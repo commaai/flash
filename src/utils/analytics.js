@@ -1,0 +1,74 @@
+import { onCLS, onFCP, onFID, onLCP, onTTFB } from 'web-vitals'
+
+const ATTRIBUTES = {
+  app: 'flash',
+  gitCommit: process.env.NEXT_PUBLIC_GIT_SHA || 'dev',
+  environment: process.env.NODE_ENV || 'development',
+}
+const RESERVED_KEYS = new Set(['_id', ...Object.keys(ATTRIBUTES)])
+
+const queue = new Set()
+let counter = 0
+
+function uniqueId() {
+  counter += 1
+  return `${Date.now()}-${Math.random().toString(10).substring(2, 10)}-${counter}`
+}
+
+async function flushQueue() {
+  if (queue.size === 0) return
+
+  const body = JSON.stringify([...queue])
+
+  // TODO: API_HOST environment variable
+  await fetch('https://api.comma.ai/_/ping', {
+    body,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    keepalive: true,
+    method: 'POST',
+  })
+
+  queue.clear()
+}
+
+export function sendEvent(event) {
+  if (!event.event) {
+    throw new Error('Analytics event must have an event property')
+  }
+  const collisions = Object.keys(event).filter((key) => RESERVED_KEYS.has(key))
+  if (collisions.length > 0) {
+    throw new Error(`Analytics event cannot have reserved keys ${collisions.join(', ')}`)
+  }
+  queue.add({
+    _id: uniqueId(),
+    ...ATTRIBUTES,
+    ...event,
+  })
+}
+
+function sendToAnalytics(metric) {
+  sendEvent({
+    event: 'web_vitals',
+    ...metric,
+  })
+}
+
+onCLS(sendToAnalytics)
+onFCP(sendToAnalytics)
+onFID(sendToAnalytics)
+onLCP(sendToAnalytics)
+onTTFB(sendToAnalytics)
+
+// Report all available metrics whenever the page is backgrounded or unloaded.
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    flushQueue()
+  }
+})
+
+// NOTE: Safari does not reliably fire the `visibilitychange` event when the
+// page is being unloaded. If Safari support is needed, you should also flush the
+// queue in the `pagehide` event.
+window.addEventListener('pagehide', flushQueue)
