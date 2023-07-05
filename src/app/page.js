@@ -34,6 +34,11 @@ export default function Home() {
             <li>A USB-C cable to power your device outside the car.</li>
             <li>Another USB-C cable to connect the device to your computer.</li>
           </ul>
+          <h3>USB Driver</h3>
+          <p>
+            If you are using a computer with Windows you should install the <a href="https://developer.android.com/studio/run/win-usb" target="_blank">
+            Google USB Driver</a> before continuing.
+          </p>
         </section>
         <hr />
 
