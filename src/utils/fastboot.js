@@ -351,10 +351,6 @@ export function useFastboot() {
         async function eraseDevice() {
           setMessage('Erasing userdata')
           await fastboot.current.runCommand('erase:userdata')
-          setProgress(0.5)
-
-          setMessage('Erasing cache')
-          await fastboot.current.runCommand('erase:cache')
           setProgress(0.9)
 
           setMessage('Rebooting')
