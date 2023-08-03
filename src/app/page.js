@@ -22,7 +22,7 @@ export default function Home() {
           <p>This tool allows you to flash AGNOS onto your comma device.</p>
           <p>
             AGNOS is the Ubuntu-based operating system for your{" "}
-            <a href="https://comma.ai/shop/comma-three" target="_blank">comma three devkit</a>.
+            <a href="https://comma.ai/shop/comma-3X" target="_blank">comma 3/3X</a>.
           </p>
         </section>
         <hr />
