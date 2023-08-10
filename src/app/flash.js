@@ -102,13 +102,13 @@ const errors = {
   [Error.FLASH_FAILED]: {
     status: 'Flash failed',
     description: 'The system image could not be flashed to your device. Try using a different cable, USB port, or ' +
-      'computer. If the problem persists, join the #hw-three channel on Discord for help.',
+      'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
   [Error.ERASE_FAILED]: {
     status: 'Erase failed',
     description: 'The device could not be erased. Try using a different cable, USB port, or computer. If the problem ' +
-      'persists, join the #hw-three channel on Discord for help.',
+      'persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
   [Error.REQUIREMENTS_NOT_MET]: {

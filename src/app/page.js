@@ -92,7 +92,7 @@ export default function Home() {
           <h3>Other questions</h3>
           <p>
             If you need help, join our <a href="https://discord.comma.ai" target="_blank">Discord server</a> and go to
-            the <strong>#hw-three</strong> channel.
+            the <strong>#hw-three-3x</strong> channel.
           </p>
         </section>
 
