@@ -12,6 +12,7 @@ const Flash = dynamic(() => import('./flash'), {
 
 export default function Home() {
   const version = process.env.NEXT_PUBLIC_GIT_SHA?.substring(0, 7) || 'dev'
+  console.info(`flash.comma.ai version: ${version}`);
   return (
     <div className="flex flex-col lg:flex-row flex-wrap">
       <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
