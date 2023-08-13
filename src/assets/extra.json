@@ -62,7 +62,7 @@
   {
     "name": "system",
     "url": "https://commadist.azureedge.net/agnosupdate-staging/system-e1fa3018bce9bad01c6967e5e21f1141cf5c8f02d2edfaed51c738f74a32a432.img.gz",
-    "hash": "611011f3e3f147bc24f371105a9dd3760ec11ba424c56d4a442a66b098c784c0",
+    "hash": "256442a55fcb9e8f72969f003a4db91598dee1136f8dda85b553a557d36b93d8",
     "hash_raw": "e1fa3018bce9bad01c6967e5e21f1141cf5c8f02d2edfaed51c738f74a32a432",
     "size": 4432911912,
     "sparse": true,
