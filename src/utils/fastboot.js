@@ -5,9 +5,7 @@ import { FastbootDevice, setDebugLevel } from 'android-fastboot'
 import * as Comlink from 'comlink'
 import { usePlausible } from 'next-plausible'
 
-import config from '@/config'
 import { sendEvent } from '@/utils/analytics'
-import { download } from '@/utils/blob'
 import { useImageWorker } from '@/utils/image'
 import { createManifest } from '@/utils/manifest'
 import { withProgress } from '@/utils/progress'
@@ -164,9 +162,8 @@ export function useFastboot() {
         }
 
         imageWorker.current?.init()
-          .then(() => download(config.manifests.release))
-          .then(blob => blob.text())
-          .then(text => {
+          .then(() => require('@/assets/extra.json'))
+          .then((text) => {
             manifest.current = createManifest(text)
 
             // sanity check

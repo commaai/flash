@@ -52,9 +52,9 @@ export class Image {
   }
 }
 
-export function createManifest(text) {
+export function createManifest(config) {
   const expectedPartitions = ['aop', 'devcfg', 'xbl', 'xbl_config', 'abl', 'boot', 'system']
-  const partitions = JSON.parse(text).map((image) => new Image(image))
+  const partitions = config.map((image) => new Image(image))
 
   // Sort into consistent order
   partitions.sort((a, b) => expectedPartitions.indexOf(a.name) - expectedPartitions.indexOf(b.name))
