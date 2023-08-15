@@ -12,6 +12,10 @@ import { useImageWorker } from '@/utils/image'
 import { createManifest } from '@/utils/manifest'
 import { withProgress } from '@/utils/progress'
 
+/**
+ * @typedef {import('./manifest.js').Image} Image
+ */
+
 // Verbose logging for fastboot
 setDebugLevel(2)
 
@@ -100,6 +104,8 @@ export function useFastboot() {
 
   const imageWorker = useImageWorker()
   const fastboot = useRef(new FastbootDevice())
+
+  /** @type {React.RefObject<Image[]>} */
   const manifest = useRef(null)
 
   const plausible = usePlausible()
