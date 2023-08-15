@@ -98,6 +98,8 @@ export function useFastboot() {
 
   const imageWorker = useImageWorker()
   const fastboot = useRef(new FastbootDevice())
+
+  /** @type {React.RefObject<import('./manifest.js').Image[]>} */
   const manifest = useRef(null)
 
   const plausible = usePlausible()
@@ -320,6 +322,7 @@ export function useFastboot() {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
 
+            // TODO: erase partition first if sparse and dontcare
             setMessage(`Flashing ${image.name}`)
             await fastboot.current.flashBlob(image.name, blob, onProgress, 'other')
           }

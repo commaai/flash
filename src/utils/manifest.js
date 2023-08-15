@@ -21,6 +21,12 @@ export class Image {
    */
   size
   /**
+   * Whether the image is sparse
+   * @type {boolean}
+   */
+  sparse
+
+  /**
    * Name of the image file
    * @type {string}
    */
@@ -41,6 +47,7 @@ export class Image {
     this.name = json.name
     this.checksum = json.hash
     this.size = json.size
+    this.sparse = json.sparse
 
     let baseUrl = json.url.split('.')
     while (baseUrl.at(-1) !== 'img') baseUrl.pop()
@@ -52,6 +59,10 @@ export class Image {
   }
 }
 
+/**
+ * @param {*[]} config
+ * @returns {Image[]}
+ */
 export function createManifest(config) {
   const expectedPartitions = ['aop', 'devcfg', 'xbl', 'xbl_config', 'abl', 'boot', 'system']
   const partitions = config.map((image) => new Image(image))
