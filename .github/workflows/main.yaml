@@ -24,6 +24,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     if: github.repository == 'commaai/flash'
+    needs: test
     permissions:
       packages: write
       contents: read
