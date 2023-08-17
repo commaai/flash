@@ -52,6 +52,10 @@ export class Image {
   }
 }
 
+/**
+ * @param {string} text 
+ * @returns {Image[]}
+ */
 export function createManifest(text) {
   const expectedPartitions = ['aop', 'devcfg', 'xbl', 'xbl_config', 'abl', 'boot', 'system']
   const partitions = JSON.parse(text).map((image) => new Image(image))
@@ -67,4 +71,14 @@ export function createManifest(text) {
   }
 
   return partitions
+}
+
+/**
+ * @param {string} url 
+ * @returns {Promise<Image[]>}
+ */
+export function getManifest(url) {
+  return fetch(url)
+    .then((response) => response.text())
+    .then(createManifest)
 }
