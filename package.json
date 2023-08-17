@@ -9,6 +9,9 @@
     "lint": "next lint",
     "test": "vitest"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "android-fastboot": "github:commaai/fastboot.js#c3ec6fe3c96a48dab46e23d0c8c861af15b2144a",
     "autoprefixer": "10.4.14",
@@ -27,6 +30,11 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.9",
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@vitejs/plugin-react": "^4.0.4",
+    "jsdom": "^22.1.0",
+    "vite-plugin-svgr": "^3.2.0",
     "vitest": "^0.34.2"
   }
 }
