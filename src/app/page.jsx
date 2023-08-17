@@ -37,8 +37,11 @@ export default function Home() {
           </ul>
           <h3>USB Driver</h3>
           <p>
-            If you are using a computer with Windows you should install the <a href="https://developer.android.com/studio/run/win-usb" target="_blank">
-            Google USB Driver</a> before continuing.
+            You need additional software for Windows to connect your device. <a href="https://developer.android.com/studio/run/win-usb" target="_blank">
+            Download Google USB Driver</a>.
+          </p>
+          <p>
+            No additional software is required for macOS or Linux.
           </p>
         </section>
         <hr />
