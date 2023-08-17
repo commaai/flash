@@ -83,6 +83,9 @@ export default function Home() {
             Try using a different USB cable or USB port. If you&apos;re using a USB hub, try connecting the device
             directly to your computer, or vice versa. Sometimes USB 2.0 ports work better than USB 3.0 ports.
           </p>
+          <p>
+            Computers running macOS or Linux have fewer issues getting connected than Windows.
+          </p>
           <h3>My device&apos;s screen is blank.</h3>
           <p>
             The device can still be in fastboot mode and reflashed normally if the screen isn&apos;t displaying
