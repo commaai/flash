@@ -11,6 +11,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-pnpm
+
+      - run: pnpm install
+      - run: pnpm lint
+      - run: pnpm test
+
   docker:
     runs-on: ubuntu-latest
     if: github.repository == 'commaai/flash'
