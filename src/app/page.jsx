@@ -5,7 +5,7 @@ import Image from 'next/image'
 import comma from '@/assets/comma.svg'
 import fastbootPorts from '@/assets/fastboot-ports.svg'
 
-const Flash = dynamic(() => import('./flash'), {
+const Flash = dynamic(() => import('./Flash'), {
   loading: () => <p className="text-black dark:text-white">Loading...</p>,
   ssr: false,
 })
