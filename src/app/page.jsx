@@ -80,8 +80,9 @@ export default function Home() {
           <h2>Troubleshooting</h2>
           <h3>Cannot enter fastboot or device says &quot;Press any key to continue&quot;</h3>
           <p>
-            Try using a different USB cable or USB port. If you&apos;re using a USB hub, try connecting the device
-            directly to your computer, or vice versa. Sometimes USB 2.0 ports work better than USB 3.0 ports.
+            Try using a different USB cable or USB port. Sometimes USB 2.0 ports work better than USB 3.0 ports. If
+            you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
+            USB hub between your computer and the device.
           </p>
           <p>
             Computers running macOS or Linux have fewer issues getting connected than Windows.
