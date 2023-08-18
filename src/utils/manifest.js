@@ -45,11 +45,13 @@ export class Image {
 
   constructor(json) {
     this.name = json.name
-    this.checksum = json.hash
     this.size = json.size
     this.sparse = json.sparse
 
-    let baseUrl = json.url.split('.')
+    const { url, hash: checksum } = json.alt || json
+    this.checksum = checksum
+
+    let baseUrl = url.split('.')
     while (baseUrl.at(-1) !== 'img') baseUrl.pop()
     baseUrl = baseUrl.join('.')
 
