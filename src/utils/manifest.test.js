@@ -11,7 +11,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
     expect(images.length).toBe(7)
 
     for (const image of images) {
-      test(`image ${image.name}`, async () => {
+      test(`${image.name} image`, async () => {
         // Check image URL points to a real file
         const response = await fetch(image.archiveUrl, { method: 'HEAD' })
         expect(response.ok).toBe(true)
