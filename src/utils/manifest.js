@@ -16,7 +16,7 @@ export class Image {
    */
   checksum
   /**
-   * Size of the image in bytes
+   * Size of the unpacked image in bytes
    * @type {number}
    */
   size

@@ -50,7 +50,7 @@ const imageWorker = {
       return
     }
 
-    // TODO: check storage quota
+    // TODO: check storage quota and report error if insufficient
     root = await navigator.storage.getDirectory()
     console.info('[ImageWorker] Initialized')
   },
@@ -80,7 +80,6 @@ const imageWorker = {
     }
 
     try {
-      // TODO: Content-Length is not very reliable
       const contentLength = +response.headers.get('Content-Length')
       const reader = response.body.getReader()
       await readChunks(reader, contentLength, {
