@@ -329,10 +329,11 @@ export function useFastboot() {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
 
-            setMessage(`Flashing ${image.name}`)
             if (image.sparse) {
+              setMessage(`Erasing ${image.name}`)
               await fastboot.current.runCommand(`erase:${image.name}`)
             }
+            setMessage(`Flashing ${image.name}`)
             await fastboot.current.flashBlob(image.name, blob, onProgress, 'other')
           }
           console.debug('[fastboot] Flashed all partitions')
