@@ -12,9 +12,18 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
 
     for (const image of images) {
       test(`${image.name} image`, async () => {
-        // Check image URL points to a real file
+        expect(image.archiveFileName, 'archive to be a gzip').toContain('.gz')
+        expect(image.archiveUrl, 'archive url to be a gzip').toContain('.gz')
+
+        if (image.name === 'system') {
+          expect(image.sparse, 'system image to be sparse').toBe(true)
+          expect(image.fileName, 'system image to be skip chunks').toContain('-skip-chunks.img')
+          expect(image.archiveUrl, 'system image to point to skip chunks').toContain('-skip-chunks.img.gz')
+        }
+
+        // TODO: download and calculate checksum?
         const response = await fetch(image.archiveUrl, { method: 'HEAD' })
-        expect(response.ok).toBe(true)
+        expect(response.ok, 'to be uploaded').toBe(true)
       })
     }
   })

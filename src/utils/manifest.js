@@ -45,19 +45,20 @@ export class Image {
 
   constructor(json) {
     this.name = json.name
+    this.checksum = json.hash
     this.size = json.size
     this.sparse = json.sparse
 
-    const { url, hash: checksum } = json.alt || json
-    this.checksum = checksum
+    let baseUrl = json.url.split('/')
+    baseUrl.pop()
+    baseUrl = baseUrl.join('/')
 
-    let baseUrl = url.split('.')
-    while (baseUrl.at(-1) !== 'img') baseUrl.pop()
-    baseUrl = baseUrl.join('.')
+    this.fileName = `${this.name}-${json.hash_raw}`
+    if (this.name === 'system') this.fileName += '-skip-chunks'
+    this.fileName += '.img'
 
-    this.fileName = baseUrl.split('/').at(-1)
     this.archiveFileName = this.fileName + '.gz'
-    this.archiveUrl = baseUrl + '.gz'
+    this.archiveUrl = `${baseUrl}/${this.archiveFileName}`
   }
 }
 
