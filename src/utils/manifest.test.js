@@ -52,7 +52,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
             if (done) break
             inflator.push(value)
           }
-        }, 15 * 60 * 1000)
+        }, 8 * 60 * 1000)
       })
     }
   })
