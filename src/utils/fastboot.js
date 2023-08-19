@@ -170,7 +170,7 @@ export function useFastboot() {
         }
 
         imageWorker.current?.init()
-          .then(() => download(config.manifests['master']))
+          .then(() => download(config.manifests['release3']))
           .then(blob => blob.text())
           .then(text => {
             manifest.current = createManifest(text)
