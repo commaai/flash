@@ -170,7 +170,7 @@ export function useFastboot() {
         }
 
         imageWorker.current?.init()
-          .then(() => download(config.manifests['release3']))
+          .then(() => download(config.manifests['agnos-alt']))
           .then(blob => blob.text())
           .then(text => {
             manifest.current = createManifest(text)
