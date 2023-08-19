@@ -63,7 +63,7 @@ export class Image {
 }
 
 /**
- * @param {string} text 
+ * @param {string} text
  * @returns {Image[]}
  */
 export function createManifest(text) {
@@ -84,7 +84,7 @@ export function createManifest(text) {
 }
 
 /**
- * @param {string} url 
+ * @param {string} url
  * @returns {Promise<Image[]>}
  */
 export function getManifest(url) {
