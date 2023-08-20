@@ -21,6 +21,12 @@ export class Image {
    */
   size
   /**
+   * Whether the image is sparse
+   * @type {boolean}
+   */
+  sparse
+
+  /**
    * Name of the image file
    * @type {string}
    */
@@ -39,21 +45,28 @@ export class Image {
 
   constructor(json) {
     this.name = json.name
-    this.checksum = json.hash
     this.size = json.size
+    this.sparse = json.sparse
 
-    let baseUrl = json.url.split('.')
-    while (baseUrl.at(-1) !== 'img') baseUrl.pop()
-    baseUrl = baseUrl.join('.')
+    if (this.name === 'system') {
+      this.checksum = json.alt.hash
+      this.fileName = `${this.name}-${json.hash_raw}-skip-chunks.img`
+    } else {
+      this.checksum = json.hash
+      this.fileName = `${this.name}-${json.hash_raw}.img`
+    }
 
-    this.fileName = baseUrl.split('/').at(-1)
+    let baseUrl = json.url.split('/')
+    baseUrl.pop()
+    baseUrl = baseUrl.join('/')
+
     this.archiveFileName = this.fileName + '.gz'
-    this.archiveUrl = baseUrl + '.gz'
+    this.archiveUrl = `${baseUrl}/${this.archiveFileName}`
   }
 }
 
 /**
- * @param {string} text 
+ * @param {string} text
  * @returns {Image[]}
  */
 export function createManifest(text) {
@@ -74,7 +87,7 @@ export function createManifest(text) {
 }
 
 /**
- * @param {string} url 
+ * @param {string} url
  * @returns {Promise<Image[]>}
  */
 export function getManifest(url) {

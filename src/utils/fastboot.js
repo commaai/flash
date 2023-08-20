@@ -169,8 +169,9 @@ export function useFastboot() {
           break
         }
 
+        // TODO: change manifest once alt image is in release
         imageWorker.current?.init()
-          .then(() => download(config.manifests.release))
+          .then(() => download(config.manifests['master']))
           .then(blob => blob.text())
           .then(text => {
             manifest.current = createManifest(text)
@@ -329,6 +330,10 @@ export function useFastboot() {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
 
+            if (image.sparse) {
+              setMessage(`Erasing ${image.name}`)
+              await fastboot.current.runCommand(`erase:${image.name}`)
+            }
             setMessage(`Flashing ${image.name}`)
             await fastboot.current.flashBlob(image.name, blob, onProgress, 'other')
           }
