@@ -169,6 +169,7 @@ export function useFastboot() {
           break
         }
 
+        // TODO: change manifest once alt image is in release
         imageWorker.current?.init()
           .then(() => download(config.manifests['master']))
           .then(blob => blob.text())
