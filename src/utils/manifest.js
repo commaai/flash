@@ -50,7 +50,7 @@ export class Image {
 
     if (this.name === 'system') {
       this.checksum = json.alt.hash
-      this.fileName = `${this.name}-${json.hash_raw}-skip-chunks.img`
+      this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
     } else {
       this.checksum = json.hash
       this.fileName = `${this.name}-${json.hash_raw}.img`
