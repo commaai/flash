@@ -23,8 +23,8 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         if (image.name === 'system') {
           test('alt image', () => {
             expect(image.sparse, 'system image to be sparse').toBe(true)
-            expect(image.fileName, 'system image to be skip chunks').toContain('-skip-chunks.img')
-            expect(image.archiveUrl, 'system image to point to skip chunks').toContain('-skip-chunks.img.gz')
+            expect(image.fileName, 'system image to be skip chunks').toContain('-skip-chunks-')
+            expect(image.archiveUrl, 'system image to point to skip chunks').toContain('-skip-chunks-')
           })
         }
 
