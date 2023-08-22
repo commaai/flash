@@ -25,7 +25,6 @@ export const Step = {
   CONNECTING: 2,
   DOWNLOADING: 3,
   UNPACKING: 4,
-  VERIFYING: 5,
   FLASHING: 6,
   ERASING: 7,
   DONE: 8,
@@ -286,33 +285,15 @@ export function useFastboot() {
         unpackImages()
           .then(() => {
             console.debug('[fastboot] Unpacked all images')
-            setStep(Step.VERIFYING)
-          })
-          .catch((err) => {
-            console.error('[fastboot] Unpack error', err)
-            setError(Error.UNPACK_FAILED)
-          })
-        break
-      }
-
-      case Step.VERIFYING: {
-        setProgress(0)
-
-        async function verifyImages() {
-          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
-            setMessage(`Verifying ${image.name}`)
-            await imageWorker.current.verifyImage(image, Comlink.proxy(onProgress))
-          }
-        }
-
-        verifyImages()
-          .then(() => {
-            console.debug('[fastboot] Verified all images')
             setStep(Step.FLASHING)
           })
           .catch((err) => {
-            console.error('[fastboot] Verification error', err)
-            setError(Error.CHECKSUM_MISMATCH)
+            console.error('[fastboot] Unpack error', err)
+            if (err.startsWith('Checksum mismatch')) {
+              setError(Error.CHECKSUM_MISMATCH)
+            } else {
+              setError(Error.UNPACK_FAILED)
+            }
           })
         break
       }

@@ -99,14 +99,16 @@ const imageWorker = {
   },
 
   /**
-   * Unpack a downloaded image archive.
+   * Unpack and verify a downloaded image archive.
+   *
+   * Throws an error if the checksum does not match.
    *
    * @param {Image} image
    * @param {progressCallback} [onProgress]
    * @returns {Promise<void>}
    */
   async unpackImage(image, onProgress = undefined) {
-    const { archiveFileName, fileName } = image
+    const { archiveFileName, checksum: expectedChecksum, fileName } = image
 
     let archiveFile
     try {
@@ -124,6 +126,7 @@ const imageWorker = {
       throw `Error opening output file handle: ${e}`
     }
 
+    const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
     let complete
     try {
       const reader = archiveFile.stream().getReader()
@@ -131,6 +134,7 @@ const imageWorker = {
         const inflator = new pako.Inflate()
         inflator.onData = function (chunk) {
           writable.write(chunk)
+          shaObj.update(chunk)
         }
         inflator.onEnd = function (status) {
           if (status) {
@@ -160,34 +164,6 @@ const imageWorker = {
     } catch (e) {
       throw `Error closing file handle: ${e}`
     }
-  },
-
-  /**
-   * Verify the checksum of an image.
-   *
-   * @param {Image} image
-   * @param {progressCallback} [onProgress]
-   * @throws {string} If the checksum does not match
-   * @returns {Promise<void>}
-   */
-  async verifyImage(image, onProgress = undefined) {
-    const { checksum: expectedChecksum, fileName } = image
-
-    let file
-    try {
-      const fileHandle = await root.getFileHandle(fileName, { create: false })
-      file = await fileHandle.getFile()
-    } catch (e) {
-      throw `Error opening file: ${e}`
-    }
-
-    const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
-    const reader = file.stream().getReader()
-    await readChunks(reader, file.size, {
-      onChunk: (chunk) => shaObj.update(chunk),
-      onProgress,
-    })
-    onProgress?.(1)
 
     const checksum = shaObj.getHash('HEX')
     if (checksum !== expectedChecksum) {
