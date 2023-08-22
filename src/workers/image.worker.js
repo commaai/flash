@@ -99,7 +99,9 @@ const imageWorker = {
   },
 
   /**
-   * Unpack a downloaded image archive.
+   * Unpack and verify a downloaded image archive.
+   *
+   * Throws an error if the checksum does not match.
    *
    * @param {Image} image
    * @param {progressCallback} [onProgress]
