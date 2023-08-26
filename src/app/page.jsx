@@ -33,6 +33,9 @@ export default function Home() {
           <ul>
             <li>A web browser which supports WebUSB (such as Google Chrome, Microsoft Edge, Opera).</li>
             <li>A USB-C cable to power your device outside the car.</li>
+            <ul>
+              <li>You can use a 5V or 12V power adapter.</li>
+            </ul>
             <li>Another USB-C cable to connect the device to your computer.</li>
           </ul>
           <h3>USB Driver</h3>
@@ -61,6 +64,10 @@ export default function Home() {
             width={450}
             height={300}
           />
+          <p>
+            If your device shows the comma spinner with a loading bar, then it&apos;s not in fastboot mode.
+            Unplug all cables, wait for the device to switch off, and try again.
+          </p>
         </section>
         <hr />
 
@@ -68,10 +75,11 @@ export default function Home() {
           <h2>Flashing</h2>
           <p>
             After your device is in fastboot mode, you can click the button to start flashing. A prompt may appear to
-            select a device. If so, choose the device labeled &quot;Android&quot;.
+            select a device; choose the device labeled &quot;Android&quot;.
           </p>
           <p>
-            The process may take 10-15 minutes depending on your internet connection and system performance.
+            The process may take 10-15 minutes depending on your internet connection and system performance. Do not
+            unplug the device until all steps are complete.
           </p>
         </section>
         <hr />
@@ -80,14 +88,14 @@ export default function Home() {
           <h2>Troubleshooting</h2>
           <h3>Cannot enter fastboot or device says &quot;Press any key to continue&quot;</h3>
           <p>
-            Try using a different USB cable or USB port. Sometimes USB 2.0 ports work better than USB 3.0 ports. If
-            you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
+            Try using a different USB cable or USB port. Sometimes USB 2.0 ports work better than USB 3.0 (blue) ports.
+            If you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
             USB hub between your computer and the device.
           </p>
           <p>
             Computers running macOS or Linux have fewer issues getting connected than Windows.
           </p>
-          <h3>My device&apos;s screen is blank.</h3>
+          <h3>My device&apos;s screen is blank</h3>
           <p>
             The device can still be in fastboot mode and reflashed normally if the screen isn&apos;t displaying
             anything. A blank screen is usually caused by installing older software that doesn&apos;t support newer
