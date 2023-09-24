@@ -97,7 +97,13 @@ export default function Home() {
             USB hub between your computer and the device.
           </p>
           <p>
-            Computers running macOS or Linux have fewer issues getting connected than Windows.
+            You may also want to try to use a different type of workstation type to flash with. In order from easiest to most troublesome:
+            <ul>
+              <li>Mac</li>
+              <li>Android with 6GB+ of RAM</li>
+              <li>Windows</li>
+              <li>Linux (You may need to search on how to allow WebUSB)</li>
+            </ul>
           </p>
           <h3>My device&apos;s screen is blank</h3>
           <p>
