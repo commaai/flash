@@ -55,7 +55,8 @@ export default function Home() {
           <ol>
             <li>Power off the device and wait for the LEDs to switch off.</li>
             <li>Connect power to the OBD-C port <strong>(port 1)</strong>.</li>
-            <li>Then, quickly connect the device to your computer using the USB-C port <strong>(port 2)</strong>.</li>
+            <li>Then, <a href="https://youtube.com/clip/Ugkx1pbkpkvFU9gGsUwvkrl7yxx-SfHOZejM?si=nsJ0WJHJwS-rnHXL">quickly</a> connect
+              the device to your computer using the USB-C port <strong>(port 2)</strong>.</li>
             <li>After a few seconds, the device should indicate it&apos;s in fastboot mode and show its serial number.</li>
           </ol>
           <Image
