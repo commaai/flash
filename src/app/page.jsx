@@ -31,7 +31,11 @@ export default function Home() {
         <section>
           <h2>Requirements</h2>
           <ul>
-            <li>A web browser which supports WebUSB (such as Google Chrome, Microsoft Edge, Opera).</li>
+            <li>
+              A web browser which supports WebUSB (such as Google Chrome, Microsoft Edge, Opera).
+              Note that Chrome or similar browsers on Android devices with 6GB+ of RAM and an
+              extended screen timeout setting may work as well.
+            </li>
             <li>A USB-C cable to power your device outside the car.</li>
             <ul>
               <li>You can use a 5V or 12V power adapter.</li>
@@ -94,7 +98,13 @@ export default function Home() {
             USB hub between your computer and the device.
           </p>
           <p>
-            Computers running macOS or Linux have fewer issues getting connected than Windows.
+            You may also want to try to use a different type of workstation type to flash with. In order from easiest to most troublesome:
+            <ul>
+              <li>Mac</li>
+              <li>Android with 6GB+ of RAM</li>
+              <li>Windows</li>
+              <li>Linux (You may need to search on how to allow WebUSB)</li>
+            </ul>
           </p>
           <h3>My device&apos;s screen is blank</h3>
           <p>
