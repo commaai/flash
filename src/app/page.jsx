@@ -4,6 +4,8 @@ import Image from 'next/image'
 
 import comma from '@/assets/comma.svg'
 import fastbootPorts from '@/assets/fastboot-ports.svg'
+import zadigCreateNewDevice from '@/assets/zadig_create_new_device.png'
+import zadigForm from '@/assets/zadig_form.png'
 
 const Flash = dynamic(() => import('./Flash'), {
   loading: () => <p className="text-black dark:text-white">Loading...</p>,
@@ -44,8 +46,34 @@ export default function Home() {
           </ul>
           <h3>USB Driver</h3>
           <p>
-            You need additional software for Windows to connect your device. <a href="https://developer.android.com/studio/run/win-usb" target="_blank">
-            Download Google USB Driver</a>.
+            You need additional driver software for Windows before you connect
+            your device.
+            <ol>
+              <li>
+                Download and install <a href="https://zadig.akeo.ie/">Zadig</a>.
+              </li>
+              <li>
+                Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
+                <Image
+                  src={zadigCreateNewDevice}
+                  alt="Zadig Create New Device"
+                  width={575}
+                  height={254}
+                />
+              </li>
+              <li>
+                Fill in three fields. The first field is just a description and
+                you can fill in anything.  The next two fields are very important.
+                Fill them in with <code>18D1</code> and <code>D00D</code> respectively.
+                Press &quot;Install Driver&quot; and give it a few minutes to install.
+                <Image
+                  src={zadigForm}
+                  alt="Zadig Form"
+                  width={575}
+                  height={254}
+                />
+              </li>
+            </ol>
           </p>
           <p>
             No additional software is required for macOS or Linux.
