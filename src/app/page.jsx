@@ -106,6 +106,11 @@ export default function Home() {
           <p>
             This is expected after the filesystem is erased. You can safely press confirm to reset your device.
           </p>
+          <h3>Flashing keeps failing immediately</h3>
+          <p>
+            If flashing keeps immediately failing with an error, try using comma&apos;s USB
+            cable between the device and the flashing workstation and the &quot;other&quot; cable for power.
+          </p>
           <h3>Other questions</h3>
           <p>
             If you need help, join our <a href="https://discord.comma.ai" target="_blank">Discord server</a> and go to
