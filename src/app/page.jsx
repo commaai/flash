@@ -34,15 +34,14 @@ export default function Home() {
           <h2>Requirements</h2>
           <ul>
             <li>
-              A web browser which supports WebUSB (such as Google Chrome, Microsoft Edge, Opera).
-              Note that Chrome or similar browsers on Android devices with 6GB+ of RAM and an
-              extended screen timeout setting may work as well.
+              A web browser which supports WebUSB (such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
             </li>
-            <li>A USB-C cable to power your device outside the car.</li>
-            <ul>
-              <li>You can use a 5V or 12V power adapter.</li>
-            </ul>
-            <li>Another USB-C cable to connect the device to your computer.</li>
+            <li>
+              A USB-C cable to power your device outside the car.
+            </li>
+            <li>
+              Another USB-C cable to connect the device to your computer.
+            </li>
           </ul>
           <h3>USB Driver</h3>
           <p>
@@ -111,7 +110,7 @@ export default function Home() {
             select a device; choose the device labeled &quot;Android&quot;.
           </p>
           <p>
-            The process may take 10-15 minutes depending on your internet connection and system performance. Do not
+            The process can take 15+ minutes depending on your internet connection and system performance. Do not
             unplug the device until all steps are complete.
           </p>
         </section>
@@ -125,15 +124,6 @@ export default function Home() {
             If you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
             USB hub between your computer and the device.
           </p>
-          <p>
-            You may also want to try to use a different type of workstation type to flash with. In order from easiest to most troublesome:
-            <ul>
-              <li>Mac</li>
-              <li>Android with 6GB+ of RAM</li>
-              <li>Windows</li>
-              <li>Linux (You may need to search on how to allow WebUSB)</li>
-            </ul>
-          </p>
           <h3>My device&apos;s screen is blank</h3>
           <p>
             The device can still be in fastboot mode and reflashed normally if the screen isn&apos;t displaying
@@ -142,12 +132,15 @@ export default function Home() {
           </p>
           <h3>After flashing, device says unable to mount data partition</h3>
           <p>
-            This is expected after the filesystem is erased. You can safely press confirm to reset your device.
+            This is expected after the filesystem is erased. Press confirm to finish resetting your device.
           </p>
-          <h3>Flashing keeps failing immediately</h3>
+          <h3>General Tips</h3>
           <p>
-            If flashing keeps immediately failing with an error, try using comma&apos;s USB
-            cable between the device and the flashing workstation and the &quot;other&quot; cable for power.
+            <ul>
+              <li>Try another computer or OS</li>
+              <li>Try different USB ports on your computer</li>
+              <li>Try different USB-C cables, including the OBD-C cable that came with the device</li>
+            </ul>
           </p>
           <h3>Other questions</h3>
           <p>
