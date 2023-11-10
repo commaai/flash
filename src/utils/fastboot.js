@@ -6,7 +6,6 @@ import * as Comlink from 'comlink'
 import { usePlausible } from 'next-plausible'
 
 import config from '@/config'
-import { sendEvent } from '@/utils/analytics'
 import { download } from '@/utils/blob'
 import { useImageWorker } from '@/utils/image'
 import { createManifest } from '@/utils/manifest'
@@ -111,11 +110,6 @@ export function useFastboot() {
 
   function setStep(step) {
     _setStep(step)
-    sendEvent({
-      event: 'fastboot_step',
-      step,
-      stepName: Object.keys(Step).find(key => Step[key] === step),
-    })
   }
 
   function setMessage(message = '') {
@@ -125,11 +119,6 @@ export function useFastboot() {
 
   function setError(error) {
     _setError(error)
-    sendEvent({
-      event: 'fastboot_error',
-      error,
-      errorName: Object.keys(Error).find(key => Error[key] === error),
-    })
   }
 
   useEffect(() => {
