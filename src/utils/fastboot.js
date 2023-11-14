@@ -136,7 +136,6 @@ export function useFastboot() {
         // Check that the browser supports WebUSB
         if (typeof navigator.usb === 'undefined') {
           console.error('[fastboot] WebUSB not supported')
-          sendEvent({ event: 'requirements_not_met', reason: 'missing_webusb' })
           setError(Error.REQUIREMENTS_NOT_MET)
           break
         }
@@ -144,7 +143,6 @@ export function useFastboot() {
         // Check that the browser supports Web Workers
         if (typeof Worker === 'undefined') {
           console.error('[fastboot] Web Workers not supported')
-          sendEvent({ event: 'requirements_not_met', reason: 'missing_webworker' })
           setError(Error.REQUIREMENTS_NOT_MET)
           break
         }
@@ -152,7 +150,6 @@ export function useFastboot() {
         // Check that the browser supports Storage API
         if (typeof Storage === 'undefined') {
           console.error('[fastboot] Storage API not supported')
-          sendEvent({ event: 'requirements_not_met', reason: 'missing_storage' })
           setError(Error.REQUIREMENTS_NOT_MET)
           break
         }
@@ -202,12 +199,6 @@ export function useFastboot() {
                 }, {})
 
                 const recognized = isRecognizedDevice(deviceInfo)
-                sendEvent({
-                  event: 'device_connected',
-                  device_info: deviceInfo,
-                  is_recognized: recognized,
-                })
-
                 console.debug('[fastboot] Device info', { recognized, deviceInfo })
 
                 if (!recognized) {
