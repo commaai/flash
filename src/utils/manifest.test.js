@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
 import jsSHA from 'jssha'
-import pako from 'pako'
+import { XzReadableStream } from 'xzwasm';
 
 import config from '../config'
 import { getManifest } from './manifest'
@@ -15,9 +15,9 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
 
     for (const image of images) {
       describe(`${image.name} image`, async () => {
-        test('gzip archive', () => {
-          expect(image.archiveFileName, 'archive to be a gzip').toContain('.gz')
-          expect(image.archiveUrl, 'archive url to be a gzip').toContain('.gz')
+        test('xz archive', () => {
+          expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
+          expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
         })
 
         if (image.name === 'system') {
@@ -32,26 +32,21 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           const response = await fetch(image.archiveUrl)
           expect(response.ok, 'to be uploaded').toBe(true)
 
-          const inflator = new pako.Inflate()
           const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
 
-          inflator.onData = function (chunk) {
-            shaObj.update(chunk)
-          }
-
-          inflator.onEnd = function (status) {
-            expect(status, 'to decompress').toBe(0)
-
-            const checksum = shaObj.getHash('HEX')
-            expect(checksum, 'to match').toBe(image.checksum)
-          }
-
-          const reader = response.body.getReader()
+          const decompressedResponse = new Response(
+            new XzReadableStream(response.body)
+          );
+         
+          const reader = decompressedResponse.body.getReader()
           while (true) {
             const { done, value } = await reader.read()
             if (done) break
-            inflator.push(value)
+            shaObj.update(value)
           }
+
+          const checksum = shaObj.getHash('HEX')
+          expect(checksum, 'to match').toBe(image.checksum)
         }, 8 * 60 * 1000)
       })
     }

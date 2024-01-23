@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink'
 
 import jsSHA from 'jssha'
-import pako from 'pako'
+import { XzReadableStream } from 'xzwasm';
 
 import { Image } from '@/utils/manifest'
 
@@ -129,28 +129,20 @@ const imageWorker = {
     const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
     let complete
     try {
-      const reader = archiveFile.stream().getReader()
-      await new Promise(async (resolve, reject) => {
-        const inflator = new pako.Inflate()
-        inflator.onData = function (chunk) {
+      const reader = (new Response(
+        new XzReadableStream(archiveFile.stream())
+      )).getReader()
+      
+      await readChunks(reader, archiveFile.size, {
+        onChunk: (chunk) => {
           writable.write(chunk)
           shaObj.update(chunk)
-        }
-        inflator.onEnd = function (status) {
-          if (status) {
-            reject(`Decompression error ${status}: ${inflator.msg}`)
-          } else {
-            resolve()
-          }
-          complete = true
-        }
-
-        await readChunks(reader, archiveFile.size, {
-          onChunk: (chunk) => inflator.push(chunk),
-          onProgress,
-        })
-        onProgress?.(1)
+        },
+        onProgress,
       })
+
+      complete = true
+      onProgress?.(1)
     } catch (e) {
       throw `Error unpacking archive: ${e}`
     }

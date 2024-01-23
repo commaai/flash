@@ -51,17 +51,14 @@ export class Image {
     if (this.name === 'system') {
       this.checksum = json.alt.hash
       this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
+      this.archiveUrl = json.alt.url
     } else {
       this.checksum = json.hash
       this.fileName = `${this.name}-${json.hash_raw}.img`
-    }
+      this.archiveUrl = json.url
+    } 
 
-    let baseUrl = json.url.split('/')
-    baseUrl.pop()
-    baseUrl = baseUrl.join('/')
-
-    this.archiveFileName = this.fileName + '.gz'
-    this.archiveUrl = `${baseUrl}/${this.archiveFileName}`
+    this.archiveFileName = this.archiveUrl.split('/').pop();
   }
 }
 

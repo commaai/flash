@@ -21,12 +21,12 @@
     "jssha": "^3.3.1",
     "next": "13.4.1",
     "next-plausible": "^3.10.1",
-    "pako": "2.1.0",
     "postcss": "8.4.24",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "tailwindcss": "3.3.2",
-    "web-vitals": "^3.4.0"
+    "web-vitals": "^3.4.0",
+    "xzwasm": "^0.1.2"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.9",
