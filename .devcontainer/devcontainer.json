@@ -1,0 +1,7 @@
+{
+	"name": "flash.comma.ai",
+
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+
+	"postCreateCommand": "pnpm install",
+}
