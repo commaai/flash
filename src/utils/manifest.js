@@ -58,7 +58,7 @@ export class Image {
       this.archiveUrl = json.url
     } 
 
-    this.archiveFileName = this.archiveUrl.split('/').pop();
+    this.archiveFileName = this.archiveUrl.split('/').pop()
   }
 }
 

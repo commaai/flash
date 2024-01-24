@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink'
 
 import jsSHA from 'jssha'
-import { XzReadableStream } from 'xzwasm';
+import { XzReadableStream } from 'xzwasm'
 
 import { Image } from '@/utils/manifest'
 
@@ -131,7 +131,7 @@ const imageWorker = {
     try {
       const reader = (new Response(
         new XzReadableStream(archiveFile.stream())
-      )).getReader()
+      )).body.getReader()
       
       await readChunks(reader, archiveFile.size, {
         onChunk: (chunk) => {
