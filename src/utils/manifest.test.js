@@ -1,13 +1,44 @@
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
-import jsSHA from 'jssha'
-import { XzReadableStream } from 'xzwasm';
+import * as Comlink from 'comlink'
 
 import config from '../config'
 import { getManifest } from './manifest'
 
+async function getImageWorker() {
+  let imageWorker
+
+  vi.mock('comlink')
+  vi.mocked(Comlink.expose).mockImplementation(worker => {
+    imageWorker = worker
+    imageWorker.init()
+  })
+
+  await import('./../workers/image.worker')
+
+  return imageWorker
+}
+
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
   describe(`${branch} manifest`, async () => {
+    const imageWorkerFileHandler = {
+      getFile: vi.fn(),
+      createWritable: vi.fn().mockImplementation(() => ({
+        write: vi.fn(),
+        close: vi.fn(),
+      })),
+    }
+
+    global.navigator = {
+      storage: {
+        getDirectory: () => ({
+          getFileHandle: () => imageWorkerFileHandler,
+        })
+      }
+    }
+
+    const imageWorker = await getImageWorker()
+
     const images = await getManifest(manifestUrl)
 
     // Check all images are present
@@ -29,24 +60,14 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         }
 
         test('image and checksum', async () => {
-          const response = await fetch(image.archiveUrl)
-          expect(response.ok, 'to be uploaded').toBe(true)
+          imageWorkerFileHandler.getFile.mockImplementation(async () => {
+            const response = await fetch(image.archiveUrl)
+            expect(response.ok, 'to be uploaded').toBe(true)
 
-          const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
-
-          const decompressedResponse = new Response(
-            new XzReadableStream(response.body)
-          );
-         
-          const reader = decompressedResponse.body.getReader()
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            shaObj.update(value)
-          }
-
-          const checksum = shaObj.getHash('HEX')
-          expect(checksum, 'to match').toBe(image.checksum)
+            return response.blob()
+          })
+      
+          await imageWorker.unpackImage(image)
         }, 8 * 60 * 1000)
       })
     }
