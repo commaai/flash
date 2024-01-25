@@ -108,7 +108,7 @@ const imageWorker = {
    * @returns {Promise<void>}
    */
   async unpackImage(image, onProgress = undefined) {
-    const { archiveFileName, checksum: expectedChecksum, fileName } = image
+    const { archiveFileName, checksum: expectedChecksum, fileName, size: imageSize } = image
 
     let archiveFile
     try {
@@ -129,11 +129,9 @@ const imageWorker = {
     const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
     let complete
     try {
-      const reader = (new Response(
-        new XzReadableStream(archiveFile.stream())
-      )).body.getReader()
+      const reader = (new XzReadableStream(archiveFile.stream())).getReader()
       
-      await readChunks(reader, archiveFile.size, {
+      await readChunks(reader, imageSize, {
         onChunk: (chunk) => {
           writable.write(chunk)
           shaObj.update(chunk)
