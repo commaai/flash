@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink'
 
 import jsSHA from 'jssha'
-import { XzReadableStream } from 'xzwasm'
+import { XzReadableStream } from 'xz-decompress';
 
 import { Image } from '@/utils/manifest'
 

@@ -26,7 +26,7 @@
     "react-dom": "18.2.0",
     "tailwindcss": "3.3.2",
     "web-vitals": "^3.4.0",
-    "xzwasm": "^0.1.2"
+    "xz-decompress": "^0.2.1"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.9",

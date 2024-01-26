@@ -44,9 +44,9 @@ dependencies:
   web-vitals:
     specifier: ^3.4.0
     version: 3.4.0
-  xzwasm:
-    specifier: ^0.1.2
-    version: 0.1.2
+  xz-decompress:
+    specifier: ^0.2.1
+    version: 0.2.1
 
 devDependencies:
   '@tailwindcss/typography':
@@ -3998,8 +3998,9 @@ packages:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
     dev: true
 
-  /xzwasm@0.1.2:
-    resolution: {integrity: sha512-AhkIQcyCRTKQAlI+ENhQBB52AUZF7puNmNleawbpyGAzEyflbMbwIKlU5yN99cgiv5XVlXt0mIeYgQrdQghdsA==}
+  /xz-decompress@0.2.1:
+    resolution: {integrity: sha512-vgpc2zPchALa6D2lc+IFRrcAB3L4I40KmgUcPV7G70CfeMWzVdmlfDpyEczvsE435WgtH6WYYT/11Um57u7s6A==}
+    engines: {node: '>=16'}
     dev: false
 
   /yallist@3.1.1:
