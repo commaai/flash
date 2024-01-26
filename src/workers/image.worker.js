@@ -10,7 +10,7 @@ import { Image } from '@/utils/manifest'
  *
  * @callback chunkCallback
  * @param {Uint8Array} chunk
- * @returns {void}
+ * @returns {Promise<void>}
  */
 
 /**
@@ -35,7 +35,7 @@ async function readChunks(reader, total, { onChunk, onProgress = undefined }) {
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
-    onChunk(value)
+    await onChunk(value)
     processed += value.length
     onProgress?.(processed / total)
   }
@@ -83,7 +83,7 @@ const imageWorker = {
       const contentLength = +response.headers.get('Content-Length')
       const reader = response.body.getReader()
       await readChunks(reader, contentLength, {
-        onChunk: (chunk) => writable.write(chunk),
+        onChunk: async (chunk) => await writable.write(chunk),
         onProgress,
       })
       onProgress?.(1)
@@ -132,8 +132,8 @@ const imageWorker = {
       const reader = (new XzReadableStream(archiveFile.stream())).getReader()
       
       await readChunks(reader, imageSize, {
-        onChunk: (chunk) => {
-          writable.write(chunk)
+        onChunk: async (chunk) => {
+          await writable.write(chunk)
           shaObj.update(chunk)
         },
         onProgress,
