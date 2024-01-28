@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -29,9 +29,6 @@ dependencies:
   next-plausible:
     specifier: ^3.10.1
     version: 3.10.1(next@13.4.1)(react-dom@18.2.0)(react@18.2.0)
-  pako:
-    specifier: 2.1.0
-    version: 2.1.0
   postcss:
     specifier: 8.4.24
     version: 8.4.24
@@ -47,6 +44,9 @@ dependencies:
   web-vitals:
     specifier: ^3.4.0
     version: 3.4.0
+  xz-decompress:
+    specifier: ^0.2.1
+    version: 0.2.1
 
 devDependencies:
   '@tailwindcss/typography':
@@ -3997,6 +3997,11 @@ packages:
   /xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
     dev: true
+
+  /xz-decompress@0.2.1:
+    resolution: {integrity: sha512-vgpc2zPchALa6D2lc+IFRrcAB3L4I40KmgUcPV7G70CfeMWzVdmlfDpyEczvsE435WgtH6WYYT/11Um57u7s6A==}
+    engines: {node: '>=16'}
+    dev: false
 
   /yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}

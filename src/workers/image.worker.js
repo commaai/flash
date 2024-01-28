@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink'
 
 import jsSHA from 'jssha'
-import pako from 'pako'
+import { XzReadableStream } from 'xz-decompress';
 
 import { Image } from '@/utils/manifest'
 
@@ -10,7 +10,7 @@ import { Image } from '@/utils/manifest'
  *
  * @callback chunkCallback
  * @param {Uint8Array} chunk
- * @returns {void}
+ * @returns {Promise<void>}
  */
 
 /**
@@ -35,7 +35,7 @@ async function readChunks(reader, total, { onChunk, onProgress = undefined }) {
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
-    onChunk(value)
+    await onChunk(value)
     processed += value.length
     onProgress?.(processed / total)
   }
@@ -83,7 +83,7 @@ const imageWorker = {
       const contentLength = +response.headers.get('Content-Length')
       const reader = response.body.getReader()
       await readChunks(reader, contentLength, {
-        onChunk: (chunk) => writable.write(chunk),
+        onChunk: async (chunk) => await writable.write(chunk),
         onProgress,
       })
       onProgress?.(1)
@@ -108,7 +108,7 @@ const imageWorker = {
    * @returns {Promise<void>}
    */
   async unpackImage(image, onProgress = undefined) {
-    const { archiveFileName, checksum: expectedChecksum, fileName } = image
+    const { archiveFileName, checksum: expectedChecksum, fileName, size: imageSize } = image
 
     let archiveFile
     try {
@@ -129,28 +129,18 @@ const imageWorker = {
     const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
     let complete
     try {
-      const reader = archiveFile.stream().getReader()
-      await new Promise(async (resolve, reject) => {
-        const inflator = new pako.Inflate()
-        inflator.onData = function (chunk) {
-          writable.write(chunk)
+      const reader = (new XzReadableStream(archiveFile.stream())).getReader()
+      
+      await readChunks(reader, imageSize, {
+        onChunk: async (chunk) => {
+          await writable.write(chunk)
           shaObj.update(chunk)
-        }
-        inflator.onEnd = function (status) {
-          if (status) {
-            reject(`Decompression error ${status}: ${inflator.msg}`)
-          } else {
-            resolve()
-          }
-          complete = true
-        }
-
-        await readChunks(reader, archiveFile.size, {
-          onChunk: (chunk) => inflator.push(chunk),
-          onProgress,
-        })
-        onProgress?.(1)
+        },
+        onProgress,
       })
+
+      complete = true
+      onProgress?.(1)
     } catch (e) {
       throw `Error unpacking archive: ${e}`
     }

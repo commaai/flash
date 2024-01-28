@@ -1,13 +1,44 @@
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 
-import jsSHA from 'jssha'
-import pako from 'pako'
+import * as Comlink from 'comlink'
 
 import config from '../config'
 import { getManifest } from './manifest'
 
+async function getImageWorker() {
+  let imageWorker
+
+  vi.mock('comlink')
+  vi.mocked(Comlink.expose).mockImplementation(worker => {
+    imageWorker = worker
+    imageWorker.init()
+  })
+
+  await import('./../workers/image.worker')
+
+  return imageWorker
+}
+
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
   describe(`${branch} manifest`, async () => {
+    const imageWorkerFileHandler = {
+      getFile: vi.fn(),
+      createWritable: vi.fn().mockImplementation(() => ({
+        write: vi.fn(),
+        close: vi.fn(),
+      })),
+    }
+
+    global.navigator = {
+      storage: {
+        getDirectory: () => ({
+          getFileHandle: () => imageWorkerFileHandler,
+        })
+      }
+    }
+
+    const imageWorker = await getImageWorker()
+
     const images = await getManifest(manifestUrl)
 
     // Check all images are present
@@ -15,9 +46,9 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
 
     for (const image of images) {
       describe(`${image.name} image`, async () => {
-        test('gzip archive', () => {
-          expect(image.archiveFileName, 'archive to be a gzip').toContain('.gz')
-          expect(image.archiveUrl, 'archive url to be a gzip').toContain('.gz')
+        test('xz archive', () => {
+          expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
+          expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
         })
 
         if (image.name === 'system') {
@@ -29,29 +60,14 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         }
 
         test('image and checksum', async () => {
-          const response = await fetch(image.archiveUrl)
-          expect(response.ok, 'to be uploaded').toBe(true)
+          imageWorkerFileHandler.getFile.mockImplementation(async () => {
+            const response = await fetch(image.archiveUrl)
+            expect(response.ok, 'to be uploaded').toBe(true)
 
-          const inflator = new pako.Inflate()
-          const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
-
-          inflator.onData = function (chunk) {
-            shaObj.update(chunk)
-          }
-
-          inflator.onEnd = function (status) {
-            expect(status, 'to decompress').toBe(0)
-
-            const checksum = shaObj.getHash('HEX')
-            expect(checksum, 'to match').toBe(image.checksum)
-          }
-
-          const reader = response.body.getReader()
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            inflator.push(value)
-          }
+            return response.blob()
+          })
+      
+          await imageWorker.unpackImage(image)
         }, 8 * 60 * 1000)
       })
     }
