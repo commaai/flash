@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  output: process.env.NEXT_CONFIG_OUTPUT || 'standalone',
 }
 
 module.exports = nextConfig
