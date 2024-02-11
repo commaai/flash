@@ -2,8 +2,6 @@ const vendorID = 0x05c6;
 const productID = 0x9008;
 const QDL_USB_CLASS = 0xff;
 
-// TODO: waitforconnect to check for valid device
-
 export class UsbError extends Error {
   constructor(message) {
     super(message);
@@ -11,7 +9,8 @@ export class UsbError extends Error {
   }
 }
 
-export class qdlDevice {
+// TODO: waitforconnect to check for valid device
+export class usbClass {
   device;
   epIn;
   epOut;
@@ -25,6 +24,14 @@ export class qdlDevice {
     this._registeredUsbListeners = null;
   }
 
+  get connected() {
+    return (
+      this.device !== null &&
+      this.device.opened &&
+      this.device.configurations[0].interfaces[0].claimed
+    );
+  }
+
   async _validateAndConnectDevice() {
     let ife = this.device?.configurations[0].interfaces[0].alternates[0];
     if (ife.endpoints.length !== 2) {
@@ -35,18 +42,19 @@ export class qdlDevice {
     this.epOut = null;
 
     for (let endpoint of ife.endpoints) {
-      console.log("Checking endpoint:", endpoint);
       if (endpoint.type !== "bulk") {
         throw new UsbError("Interface endpoint is not bulk");
       }
       if (endpoint.direction === "in") {
         if (this.epIn === null) {
+          console.log("epIn", endpoint);
           this.epIn = endpoint;
         } else {
           throw new UsbError("Interface has multiple IN endpoints");
         }
       } else if (endpoint.direction === "out") {
         if (this.epOut === null) {
+          console.log("epOut", endpoint);
           this.epOut = endpoint;
         } else {
           throw new UsbError("Interface has multiple OUT endpoints");
@@ -88,6 +96,7 @@ export class qdlDevice {
     console.log("USing USB device:", this.device);
 
     if (!this._registeredUsbListeners){
+      console.log("Get in unregistered");
       navigator.usb.addEventListener("connect", async (event) =>{
         console.log("USB device connect:", event.device);
         this.device = event.device;
@@ -95,7 +104,7 @@ export class qdlDevice {
         try {
           await this._validateAndConnectDevice();
         } catch (error) {
-          console.log("Error while connecting to the device")
+          console.log("Error while connecting to the device");
         }
       });
 
@@ -105,40 +114,48 @@ export class qdlDevice {
   }
 
   async _usbRead(resplen = null){
-    let respData = { text : "" };
+    let respData = { text : "", };
 
-    if (!(resplen === null)) { resplen = this.epIn.packetSize; }
+    if ((resplen === null)) { resplen = this.epIn.packetSize; }
 
     while (respData.text.length < resplen) {
       try {
-        let respPacket = await this.device?.transferIn(this.epIn.endpointNumber, resplen);
-        respData.text += respPacket.data;
+        console.log("Transferring...");
+        let respPacket = await this.device?.transferIn(this.epIn?.endpointNumber, resplen);
+        console.log("get respPacket");
+        let response = new TextDecoder().decode(respPacket.data);
+        console.log("get response");
+        respData.text += response;
+        console.log("added response");
       } catch (error) {
         if (error.includes("timed out")) {
           console.error("Timed out");
-          return new TextDecoder().endcode("");
+          return new TextEncoder().endcode("");
         } else if (error.includes("Overflow")) {
           console.error("USB Overflow");
-          return new TextDecoder().endcode("");
+          return new TextEncoder().endcode("");
         }
       }
     }
-    return respData;
+    return new TextEncoder().encode(respData);
   }
 
   async _usbWrite(cmd, pktSize=null) {
-    if (!(pktSize === null)) { pktSize = this.epOut.packetSize; }
-    let cmdPacket = new TextDecoder().encode(cmd);
+    if (!(pktSize === null)) { pktSize = this.epOut?.packetSize; }
+    let cmdPacket = new TextEncoder().encode(cmd);
     let offset = 0;
     while (offset < cmdPacket.length){
+      console.log("Get in in while loop in write")
       try {
         await this.device.transferOut(this.epOut.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
         offset += pktSize;
       } catch (error) {
         console.error(error);
-        return false;
+        return new TextEncoder().encode("");
       }
     }
+    //return true;
     return true;
+    //return this._usbRead()
   }
 }
