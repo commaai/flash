@@ -83,7 +83,6 @@ export class usbClass {
     let devices = await navigator.usb.getDevices();
     console.log("Found these USB devices:", devices);
 
-    //console.log("USing USB device:", this.device);
     this.device = await navigator.usb.requestDevice({
       filters: [
         {
@@ -120,7 +119,7 @@ export class usbClass {
 
     while (respData.text.length < resplen) {
       try {
-        console.log("Transferring...");
+        console.log("Transferring In...");
         let respPacket = await this.device?.transferIn(this.epIn?.endpointNumber, resplen);
         console.log("get respPacket");
         let response = new TextDecoder().decode(respPacket.data);
@@ -140,22 +139,22 @@ export class usbClass {
     return new TextEncoder().encode(respData);
   }
 
-  async _usbWrite(cmd, pktSize=null) {
+  async _usbWrite(cmdPacket, pktSize=null) {
     if (!(pktSize === null)) { pktSize = this.epOut?.packetSize; }
-    let cmdPacket = new TextEncoder().encode(cmd);
+    //let cmdPacket = new TextEncoder().encode(cmd);
     let offset = 0;
     while (offset < cmdPacket.length){
-      console.log("Get in in while loop in write")
       try {
-        await this.device.transferOut(this.epOut.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
+        console.log("Transferring Out...")
+        console.log(cmdPacket.slice(offset, offset+4));
+        await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
         offset += pktSize;
       } catch (error) {
         console.error(error);
-        return new TextEncoder().encode("");
+        //return new TextEncoder().encode("");
+        return false;
       }
     }
-    //return true;
     return true;
-    //return this._usbRead()
   }
 }
