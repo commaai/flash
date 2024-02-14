@@ -1,7 +1,6 @@
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 
-
 export class qdlDevice {
   cdc;
   sahara;
@@ -18,7 +17,6 @@ export class qdlDevice {
         console.log("Device detected");
         try {
           let resp = await this.sahara?.connect();
-          console.log("finish connecting sahara");
           if (resp.hasOwnProperty("mode")){
             let mode = resp["mode"];
             console.log("Mode detected:", mode);
@@ -26,7 +24,6 @@ export class qdlDevice {
           }
         } catch (error) {
           console.error(error);
-          process.exit(1);
         }
       }
     }

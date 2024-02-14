@@ -6,17 +6,15 @@ export class structHelper_io {
     this.data = data;
   }
 
-  dword(idx_start) {
-    // TODO: check endianess
-    dat = new TextDecoder('utf-8').decode(data).substring(idx_start, idx_start + 4 - 1);
-    return dat;
+  dword(idx_start, littleEndian=true) {
+    let view = new DataView(this.data.slice(idx_start, idx_start+4).buffer, 0);
+    return view.getUint32(0, littleEndian);
   }
 
-  qword(idx_start) {
-    dat = new TextDecoder('utf-8').decode(data).substring(idx_start, idx_start + 8 - 1);
-    return dat;
+  qword(idx_start, littleEndian=true) {
+    let view = new DataView(this.data.slice(idx_start, idx_start+8).buffer, 0);
+    return view.getUint64(0, littleEndian);
   }
-
 }
 
 export function packGenerator(elements, littleEndian=true) {
@@ -27,4 +25,23 @@ export function packGenerator(elements, littleEndian=true) {
     view.setUint32(i*4, elements[i], littleEndian);
   }
   return new Uint8Array(view.buffer);
+}
+
+export function concatUint8Array(arrays){
+  let length = 0;
+  arrays.forEach(item => {
+    if (item !== null)
+      length += item.length;
+  });
+
+  let concatArray = new Uint8Array(length);
+  let offset = 0;
+  arrays.forEach( item => {
+    if (item !== null) {
+      concatArray.set(item, offset);
+      offset += item.length;
+    }
+  });
+
+  return concatArray;
 }

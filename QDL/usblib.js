@@ -1,3 +1,5 @@
+import { concatUint8Array } from "./utils";
+
 const vendorID = 0x05c6;
 const productID = 0x9008;
 const QDL_USB_CLASS = 0xff;
@@ -65,12 +67,6 @@ export class usbClass {
 
     try {
         await this.device?.open();
-        // Opportunistically reset to fix issues on some platforms
-        try {
-            await this.device?.reset();
-        } catch (error) {
-            /* Failed = doesn't support reset */
-        }
         await this.device?.selectConfiguration(1);
         await this.device?.claimInterface(0);
     } catch (error) {
@@ -112,46 +108,42 @@ export class usbClass {
     await this._validateAndConnectDevice();
   }
 
-  async _usbRead(resplen = null){
-    let respData = { text : "", };
+  async _usbRead(resplen=null){
+    let respData = null;
+    let covered = 0;
+    if ((resplen === null)) 
+      resplen = this.epIn.packetSize;
 
-    if ((resplen === null)) { resplen = this.epIn.packetSize; }
-
-    while (respData.text.length < resplen) {
+    while (covered < resplen) {
       try {
         console.log("Transferring In...");
         let respPacket = await this.device?.transferIn(this.epIn?.endpointNumber, resplen);
-        console.log("get respPacket");
-        let response = new TextDecoder().decode(respPacket.data);
-        console.log("get response");
-        respData.text += response;
-        console.log("added response");
+        respData = concatUint8Array([respData, new Uint8Array(respPacket.data.buffer)]);
+        if (respData !== null)
+          covered += respData.length;
       } catch (error) {
-        if (error.includes("timed out")) {
-          console.error("Timed out");
-          return new TextEncoder().endcode("");
-        } else if (error.includes("Overflow")) {
-          console.error("USB Overflow");
-          return new TextEncoder().endcode("");
-        }
+        console.error(error);
       }
     }
-    return new TextEncoder().encode(respData);
+    return respData;
   }
 
   async _usbWrite(cmdPacket, pktSize=null) {
-    if (!(pktSize === null)) { pktSize = this.epOut?.packetSize; }
-    //let cmdPacket = new TextEncoder().encode(cmd);
     let offset = 0;
+    if (pktSize === null)
+      if (cmdPacket.length > this.epOUt?.packetSize){
+        pktSize = this.epOut?.packetSize;
+      } else {
+        pktSize = cmdPacket.length;
+      }
+
     while (offset < cmdPacket.length){
       try {
         console.log("Transferring Out...")
-        console.log(cmdPacket.slice(offset, offset+4));
         await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
         offset += pktSize;
       } catch (error) {
         console.error(error);
-        //return new TextEncoder().encode("");
         return false;
       }
     }
