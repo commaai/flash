@@ -129,11 +129,13 @@ export class usbClass {
   async _usbWrite(cmdPacket, pktSize=null) {
     let offset = 0;
     if (pktSize === null)
-      if (cmdPacket.length > this.epOUt?.packetSize){
+      if (cmdPacket.length > this.epOut?.packetSize){
         pktSize = this.epOut?.packetSize;
       } else {
         pktSize = cmdPacket.length;
       }
+    console.log("default pktSize:", this.epOut?.packetSize);
+    console.log("pktSize in write:", pktSize);
     while (offset < cmdPacket.length){
       try {
         console.log("Transferring Out...")

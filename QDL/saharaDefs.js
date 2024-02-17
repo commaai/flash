@@ -133,7 +133,7 @@ export class CommandHandler {
   }
 
   pkt_read_data_64(data) {
-    if (data.length <0x8 + 0x3 * 0x8) {
+    if (data.length < 0x8 + 0x3 * 0x8) {
       console.error("DataError")
       process.exit(1)
     }
@@ -141,9 +141,9 @@ export class CommandHandler {
     return {
       cmd : st.dword(0),
       len : st.dword(4),
-      image_id : st.qword(8),
-      data_offset : st.qword(16),
-      data_len : st.qword(24),
+      image_id : Number(st.qword(8)),
+      data_offset : Number(st.qword(16)),
+      data_len : Number(st.qword(24)),
     }
   }
   

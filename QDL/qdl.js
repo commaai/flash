@@ -38,7 +38,8 @@ export class qdlDevice {
       let resp = await this.doconnect();
       let mode = resp["mode"];
       if (mode === "sahara") {
-        this.sahara?.uploadLoader(2); // version 2
+        let mode = await this.sahara?.uploadLoader(2); // version 2
+        console.log("mode from uploadloader:", mode);
       }
     } catch (error) {
       console.error(error);

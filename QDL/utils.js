@@ -13,7 +13,7 @@ export class structHelper_io {
 
   qword(idx_start, littleEndian=true) {
     let view = new DataView(this.data.slice(idx_start, idx_start+8).buffer, 0);
-    return view.getUint64(0, littleEndian);
+    return view.getBigUint64(0, littleEndian);
   }
 }
 
