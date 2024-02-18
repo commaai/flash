@@ -45,3 +45,13 @@ export function concatUint8Array(arrays){
 
   return concatArray;
 }
+
+export function containsBytes(subString, array) {
+  let tArray = new TextDecoder().decode(array);
+  return tArray.includes(subString);
+}
+
+export function compareStringToBytes(compareString, array) {
+  let tArray = new TextDecoder().decode(array);
+  return compareString == tArray;
+}

@@ -1,5 +1,6 @@
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
+import { Firehose } from "./firehose"
 
 export class qdlDevice {
   cdc;
@@ -8,6 +9,7 @@ export class qdlDevice {
   constructor() {
     this.cdc = new usbClass();
     this.sahara = new Sahara(this.cdc);
+    this.firehose = new Firehose(this.cdc);
   }
 
   async doconnect() {
@@ -41,6 +43,8 @@ export class qdlDevice {
         let mode = await this.sahara?.uploadLoader(2); // version 2
         console.log("mode from uploadloader:", mode);
       }
+      await this.firehose?.configure(0);
+      await this.firehose?.cmdReset();
     } catch (error) {
       console.error(error);
     }
