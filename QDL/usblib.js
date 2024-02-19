@@ -1,4 +1,4 @@
-import { concatUint8Array } from "./utils";
+import { concatUint8Array, sleep } from "./utils";
 
 const vendorID = 0x05c6;
 const productID = 0x9008;
@@ -107,14 +107,13 @@ export class usbClass {
   }
 
   async _usbRead(resplen=null){
-    let respData = null;
+    let respData = new Uint8Array();
     let covered = 0;
     if ((resplen === null)) 
       resplen = this.epIn.packetSize;
 
     while (covered < resplen) {
       try {
-        console.log("Transferring In...");
         let respPacket = await this.device?.transferIn(this.epIn?.endpointNumber, resplen);
         respData = concatUint8Array([respData, new Uint8Array(respPacket.data.buffer)]);
         resplen = respData.length;
@@ -126,7 +125,7 @@ export class usbClass {
     return respData;
   }
 
-  async _usbWrite(cmdPacket, pktSize=null) {
+  async _usbWrite(cmdPacket, pktSize=null, wait=true) {
     let offset = 0;
     if (pktSize === null)
       if (cmdPacket.length > this.epOut?.packetSize){
@@ -134,12 +133,14 @@ export class usbClass {
       } else {
         pktSize = cmdPacket.length;
       }
-    console.log("default pktSize:", this.epOut?.packetSize);
-    console.log("pktSize in write:", pktSize);
     while (offset < cmdPacket.length){
       try {
-        console.log("Transferring Out...")
-        await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
+        if (wait){
+          await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
+        } else {
+          this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
+          await sleep(80);
+        }
         offset += pktSize;
       } catch (error) {
         console.error(error);

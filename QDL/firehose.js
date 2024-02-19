@@ -1,5 +1,5 @@
 import { xmlParser } from "./xmlParser"
-import { concatUint8Array, containsBytes, compareStringToBytes } from "./utils"
+import { concatUint8Array, containsBytes, compareStringToBytes, sleep } from "./utils"
 
 class cfg {
 
@@ -49,33 +49,26 @@ export class Firehose {
               `</data>`
 
     // TODO: Transfer connectCmd to Uint8Array
-    console.log("writing config");
-    let rsp = await this.xmlSend(connectCmd);
-    console.log("finish writing config")
+    let rsp = await this.xmlSend(connectCmd, false);
     return true;
   }
 
-  async xmlSend(data) {
+  async xmlSend(data, wait=true) {
     let dataToSend = new TextEncoder().encode(data).slice(0, this.cfg.MaxXMLSizeInBytes);
-    await this.cdc?._usbWrite(dataToSend);
-    console.log("finish writing in xmlsend");
-    let rData; // response data in bytes
+    await this.cdc?._usbWrite(dataToSend, null, wait);
+    let rData = new Uint8Array(); // response data in bytes
     let counter = 0;
     let timeout = 0;
     while (!(containsBytes("<response value", rData))) {
-      console.log("in while loop")
       try {
         let tmp = await this.cdc?._usbRead();
         if (compareStringToBytes("", tmp)) {
           counter += 1;
-          for (let i=0; i < 100; i += 1)
-            continue; /* UGLY: this is temp for sleep() */
+          await sleep(50);
           if (counter > timeout)
             break;
         }
-        console.log(new TextDecoder().decode(tmp));
-        rData = concatUint8Array(rData, tmp);
-        console.log(new TextDecoder().decode(rData));
+        rData = concatUint8Array([rData, tmp]);
       } catch (error) {
         console.error(error);
       }
@@ -110,10 +103,8 @@ export class Firehose {
 
   getStatus(resp) {
     if (resp.hasOwnProperty("value")) {
-      console.log("In getStatus")
       let value = resp["value"];
       if (value == "ACK" || value == "true" ) {
-        console.log("IN value = ACK")
         return true;
       } else {
         return false;

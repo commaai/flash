@@ -45,6 +45,6 @@ export class xmlParser {
         }, data);
       }
     }
-    return data;
+    return content;
   }
 }

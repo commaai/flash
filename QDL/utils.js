@@ -55,3 +55,5 @@ export function compareStringToBytes(compareString, array) {
   let tArray = new TextDecoder().decode(array);
   return compareString == tArray;
 }
+
+export const sleep = ms => new Promise(r => setTimeout(r, ms));
