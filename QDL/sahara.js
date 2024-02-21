@@ -1,5 +1,5 @@
 import { CommandHandler, cmd_t, sahara_mode_t, status_t } from "./saharaDefs"
-import { concatUint8Array, packGenerator } from "./utils";
+import { concatUint8Array, packGenerator, loadFileFromLocal } from "./utils";
 
 export class Sahara {
   cdc;
@@ -69,7 +69,7 @@ export class Sahara {
       return "";
     }
     console.log("Uploading Programmer...");
-    let programmer = new Uint8Array(await this.loadProgrammerFromLocal());
+    let programmer = new Uint8Array(await loadFileFromLocal());
     if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING, version=version))) {
       return "";
     }
@@ -132,21 +132,6 @@ export class Sahara {
       console.error(error);
     }
     return this.mode;
-  }
-  
-  async loadProgrammerFromLocal(){
-    const [fileHandle] = await window.showOpenFilePicker();
-    const blob = await fileHandle.getFile();
-    return new Promise((resolve, reject) => {
-      let reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result);
-      };
-      reader.onerror = () => {
-        reject(reader.error);
-      };
-      reader.readAsArrayBuffer(blob);
-    });
   }
 
   async cmdDone(){

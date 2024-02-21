@@ -24,6 +24,8 @@ export class usbClass {
     this.epIn = null;
     this.epOut = null;
     this._registeredUsbListeners = null;
+    // TODO: auto maxSize
+    this.maxSize = 512;
   }
 
   get connected() {

@@ -81,7 +81,7 @@ export class CommandHandler {
       process.exit(1)
     }
     let st = new structHelper_io(data);
-    return { cmd : st.dword(0), len : st.dword(4) }
+    return { cmd : st.dword(), len : st.dword() }
   }
 
   pkt_hello_req(data) {
@@ -91,18 +91,18 @@ export class CommandHandler {
     }
     let st = new structHelper_io(data);
     return {
-      cmd : st.dword(0),
-      len : st.dword(4),
-      version : st.dword(8),
-      version_supported : st.dword(12),
-      cmd_packet_length : st.dword(16),
-      mode : st.dword(20),
-      reserved1 : st.dword(24),
-      reserved2 : st.dword(28),
-      reserved3 : st.dword(32),
-      reserved4 : st.dword(36),
-      reserved5 : st.dword(40),
-      reserved6 : st.dword(44),
+      cmd : st.dword(),
+      len : st.dword(),
+      version : st.dword(),
+      version_supported : st.dword(),
+      cmd_packet_length : st.dword(),
+      mode : st.dword(),
+      reserved1 : st.dword(),
+      reserved2 : st.dword(),
+      reserved3 : st.dword(),
+      reserved4 : st.dword(),
+      reserved5 : st.dword(),
+      reserved6 : st.dword(),
     }
   }
   pkt_image_end(data) {
@@ -112,10 +112,10 @@ export class CommandHandler {
     }
     let st = new structHelper_io(data);
     return {
-      cmd : st.dword(0),
-      len : st.dword(4),
-      image_id : st.dword(8),
-      image_tx_status : st.dword(12),
+      cmd : st.dword(),
+      len : st.dword(),
+      image_id : st.dword(),
+      image_tx_status : st.dword(),
     }
   }
 
@@ -126,9 +126,9 @@ export class CommandHandler {
     }
     let st = new structHelper_io(data);
     return {
-      cmd : st.dword(0),
-      len : st.dword(4),
-      image_tx_status : st.dword(8)
+      cmd : st.dword(),
+      len : st.dword(),
+      image_tx_status : st.dword()
     }
   }
 
@@ -139,11 +139,11 @@ export class CommandHandler {
     }
     let st = new structHelper_io(data)
     return {
-      cmd : st.dword(0),
-      len : st.dword(4),
-      image_id : Number(st.qword(8)),
-      data_offset : Number(st.qword(16)),
-      data_len : Number(st.qword(24)),
+      cmd : st.dword(),
+      len : st.dword(),
+      image_id : Number(st.qword()),
+      data_offset : Number(st.qword()),
+      data_len : Number(st.qword()),
     }
   }
   
@@ -154,10 +154,10 @@ export class CommandHandler {
     }
     let st = new structHelper_io(data)
     return {
-        cmd : st.dword(0),
-        len : st.dword(4),
-        client_cmd : st.dword(8),
-        data_len : st.dword(12),
+        cmd : st.dword(),
+        len : st.dword(),
+        client_cmd : st.dword(),
+        data_len : st.dword(),
     }
   }
 }
