@@ -127,7 +127,7 @@ export class usbClass {
     return respData;
   }
 
-  async _usbWrite(cmdPacket, pktSize=null, wait=true) {
+  async _usbWrite(cmdPacket, pktSize=null, wait=true, force=false) {
     let offset = 0;
     if (pktSize === null)
       if (cmdPacket.length > this.epOut?.packetSize){
@@ -135,6 +135,10 @@ export class usbClass {
       } else {
         pktSize = cmdPacket.length;
       }
+
+    if (cmdPacket.length === 0 && force)
+      await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
+
     while (offset < cmdPacket.length){
       try {
         if (wait){

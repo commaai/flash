@@ -1,6 +1,7 @@
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
+import { loadFileFromLocal } from "./utils";
 
 export class qdlDevice {
   cdc;
@@ -44,8 +45,32 @@ export class qdlDevice {
         console.log("mode from uploadloader:", mode);
       }
       await this.firehose?.configure(0);
-      let dp = await this.firehose?.detectPartition("boot");
-      console.log("Partition information:", dp);
+
+      let startSector = 0;
+      let partitionName = "boot";
+      let dp = await this.firehose?.detectPartition(partitionName);
+      if (dp[0]) {
+        let lun = dp[1];
+        const imgSize = new Uint8Array(await loadFileFromLocal()).length;
+        let imgSectors = Math.floor(imgSize/this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
+        if (imgSize % this.firehose.cfg.SECTOR_SIZE_IN_BYTES !== 0)
+          imgSectors += 1;
+        if (partitionName.toLowerCase() !== "gpt") {
+          const partition = dp[2];
+          if (imgSectors > partition.sectors) {
+            console.error("partition has fewer sectors compared to the flashing image");
+            return false;
+          }
+          startSector = partition.sector;
+          //console.log(`startSector of ${partitionName} is ${startSector}`);
+          if (await this.firehose.cmdProgram(lun, startSector, "")) {
+            console.log(`Wrote to startSector: ${startSector}`);
+          } else {
+            console.error("Error writing image");
+          }
+        }
+      }
+
       await this.firehose?.cmdReset();
     } catch (error) {
       console.error(error);

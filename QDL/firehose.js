@@ -321,8 +321,53 @@ export class Firehose {
 
 
   // display?
+  // filename not used until I use the navigator.storage, currently choose image file manually
   async cmdProgram(physicalPartitionNumber, startSector, fileName) {
-    let fname = new Uint8Array(await loadFileFromLocal())
+    let flashImg = new Uint8Array(await loadFileFromLocal())
+    const total = flashImg.length;
+    let bytesToWrite = total;
+    let numPartitionSectors = Math.floor(total/this.cfg.SECTOR_SIZE_IN_BYTES);
+    if (total % this.cfg.SECTOR_SIZE_IN_BYTES !== 0)
+      numPartitionSectors += 1;
+    const data = `<?xml version=\"1.0\" ?><data>\n` +
+              `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
+              ` num_partition_sectors=\"${numPartitionSectors}\"` +
+              ` physical_partition_number=\"${physicalPartitionNumber}\"` +
+              ` start_sector=\"${startSector}\" />\n</data>`;
+    let rsp = await this.xmlSend(data);
+    let offSet = 0;
+    if (rsp.resp) {
+      while (bytesToWrite > 0) { 
+        const wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeFromTargetInBytes);
+        console.log
+        let wdata = flashImg.slice(offSet, offSet + wlen);
+        offSet += wlen;
+        bytesToWrite -= wlen;
+
+        if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0){
+          let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
+                        this.cfg.SECTOR_SIZE_IN_BYTES;
+          const fillArray = new Uint8Array(fillLen-wlen).fill(0x00);
+          wdata = concatUint8Array([wdata, fillArray]);
+        }
+        await this.cdc._usbWrite(wdata);
+        console.log(`Progress: ${Math.floor(offSet/total)*100}%`);
+        await this.cdc._usbWrite(new Uint8Array(0), null, true, true);
+      }
+      const wd = await this.waitForData();
+      const log = this.xml.getLog(wd);
+      const rsp = this.xml.getReponse(wd);
+      if (rsp.hasOwnProperty("value")) {
+        if (rsp["value"] !== "ACK") {
+          console.error("ERROR")
+          return false;
+        }
+      } else {
+        console.error("Error:", rsp);
+        return false;
+      }
+    }
+    return true;
   }
 
 
