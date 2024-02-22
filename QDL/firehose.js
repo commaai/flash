@@ -1,5 +1,6 @@
 import { xmlParser } from "./xmlParser"
 import { concatUint8Array, containsBytes, compareStringToBytes, sleep, loadFileFromLocal } from "./utils"
+import { gpt } from "./gpt"
 
 
 class response {
@@ -12,7 +13,6 @@ class response {
 }
 
 class cfg {
-
   constructor() {
     this.TargetName = "";
     this.Version = "";
@@ -35,13 +35,14 @@ class cfg {
 
 export class Firehose {
   cdc;
-  //xml;
+  xml;
   cfg
 
   constructor(cdc) {
     this.cdc = cdc;
     this.xml = new xmlParser();
     this.cfg = new cfg();
+    this.luns = [];
   }
 
   async configure(lvl) {
@@ -76,7 +77,7 @@ export class Firehose {
 
   getLuns() {
     let luns = [];
-    for (let i; i < this.cfg.maxlun; i++)
+    for (let i=0; i < this.cfg.maxlun; i++)
       luns.push(i);
     return luns;
   }
@@ -111,7 +112,7 @@ export class Firehose {
   async getStorageInfo() {
     const data = "<?xml version=\"1.0\" ?><data><getstorageinfo physical_partition_number=\"0\"/></data>";
     let val = await this.xmlSend(data);
-    if (containsBytes("", val.data) && val.log.length == 0 && val.resp)
+    if (compareStringToBytes("", val.data) && val.log.length == 0 && val.resp)
       return null;
     if (val.resp) {
       if (val.log !== null) {
@@ -164,17 +165,25 @@ export class Firehose {
     try {
       const resp = this.xml.getReponse(rData); // input is Uint8Array
       const status = this.getStatus(resp);
-      if (status !== null) {
-        if (containsBytes("log value=", rData)) {
+      if (resp.hasOwnProperty("rawmode")) {
+        if (resp["rawmode"] == "false") {
           let log = this.xml.getLog(rData);
-          return { resp : status, data : rData, log : log, error : "" }; // TODO: getLog()
+          return new response(status, rData, "", log)
         }
-        return { resp : status, data : rData, log : [] , error : ""};
+      } else { 
+        if (status) {
+          if (containsBytes("log value=", rData)) {
+            let log = this.xml.getLog(rData);
+            //return { resp : status, data : rData, log : log, error : "" }; // TODO: getLog()
+            return new response(status, rData, "", log);
+          }
+          return new response(status, rData);
+        }
       }
     } catch (error) {
       console.error(error);
     }
-    return {resp : true, data : rData, log : [], error : ""};
+    return new response(true, rData);
   }
 
   
@@ -215,23 +224,24 @@ export class Firehose {
 
 
   async getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba) {
+    let resp;
     try {
-      let resp = await this.cmdReadBuffer(lun, 0, 2);
+      resp = await this.cmdReadBuffer(lun, 0, 2);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
     if (!resp.resp) {
       console.error(resp.error);
       return [null, null];
     }
     let data = resp.data;
-    const guidGpt = gpt(gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
+    let guidGpt = new gpt(gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
     try {
-      let header = guidGpt.parseHeader(data, this.cfg.SECTOR_SIZE_IN_BYTES);
+      const header = guidGpt.parseHeader(data, this.cfg.SECTOR_SIZE_IN_BYTES);
       if (containsBytes("EFI PART", header.signature)) {
-        const gptSize =   (header.partEntryStartLba * this.cfg.SECTOR_SIZE_IN_BYTES) +
-                        (header.numPartEntry * header.partEntrySize);
-        let sectors = Math.floor(gptSize / this.cfg.SECTOR_SIZE_IN_BYTES)
+        const gptSize =   (header.part_entry_start_lba * this.cfg.SECTOR_SIZE_IN_BYTES) +
+                        (header.num_part_entries * header.part_entry_size);
+        let sectors = Math.floor(gptSize / this.cfg.SECTOR_SIZE_IN_BYTES);
         if (gptSize % this.cfg.SECTOR_SIZE_IN_BYTES != 0)
           sectors += 1;
         if (sectors === 0)
@@ -239,7 +249,7 @@ export class Firehose {
         if (sectors > 64)
           sectors = 64;
         data = await this.cmdReadBuffer(lun, 0, sectors);
-        if (containsBytes("", data))
+        if (compareStringToBytes("", data.data))
           return [null, null];
         guidGpt.parse(data.data, this.cfg.SECTOR_SIZE_IN_BYTES);
         return [data.data, guidGpt];
@@ -254,7 +264,7 @@ export class Firehose {
 
 
   async cmdReadBuffer(physicalPartitionNumber, startSector, numPartitionSectors) {
-    let prog = 0;
+    //let prog = 0;
     const data = `<?xml version=\"1.0\" ?><data><read SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
         ` num_partition_sectors=\"${numPartitionSectors}\"` +
         ` physical_partition_number=\"${physicalPartitionNumber}\"` +
@@ -265,7 +275,7 @@ export class Firehose {
       return rsp
     } else {
       let bytesToRead = this.cfg.SECTOR_SIZE_IN_BYTES * numPartitionSectors;
-      let total = bytesToRead;
+      let total = bytesToRead; // for progress bar
       while (bytesToRead > 0) {
         let tmp = await this.cdc._usbRead(Math.min(this.cdc.maxSize, bytesToRead));
         const size = tmp.length;
@@ -277,18 +287,18 @@ export class Firehose {
       rsp = this.xml.getReponse(wd);
       if (rsp.hasOwnProperty("value")) { 
         if (rsp["value"] !== "ACK") {
-          return new response( { resp : false, data : resData, error : info});
+          return new response(false, resData, info);
         } else if (rsp.hasOwnProperty("rawmode")) {
           if (rsp["rawmode"] === "false")
-            return new response({ resp : true, data : resData});
+            return new response(true, resData);
         }
       } else {
         console.error("Failed read buffer");
-        return new response({ resp: false, data : resData, error :  rsp[2]});
+        return new response(false, resData, rsp[2]);
       }
     }
     let resp = rsp["value"] === "ACK";
-    return response({ resp : resp, data : resData, error : rsp[2]});
+    return response(resp, resData, rsp[2]);
   }
 
 
@@ -299,13 +309,14 @@ export class Firehose {
       let res = await this.cdc._usbRead();
       if (compareStringToBytes("", res)) {
         timeout += 1;
-        if (timeout === 4)
+        if (timeout === 4){
           break;
+        }
         await sleep(20);
       }
       tmp = concatUint8Array([tmp, res]);
-      return tmp;
     }
+    return tmp;
   }
 
 

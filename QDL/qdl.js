@@ -44,6 +44,8 @@ export class qdlDevice {
         console.log("mode from uploadloader:", mode);
       }
       await this.firehose?.configure(0);
+      let dp = await this.firehose?.detectPartition("boot");
+      console.log("Partition information:", dp);
       await this.firehose?.cmdReset();
     } catch (error) {
       console.error(error);
