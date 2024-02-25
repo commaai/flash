@@ -82,6 +82,27 @@ export class qdlDevice {
     }
   }
   
+  async getActiveSlot() {
+    const luns = this.firehose?.getLuns();
+    let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
+    //for (const lun of luns) {
+    const lun = luns[0];
+    let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
+    if (guidGpt === null)
+      return ""
+    for (const partitionName in guidGpt.partentries) {
+      const slot = partitionName.slice(-2);
+      if (slot == "_a") {
+        return "a";
+      } else if (slot == "b") {
+        return "b";
+      } else {
+        console.error("Can't detect slot A or B");
+        return ""
+      }
+    }
+    //}
+  }
   async reset() {
     try {
       let resp = await this.doconnect();
