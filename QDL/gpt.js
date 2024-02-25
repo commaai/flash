@@ -1,5 +1,5 @@
 const { containsBytes } = require("./utils");
-const crc32 = require("crc-32");
+const CRC32 = require("crc-32");
 
 const AB_FLAG_OFFSET = 6;
 const AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2);
@@ -306,9 +306,9 @@ export class gpt {
     const partdata = data.slice(partentry_offset, partentry_offset + partentry_size);
     const headeroffset = this.header.current_lba * this.sectorSize;
     let headerdata = data.slice(headeroffset, headeroffset+this.header.header_size);
-    headerdata.splice(0x58, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, crc32(Array.from(partdata)), true)));
-    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, crc32(new Array(4).fill(0)), true)));
-    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, crc32(Array.from(headerdata)), true)));
+    headerdata.splice(0x58, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(partdata)), true)));
+    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(new Array(4).fill(0)), true)));
+    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(headerdata)), true)));
     data.splice(headeroffset, this.header.header_size, headerdata);
     return data;
   }

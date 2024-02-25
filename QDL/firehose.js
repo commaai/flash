@@ -452,7 +452,7 @@ export class Firehose {
         bytesToWrite -= wlen;
         pos += wlen;
         await this.cdc._usbWrite(new Uint8Array(0), null, true, true);
-        console.log(`Finished: ${Math.floor(pos/total)*100}%`);
+        console.log(`Progress: ${Math.floor(pos/total)*100}%`);
       }
       const res = await this.waitForData();
       //const info = this.xml.getLog(res);
