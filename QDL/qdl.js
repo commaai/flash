@@ -37,7 +37,7 @@ export class qdlDevice {
    * or mode = firehose then don't need to connect
    */
 
-  async flasbBlob(partitionName) {
+  async flashBlob(partitionName) {
     let startSector = 0;
     let dp = await this.firehose?.detectPartition(partitionName);
     if (dp[0]) {
@@ -53,7 +53,6 @@ export class qdlDevice {
           return false;
         }
         startSector = partition.sector;
-        //console.log(`startSector of ${partitionName} is ${startSector}`);
         if (await this.firehose.cmdProgram(lun, startSector, "")) {
           console.log(`Wrote to startSector: ${startSector}`);
         } else {
@@ -81,6 +80,7 @@ export class qdlDevice {
       }
     }
   }
+
   
   async getActiveSlot() {
     const luns = this.firehose?.getLuns();
@@ -103,6 +103,19 @@ export class qdlDevice {
     }
     //}
   }
+
+
+  async setActvieSlot(slot) {
+    try {
+      await this.firehose.cmdSetActiveSlot(slot);
+      return true;
+    } catch (error) {
+      console.error(`Error while setting active slot: ${error}`)
+      return false;
+    }
+  }
+
+
   async reset() {
     try {
       let resp = await this.doconnect();
@@ -112,7 +125,8 @@ export class qdlDevice {
         console.log("mode from uploadloader:", mode);
       }
       await this.firehose?.configure(0);
-      await this.erase("cache");
+      //await this.erase("cache");
+      await this.flashBlob("boot");
       await this.firehose?.cmdReset();
     } catch (error) {
       console.error(error);

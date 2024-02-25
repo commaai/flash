@@ -336,13 +336,14 @@ export class Firehose {
               ` start_sector=\"${startSector}\" />\n</data>`;
 
     let rsp = await this.xmlSend(data);
-    let offSet = 0;
+    let offset = 0;
     if (rsp.resp) {
-      while (offSet < total) { 
+      while (bytesToWrite > 0) { 
         const wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeFromTargetInBytes);
         console.log
-        let wdata = flashImg.slice(offSet, offSet + wlen);
-        offSet += wlen;
+        let wdata = flashImg.slice(offset, offset + wlen);
+        offset += wlen;
+        bytesToWrite -= wlen;
 
         if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0){
           let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
@@ -351,7 +352,7 @@ export class Firehose {
           wdata = concatUint8Array([wdata, fillArray]);
         }
         await this.cdc._usbWrite(wdata);
-        console.log(`Progress: ${Math.floor(offSet/total)*100}%`);
+        console.log(`Progress: ${Math.floor(offset/total)*100}%`);
         await this.cdc._usbWrite(new Uint8Array(0), null, true, true);
       }
       const wd = await this.waitForData();
@@ -368,6 +369,68 @@ export class Firehose {
       }
     }
     return true;
+  }
+
+
+  async cmdSetActiveSlot(slot) {
+    slot = slot.toLowerCase();
+    const luns = this.getLuns();
+    let partSlots = {};
+    if (slot == "a") {
+      partSlots["_a"] = true;
+      partSlots["_b"] = false;
+    } else if (slot == "b") {
+      partSlots["_a"] = false;
+      partSlots["_b"] = true;
+    } else {
+      console.error("Only slots a or b are accepted. Aborting.");
+      return false;
+    }
+    for (const lun of luns) {
+      const [ data, guidGpt ] = await this.getGpt(lun, 0, 0, 0);
+      if (guidGpt === null)
+        break;
+      for (const partitionName in guidGpt.partentries) {
+        const gp = new gpt();
+        slot = partitionName.toLowerCase().slice(-2);
+        if (slot === "a" || slot === "b") {
+          const [ pdata, pOffset ] = gp.patch(data, partitionName, partSlots[slot]);
+          data.splice(pOffset, pdata.length, pdata);
+          let wdata = gp.fixGptCrc(data);
+          if (wdata !== null) {
+            const startSectorPath = Math.floor(pOffset/this.cfg.SECTOR_SIZE_IN_BYTES);
+            const byteOffsetPatch = pOffset % this.cfg.SECTOR_SIZE_IN_BYTES;
+            const headerOffset = gp.header.current_lba * gp.sectorSize;
+            const startSectorHdr = Math.floor(headerOffset/this.cfg.SECTOR_SIZE_IN_BYTES);
+            const header = wdata.slice(startSectorHdr, startSectorHdr+gp.header.header_size);
+            await this.cmdPatch(lun, startSectorPath, byteOffsetPatch, pdata, pdata.length);
+            await this.cmdPatch(lun, headerOffset, 0, header, pdata.length);
+          }
+        }
+      }
+    }
+  }
+
+
+  async cmdPatch(physical_partition_number, start_sector, byte_offset, value, size_in_bytes) {
+    const data = `<?xml version=\"1.0\" ?><data>\n` +
+        `<patch SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
+        ` byte_offset=\"${byte_offset}\"` +
+        ` filename=\"DISK\"` +
+        ` physical_partition_number=\"${physical_partition_number}\"` +
+        ` size_in_bytes=\"${size_in_bytes}\" ` +
+        ` start_sector=\"${start_sector}\" ` +
+        ` value=\"${value}\" />\n</data>`;
+
+    let rsp = await this.xmlSend(data);
+    if (rsp.resp) {
+      console.log("Patch:\n--------------------\n");
+      console.log(rsp.data);
+      return true;
+    } else {
+      console.error(`Error: ${rsp.error}`);
+      return false;
+    }
   }
 
 
