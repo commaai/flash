@@ -68,7 +68,13 @@ export class usbClass {
     try {
         await this.device?.open();
         await this.device?.selectConfiguration(1);
-        await this.device?.claimInterface(0);
+        try {
+          await this.device?.releaseInterface(0);
+        } catch (error) {
+          console.log(error);
+          console.log("can't release interface");
+        }
+        await this.device?.claimInterface(this.device.configuration.interfaces[0].interfaceNumber);
     } catch (error) {
         throw error;
     }
@@ -145,7 +151,7 @@ export class usbClass {
           await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
         } else {
           this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
-          await sleep(80);
+          await sleep(80); 
         }
         offset += pktSize;
       } catch (error) {

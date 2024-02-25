@@ -334,15 +334,15 @@ export class Firehose {
               ` num_partition_sectors=\"${numPartitionSectors}\"` +
               ` physical_partition_number=\"${physicalPartitionNumber}\"` +
               ` start_sector=\"${startSector}\" />\n</data>`;
+
     let rsp = await this.xmlSend(data);
     let offSet = 0;
     if (rsp.resp) {
-      while (bytesToWrite > 0) { 
+      while (offSet < total) { 
         const wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeFromTargetInBytes);
         console.log
         let wdata = flashImg.slice(offSet, offSet + wlen);
         offSet += wlen;
-        bytesToWrite -= wlen;
 
         if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0){
           let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
@@ -367,6 +367,44 @@ export class Firehose {
         return false;
       }
     }
+    return true;
+  }
+
+
+  async cmdErase(physicalPartitionNumber, startSector, numPartitionSectors) {
+    const data = `<?xml version=\"1.0\" ?><data>\n` +
+          `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
+          ` num_partition_sectors=\"${numPartitionSectors}\"` +
+          ` physical_partition_number=\"${physicalPartitionNumber}\"` +
+          ` start_sector=\"${startSector}\" />\n</data>`;
+
+    let rsp = await this.xmlSend(data)
+    let empty = new Uint8Array(this.cfg.MaxPayloadSizeToTargetInBytes).fill(0x00);
+    let pos = 0, bytesToWrite = this.cfg.SECTOR_SIZE_IN_BYTES * numPartitionSectors;
+    const total = bytesToWrite;
+    if (rsp.resp) {
+      while (bytesToWrite > 0) {
+        let wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeToTargetInBytes);
+        await this.cdc._usbWrite(empty.slice(0, wlen));
+        bytesToWrite -= wlen;
+        pos += wlen;
+        await this.cdc._usbWrite(new Uint8Array(0), null, true, true);
+        console.log(`Finished: ${Math.floor(pos/total)*100}%`);
+      }
+      const res = await this.waitForData();
+      //const info = this.xml.getLog(res);
+      const response = this.xml.getReponse(res);
+      if (response.hasOwnProperty("value")) {
+        if (response["value"] !== "ACK") {
+            console.error("ERROR")
+            return false;
+        }
+      } else {
+        console.error("Error:", rsp);
+        return false;
+      }
+    }
+    console.log("Finish erasing");
     return true;
   }
 
