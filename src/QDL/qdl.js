@@ -39,9 +39,8 @@ export class qdlDevice {
   }
 
 
-  async flashBlob(partitionName) {
+  async flashBlob(partitionName, blob) {
     if (this.mode !== "firehose") {
-      // TODO: auto connect to sahara
       console.error("Please try again, must be in command mode to flash")
       return false;
     }
@@ -49,7 +48,7 @@ export class qdlDevice {
     let dp = await this.firehose?.detectPartition(partitionName);
     if (dp[0]) {
       let lun = dp[1];
-      const imgSize = new Uint8Array(await loadFileFromLocal()).length;
+      const imgSize = blob.size;
       let imgSectors = Math.floor(imgSize/this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
       if (imgSize % this.firehose.cfg.SECTOR_SIZE_IN_BYTES !== 0)
         imgSectors += 1;
@@ -61,7 +60,7 @@ export class qdlDevice {
         }
         startSector = partition.sector;
         console.log(`Writing to partition ${partitionName}: startSector ${partition.sector} including ${partition.sectors} sectors`);
-        if (await this.firehose.cmdProgram(lun, startSector, "")) {
+        if (await this.firehose.cmdProgram(lun, startSector, blob)) {
           console.log(`Wrote to startSector: ${startSector}`);
         } else {
           console.error("Error writing image");
@@ -74,7 +73,6 @@ export class qdlDevice {
 
   async erase(partitionName) {
     if (this.mode !== "firehose") {
-      // TODO: auto connect to sahara
       console.error("Please try again, must be in command mode to erase")
       return false;
     }
@@ -100,7 +98,6 @@ export class qdlDevice {
   
   async getActiveSlot() {
     if (this.mode !== "firehose") {
-      // TODO: auto connect to sahara
       console.error("Please try again, must be in command mode to get active slot")
       return false;
     }
@@ -129,7 +126,6 @@ export class qdlDevice {
 
   async setActvieSlot(slot) {
     if (this.mode !== "firehose") {
-      // TODO: auto connect to sahara
       console.error("Please try again, must be in command mode to set active slot");
       return false;
     }
@@ -157,7 +153,6 @@ export class qdlDevice {
 
   async reset() {
     if (this.mode !== "firehose") {
-      // TODO: auto connect to sahara
       console.error("Please try again, must be in command mode reset")
       return false;
     }
@@ -178,7 +173,8 @@ export class qdlDevice {
 
       await this.transferToCmdMode();
 
-      await this.flashBlob(flashPartition);
+      let blob = await loadFileFromLocal();
+      await this.flashBlob(flashPartition, blob);
 
       await this.erase(erasePartition)
 

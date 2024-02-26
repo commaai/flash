@@ -40,6 +40,7 @@ class structHelper {
   }
 }
 
+// TODO: remove unecessary
 const efiType = {
   0x00000000 : "EFI_UNUSED",
   0x024DEE41 : "EFI_MBR",

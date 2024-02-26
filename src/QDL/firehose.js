@@ -1,6 +1,7 @@
 import { xmlParser } from "./xmlParser"
 import { concatUint8Array, containsBytes, compareStringToBytes, sleep, loadFileFromLocal } from "./utils"
 import { gpt } from "./gpt"
+import { QCSparse } from "./sparse";
 
 
 class response {
@@ -320,15 +321,21 @@ export class Firehose {
   }
 
 
-  // display?
-  // filename not used until I use the navigator.storage, currently choose image file manually
-  async cmdProgram(physicalPartitionNumber, startSector, fileName) {
-    let flashImg = new Uint8Array(await loadFileFromLocal())
-    const total = flashImg.length;
+  async cmdProgram(physicalPartitionNumber, startSector, blob) {
+    let sparse = new QCSparse(blob);
+    blob = new Uint8Array(blob)
+    let total = blob.length;
+    let sparseformat = false
+    if (sparse.parseFileHeader()) {
+      sparseformat = true;
+      total = sparse.getSize();
+    }
     let bytesToWrite = total;
     let numPartitionSectors = Math.floor(total/this.cfg.SECTOR_SIZE_IN_BYTES);
+
     if (total % this.cfg.SECTOR_SIZE_IN_BYTES !== 0)
       numPartitionSectors += 1;
+
     const data = `<?xml version=\"1.0\" ?><data>\n` +
               `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
               ` num_partition_sectors=\"${numPartitionSectors}\"` +
@@ -339,9 +346,13 @@ export class Firehose {
     let offset = 0;
     if (rsp.resp) {
       while (bytesToWrite > 0) { 
-        const wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeFromTargetInBytes);
-        console.log
-        let wdata = flashImg.slice(offset, offset + wlen);
+        let wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeFromTargetInBytes);
+        let wdata;
+        if (sparseformat) {
+          wdata = sparse.read(wlen);
+        } else {
+          wdata = blob.slice(offset, offset + wlen);
+        }
         offset += wlen;
         bytesToWrite -= wlen;
 
@@ -355,6 +366,7 @@ export class Firehose {
         console.log(`Progress: ${Math.floor(offset/total)*100}%`);
         await this.cdc._usbWrite(new Uint8Array(0), null, true, true);
       }
+
       const wd = await this.waitForData();
       const log = this.xml.getLog(wd);
       const rsp = this.xml.getReponse(wd);
