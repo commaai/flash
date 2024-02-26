@@ -11,175 +11,71 @@ export class Sahara {
   mode;
 
   constructor(cdc) {
-    this.cdc = cdc;
-    this.pktSize = null;
-    this.version = null;
-    this.ch = new CommandHandler();
+    this.cdc        = cdc;
+    this.pktSize    = null;
+    this.version    = null;
+    this.ch         = new CommandHandler();
+    // TODO: change to auto upload Loader
     this.programmer = "0005f0e100000000_b155b8bf19297f47_fhprg_peek.bin";
-    this.id = null;
-    this.mode = "";
+    this.id         = null;
+    this.mode       = "";
   }
 
   async connect() {
     try {
-      let v = await this.cdc?._usbRead(0xC * 0x4);
+      let v = await this.cdc?.read(0xC * 0x4);
       let v_text = new TextDecoder("utf-8").decode(v);
       if (v.length > 1){
         if (v[0] == 0x01){
           let pkt = this.ch.pkt_cmd_hdr(v);
           if (pkt.cmd === cmd_t.SAHARA_HELLO_REQ) {
-            let rsp = this.ch.pkt_hello_req(v);
+            let rsp      = this.ch.pkt_hello_req(v);
             this.pktSize = rsp.cmd_packet_length;
             this.version = rsp.version;
             return { "mode" : "sahara", "cmd" : cmd_t.SAHARA_HELLO_REQ, "data" : rsp };
-          // TODO: probably don't need from here downward till end of this func
-          } else if (v_text.includes("<?xml")) {
-            return { "mode" : "firehose" };
           }
-        }
-      } else {
-        let data = new TextEndcoder().encode("<?xml version=\"1.0\" ?><data><nop /></data>")
-        this.cdc._usbwrite(data);
-        let resp = await this.cdc._usbRead();
-        let resp_text = new TextDecoder().decode(resp);
-        if (resp_text.includes("<?xml")) {
-          return { "mode" : "firehose" };
         }
       }
     } catch (error) {
       console.error(error);
-      return { "mode" : "error" };
     }
+    return { "mode" : "error" };
   } 
 
-  async uploadLoader(version){
-    // TODO: enter command mode?
-    if (!(await this.enterCommandMode(version))) {
-      console.error("Failed to enter command mode in Sahara");
-      return "error"
-    } else {
-      try {
-        await this.cmdModeSwitch(sahara_mode_t.SAHARA_MODE_COMMAND);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-    let connectResp = await this.connect();
-    if ((connectResp["mode"] != "sahara")) {
-      return "";
-    }
-    console.log("Uploading Programmer...");
-    let programmer = new Uint8Array(await loadFileFromLocal());
-    if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING, version=version))) {
-      return "";
-    }
+
+  async cmdHello(mode, version=2, version_min=1, max_cmd_len=0) {
+    let cmd            = cmd_t.SAHARA_HELLO_RSP;
+    let len            = 0x30;
+    const elements     = [cmd, len, version, version_min, max_cmd_len, mode, 1, 2, 3, 4, 5, 6];
+    const responseData = packGenerator(elements);
+
     try {
-      let datalen = programmer.length;
-      let done = false;
-      let loop = 0;
-      while (datalen >= 0 || done){
-        let resp = await this.getResponse();
-        let cmd
-        if (resp.hasOwnProperty("cmd")){
-          cmd = resp["cmd"];
-        } else {
-          console.error("Timeout while uploading loader. Wrong loader?");
-          return ""
-        }
-        if (cmd == cmd_t.SAHARA_DONE_REQ){
-          if (self.cmdDone()){
-            return ""
-          }
-        }
-        // TODO: Probably not necessary
-        if ([cmd_t.SAHARA_64BIT_MEMORY_READ_DATA,cmd_t.SAHARA_READ_DATA].includes(cmd)) {
-          if (cmd == cmd_t.SAHARA_64BIT_MEMORY_READ_DATA)
-            if (loop == 0)
-              console.log("64-bit mode detected");
-          let pkt = resp["data"];
-          this.id = pkt.image_id;
-          if (this.id >= 0xC){
-            this.mode = "firehose";
-            if (loop == 0)
-              console.log("Firehose mode detected, uploading...");
-          } else {
-            console.error("Unknown sahara id");
-            return "error";
-          }
-          loop += 1;
-          let dataOffset = pkt.data_offset;
-          let dataLen = pkt.data_len;
-          if (dataOffset + dataLen > programmer.length) {
-            const fillerArray = new Uint8Array(dataOffset+dataLen-programmer.length).fill(0xff);
-            programmer = concatUint8Array([programmer, fillerArray]);
-          }
-          let dataToSend = programmer.slice(dataOffset, dataOffset+dataLen); // Uint8Array
-          await this.cdc?._usbWrite(dataToSend);
-          datalen -= dataLen;
-        } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
-          let pkt = resp["data"];
-          if (pkt.image_tx_status == status_t.SAHARA_STATUS_SUCCESS){
-            if (await this.cmdDone()){
-              console.log("Loader successfully uploaded");
-            } else {
-              console.error("Error on uploading loader.");
-            }
-            return this.mode;
-          }
-        }
-      }
+      await this.cdc?.write(responseData);
+      return true;
     } catch (error) {
       console.error(error);
-    }
-    return this.mode;
-  }
-
-  async cmdDone(){
-    const toSendData = packGenerator([cmd_t.SAHARA_DONE_REQ, 0x8]);
-    if (await this.cdc._usbWrite(toSendData)) {
-      let res = await this.getResponse();
-      for (let i = 0; i < 500; i += 1)
-        continue;
-      if (res.hasOwnProperty("cmd")){
-        let cmd = res["cmd"];
-        if (cmd == cmd_t.SAHARA_DONE_RSP){
-          return true
-        } else if (cmd == cmd_t.SAHARA_END_TRANSFER){
-          if (res.hasOwnProperty("data")) {
-            let pkt = res["data"];
-            if (pkt.iamge_txt_status == status_t.SAHARA_NAK_INVALID_CMD){
-              console.error("Invalid transfer command received");
-              return false;
-            }
-          }
-        } else {
-          console.error("received invalid resposne");
-        }
-      }
-    }
-    return false;
-  }
-
-  async enterCommandMode(version=2) {
-    if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND)){
       return false;
     }
-    let res = await this.getResponse();
-    if (res.hasOwnProperty("cmd")){
-      if (res["cmd"] === cmd_t.SAHARA_END_TRANSFER){
-        if (res.hasOwnProperty("data")){
-          return false;
-        }
-      } else if (res["cmd"] === cmd_t.SAHARA_CMD_READY){
-        return true;
-      }
-    }
-    return false;
   }
+
+
+  async cmdModeSwitch(mode){
+    const elements = [cmd_t.SAHARA_SWITCH_MODE, 0xC, mode];
+    let data       = packGenerator(elements);
+
+    try {
+      await this.cdc?.write(data);
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
+
 
   async getResponse() {
     try {
-      let data = await this.cdc?._usbRead();
+      let data      = await this.cdc?.read();
       let data_text = new TextDecoder('utf-8').decode(data.data);
       if (data.length == 0){
         return {};
@@ -209,29 +105,136 @@ export class Sahara {
     }
   }
 
-  async cmdHello(mode, version=2, version_min=1, max_cmd_len=0) {
-    let cmd = cmd_t.SAHARA_HELLO_RSP;
-    let len = 0x30;
-    const elements = [cmd, len, version, version_min, max_cmd_len, mode, 1, 2, 3, 4, 5, 6];
-    const responseData = packGenerator(elements);
-    try {
-      await this.cdc?._usbWrite(responseData);
-      return true;
-    } catch (error) {
-      console.error(error);
+
+  async enterCommandMode(version=2) {
+    if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND)){
       return false;
     }
+    let res = await this.getResponse();
+    if (res.hasOwnProperty("cmd")){
+      if (res["cmd"] === cmd_t.SAHARA_END_TRANSFER){
+        if (res.hasOwnProperty("data")){
+          return false;
+        }
+      } else if (res["cmd"] === cmd_t.SAHARA_CMD_READY){
+        return true;
+      }
+    }
+    return false;
   }
 
-  async cmdModeSwitch(mode){
-    const elements = [cmd_t.SAHARA_SWITCH_MODE, 0xC, mode];
-    let data = packGenerator(elements);
+
+
+  async uploadLoader(version){
+    if (!(await this.enterCommandMode(version))) {
+      console.error("Failed to enter command mode in Sahara");
+      return "error"
+    } else {
+      try {
+        await this.cmdModeSwitch(sahara_mode_t.SAHARA_MODE_COMMAND);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    let connectResp = await this.connect();
+    if ((connectResp["mode"] != "sahara")) {
+      return "";
+    }
+
+    console.log("Uploading Programmer...");
+    let programmer = new Uint8Array(await loadFileFromLocal());
+    if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING, version=version))) {
+      return "";
+    }
+
     try {
-      await this.cdc?._usbWrite(data);
-      return true;
+      let datalen = programmer.length;
+      let done    = false;
+      let loop    = 0;
+      while (datalen >= 0 || done){
+        let resp = await this.getResponse();
+        let cmd
+        if (resp.hasOwnProperty("cmd")){
+          cmd = resp["cmd"];
+        } else {
+          console.error("Timeout while uploading loader. Wrong loader?");
+          return ""
+        }
+        if (cmd == cmd_t.SAHARA_DONE_REQ){
+          if (self.cmdDone()){
+            return ""
+          }
+        }
+        if ([cmd_t.SAHARA_64BIT_MEMORY_READ_DATA,cmd_t.SAHARA_READ_DATA].includes(cmd)) {
+          if (cmd == cmd_t.SAHARA_64BIT_MEMORY_READ_DATA)
+            if (loop == 0)
+              console.log("64-bit mode detected");
+          let pkt = resp["data"];
+          this.id = pkt.image_id;
+          if (this.id >= 0xC){
+            this.mode = "firehose";
+            if (loop == 0)
+              console.log("Firehose mode detected, uploading...");
+          } else {
+            console.error("Unknown sahara id");
+            return "error";
+          }
+
+          loop += 1;
+          let dataOffset = pkt.data_offset;
+          let dataLen    = pkt.data_len;
+          if (dataOffset + dataLen > programmer.length) {
+            const fillerArray = new Uint8Array(dataOffset+dataLen-programmer.length).fill(0xff);
+            programmer = concatUint8Array([programmer, fillerArray]);
+          }
+          let dataToSend = programmer.slice(dataOffset, dataOffset+dataLen); // Uint8Array
+          await this.cdc?.write(dataToSend);
+          datalen -= dataLen;
+
+        } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
+          let pkt = resp["data"];
+          if (pkt.image_tx_status == status_t.SAHARA_STATUS_SUCCESS){
+            if (await this.cmdDone()){
+              console.log("Loader successfully uploaded");
+            } else {
+              console.error("Error on uploading loader.");
+            }
+            return this.mode;
+          }
+        }
+      }
     } catch (error) {
       console.error(error);
-      return false;
+      return "error";
     }
+    return this.mode;
+  }
+
+
+  async cmdDone(){
+    const toSendData = packGenerator([cmd_t.SAHARA_DONE_REQ, 0x8]);
+    if (await this.cdc.write(toSendData)) {
+      let res = await this.getResponse();
+      for (let i = 0; i < 500; i += 1)
+        continue;
+      if (res.hasOwnProperty("cmd")){
+        let cmd = res["cmd"];
+        if (cmd == cmd_t.SAHARA_DONE_RSP){
+          return true
+        } else if (cmd == cmd_t.SAHARA_END_TRANSFER){
+          if (res.hasOwnProperty("data")) {
+            let pkt = res["data"];
+            if (pkt.iamge_txt_status == status_t.SAHARA_NAK_INVALID_CMD){
+              console.error("Invalid transfer command received");
+              return false;
+            }
+          }
+        } else {
+          console.error("received invalid resposne");
+        }
+      }
+    }
+    return false;
   }
 }

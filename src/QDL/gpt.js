@@ -40,7 +40,6 @@ class structHelper {
   }
 }
 
-// TODO: remove unecessary
 const efiType = {
   0x00000000 : "EFI_UNUSED",
   0x024DEE41 : "EFI_MBR",
@@ -187,27 +186,27 @@ class gptPartition {
 
 
 class partf {
-  unique =  new Uint8Array();
-  firstLba = 0;
-  lastLba = 0;
-  flags = 0;
-  sector = 0;
-  sectors = 0;
-  type = null;
-  name = "";
+  firstLba    = 0;
+  lastLba     = 0;
+  flags       = 0;
+  sector      = 0;
+  sectors     = 0;
   entryOffset = 0;
+  type        = null;
+  name        = "";
+  unique      =  new Uint8Array();
 }
 
 
 export class gpt {
   constructor(numPartEntries=0, partEntrySize=0, partEntryStartLba=0) {
-    this.numPartEntries = numPartEntries;
-    this.partEntrySize = partEntrySize; 
-    this.partEntryStartLba = partEntryStartLba;
-    this.totalSectors = null;
-    this.header = null;
-    this.sectorSize = null;
-    this.partentries = {};
+    this.numPartEntries     = numPartEntries;
+    this.partEntrySize      = partEntrySize; 
+    this.partEntryStartLba  = partEntryStartLba;
+    this.totalSectors       = null;
+    this.header             = null;
+    this.sectorSize         = null;
+    this.partentries        = {};
   }
 
   parseHeader(gptData, sectorSize=512){
@@ -215,14 +214,16 @@ export class gpt {
   }
 
   parse(gptData, sectorSize=512) {
-    this.header = new gptHeader(gptData.slice(sectorSize, sectorSize + 0x5C));
+    this.header     = new gptHeader(gptData.slice(sectorSize, sectorSize + 0x5C));
     this.sectorSize = sectorSize;
+
     if (!containsBytes("EFI PART", this.header.signature))
       return false;
     if (this.header.revision != 0x10000) {
       console.error("Unknown GPT revision.");
       return false;
     }
+
     let start;
     if (this.partEntryStartLba != 0) {
       start = self.partEntryStartLba;
@@ -230,43 +231,51 @@ export class gpt {
       start = this.header.part_entry_start_lba * sectorSize;
     }
 
-    let entrySize = this.header.part_entry_size;
-    this.partentries = {};
-
-    let numPartEntries = this.header.num_part_entries;
-
+    let entrySize       = this.header.part_entry_size;
+    this.partentries    = {};
+    let numPartEntries  = this.header.num_part_entries;
     for (let idx=0; idx < numPartEntries; idx++) {
       const data = gptData.slice(start + (idx * entrySize), start + (idx * entrySize) + entrySize);
       if (new DataView(data.slice(16,32).buffer, 0).getUint16(0, true) == 0)
          break;
-      let partentry = new gptPartition(data);
-      let pa = new partf();
 
-      const guid1 = new DataView(partentry.unique.slice(0, 0x4).buffer, 0).getUint32(0, true);
-      const guid2 = new DataView(partentry.unique.slice(0x4, 0x6).buffer, 0).getUint16(0, true);
-      const guid3 = new DataView(partentry.unique.slice(0x6, 0x8).buffer, 0).getUint16(0, true);
-      const guid4 = new DataView(partentry.unique.slice(0x8, 0xA).buffer, 0).getUint16(0, true);
-      const guid5 = Array.from(partentry.unique.subarray(0xA, 0x10))
+      let partentry = new gptPartition(data);
+      let pa        = new partf();
+      const guid1   = new DataView(partentry.unique.slice(0, 0x4).buffer, 0).getUint32(0, true);
+      const guid2   = new DataView(partentry.unique.slice(0x4, 0x6).buffer, 0).getUint16(0, true);
+      const guid3   = new DataView(partentry.unique.slice(0x6, 0x8).buffer, 0).getUint16(0, true);
+      const guid4   = new DataView(partentry.unique.slice(0x8, 0xA).buffer, 0).getUint16(0, true);
+      const guid5   = Array.from(partentry.unique.subarray(0xA, 0x10))
           .map(byte => byte.toString(16).padStart(2, '0'))
           .join('');
 
-      pa.unique = `${guid1.toString(16).padStart(8, '0')}-${guid2.toString(16).padStart(4, '0')}-${guid3.toString(16).padStart(4, '0')}-${guid4.toString(16).padStart(4, '0')}-${guid5}`;
-      pa.sector = partentry.first_lba;
-      pa.sectors = partentry.last_lba - partentry.first_lba + 1;
-      pa.flags = partentry.flags;
-      pa.entryOffset = start + (idx * entrySize);
+      pa.unique             =`${guid1.toString(16).padStart(8, '0')}-
+                              ${guid2.toString(16).padStart(4, '0')}-
+                              ${guid3.toString(16).padStart(4, '0')}-
+                              ${guid4.toString(16).padStart(4, '0')}-
+                              ${guid5}`;
+      pa.sector             = partentry.first_lba;
+      pa.sectors            = partentry.last_lba - partentry.first_lba + 1;
+      pa.flags              = partentry.flags;
+      pa.entryOffset        = start + (idx * entrySize);
       const typeOfPartentry = new DataView(partentry.type.slice(0, 0x4).buffer, 0).getUint32(0, true);
+
       if (efiType.hasOwnProperty(typeOfPartentry)) {
         pa.type = efiType[typeOfPartentry];
       } else {
         pa.type = typeOfPartentry.toString(16);
       }
-      let nullIndex = Array.from(partentry.name).findIndex((element, index) => index % 2 === 0 && element === 0);
+
+      let nullIndex       = Array.from(partentry.name).findIndex(
+                              (element, index) => index % 2 === 0 && element === 0
+                            );
       let nameWithoutNull = partentry.name.slice(0, nullIndex);
-      let decodedName = new TextDecoder('utf-16').decode(nameWithoutNull);
-      pa.name = decodedName;
+      let decodedName     = new TextDecoder('utf-16').decode(nameWithoutNull);
+      pa.name             = decodedName;
+
       if (pa.type == "EFI_UNUSED")
         continue;
+
       this.partentries[pa.name] = pa;
     }
     this.totalsectors = this.header.first_usable_lba + this.header.last_usable_lba;
@@ -302,11 +311,12 @@ export class gpt {
 
 
   fixGptCrc(data) {
-    const partentry_size = this.header.num_part_entries * this.header.part_entry_size;
-    const partentry_offset = this.header.part_entry_start_lba * this.sectorSize;
-    const partdata = data.slice(partentry_offset, partentry_offset + partentry_size);
-    const headeroffset = this.header.current_lba * this.sectorSize;
-    let headerdata = data.slice(headeroffset, headeroffset+this.header.header_size);
+    const partentry_size    = this.header.num_part_entries * this.header.part_entry_size;
+    const partentry_offset  = this.header.part_entry_start_lba * this.sectorSize;
+    const partdata          = data.slice(partentry_offset, partentry_offset + partentry_size);
+    const headeroffset      = this.header.current_lba * this.sectorSize;
+    let headerdata          = data.slice(headeroffset, headeroffset+this.header.header_size);
+
     headerdata.splice(0x58, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(partdata)), true)));
     headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(new Array(4).fill(0)), true)));
     headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(headerdata)), true)));
