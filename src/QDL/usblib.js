@@ -24,6 +24,7 @@ export class usbClass {
     this.epIn = null;
     this.epOut = null;
     this._registeredUsbListeners = null;
+    this.maxSize = 512;
   }
 
   get connected() {
@@ -60,6 +61,7 @@ export class usbClass {
           throw new UsbError("Interface has multiple OUT endpoints");
         }
       }
+      this.maxSize = this.epIn.packetSize;
     }
     console.log("Endpoints: in =", this.epIn, ", out =", this.epOut);
 
