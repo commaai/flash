@@ -2,6 +2,7 @@ import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
 import { loadFileFromLocal } from "./utils";
+import * as gpt from "./gpt"
 
 
 export class qdlDevice {
@@ -100,20 +101,28 @@ export class qdlDevice {
       console.error("Please try again, must be in command mode to get active slot")
       return false;
     }
+
     const luns = this.firehose?.getLuns();
     let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
-    //for (const lun of luns) {
-    const lun = luns[0];
-    let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
-    if (guidGpt === null)
-      return ""
-    for (const partitionName in guidGpt.partentries) {
-      const slot = partitionName.slice(-2);
-      return (slot === "a") ? "a" : "b";
+    for (const lun of luns) {
+      let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
+
+      if (guidGpt === null)
+        return ""
+
+      for (const partitionName in guidGpt.partentries) {
+        const slot = partitionName.slice(-2);
+        const partition = guidGpt.partentries[partitionName];
+        const active = (((partition.flags >> (gpt.AB_FLAG_OFFSET*8))&0xff) & gpt.AB_PARTITION_ATTR_SLOT_ACTIVE) == gpt.AB_PARTITION_ATTR_SLOT_ACTIVE; 
+        if (slot == "_a" && active) {
+          return "a";
+        } else if (slot == "_b" && active) {
+          return "b";
+        }
+      }
     }
     console.error("Can't detect slot A or B");
     return "";
-    //}
   }
 
 

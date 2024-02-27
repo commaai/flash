@@ -1,8 +1,8 @@
 const { containsBytes } = require("./utils");
 const CRC32 = require("crc-32");
 
-const AB_FLAG_OFFSET = 6;
-const AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2);
+export const AB_FLAG_OFFSET = 6;
+export const AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2);
 const AB_PARTITION_ATTR_UNBOOTABLE = (0x1 << 7);
 
 class structHelper {
