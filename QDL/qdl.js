@@ -1,7 +1,6 @@
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
-import { loadFileFromLocal } from "./utils";
 import { AB_FLAG_OFFSET, AB_PARTITION_ATTR_SLOT_ACTIVE } from "./gpt"
 
 
@@ -16,6 +15,7 @@ export class qdlDevice {
     this.sahara = new Sahara(this.cdc);
     this.firehose = new Firehose(this.cdc);
   }
+
 
   async connectToSahara() {
     while (!this.cdc.connected){
@@ -95,6 +95,33 @@ export class qdlDevice {
     return true;
   }
 
+
+  async getDevicePartitions() {
+    const partitions = [];
+    const luns = this.firehose?.getLuns();
+    let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
+    try {
+      for (const lun of luns) {
+        let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
+
+        if (guidGpt === null)
+          return [];
+        for (const partitionName in guidGpt.partentries) {
+          let partition = partitionName;
+          if (partitionName.endsWith("_a") || partitionName.endsWith("_b"))
+            partition = partitionName.substring(0, partitionName.length-2);
+          if (partitions.includes(partition))
+            continue;
+          partitions.push(partition);
+        }
+      }
+      return partitions;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  }
+
   
   async getActiveSlot() {
     if (this.mode !== "firehose") {
@@ -106,10 +133,8 @@ export class qdlDevice {
     let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
     for (const lun of luns) {
       let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
-
       if (guidGpt === null)
         return ""
-
       for (const partitionName in guidGpt.partentries) {
         const slot = partitionName.slice(-2);
         const partition = guidGpt.partentries[partitionName];
@@ -174,10 +199,13 @@ export class qdlDevice {
 
       await this.toCmdMode();
 
-      let blob = await loadFileFromLocal();
-      await this.flashBlob(flashPartition, blob);
+      //let blob = await loadFileFromLocal();
+      //await this.flashBlob(flashPartition, blob);
 
-      await this.erase(erasePartition)
+      //await this.erase(erasePartition)
+
+      let partitions = await this.getDevicePartitions();
+      console.log("Partitions:", partitions);
 
       await this.reset();
 

@@ -506,8 +506,8 @@ export class Firehose {
     console.log("Finish erasing");
     return true;
   }
-  
 
+  
   async cmdReset() {
     let data  = "<?xml version=\"1.0\" ?><data><power value=\"reset\"/></data>";
     let val   = await this.xmlSend(data);
