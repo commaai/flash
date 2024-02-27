@@ -2,7 +2,7 @@ import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
 import { loadFileFromLocal } from "./utils";
-import * as gpt from "./gpt"
+import { AB_FLAG_OFFSET, AB_PARTITION_ATTR_SLOT_ACTIVE } from "./gpt"
 
 
 export class qdlDevice {
@@ -113,7 +113,7 @@ export class qdlDevice {
       for (const partitionName in guidGpt.partentries) {
         const slot = partitionName.slice(-2);
         const partition = guidGpt.partentries[partitionName];
-        const active = (((partition.flags >> (gpt.AB_FLAG_OFFSET*8))&0xff) & gpt.AB_PARTITION_ATTR_SLOT_ACTIVE) == gpt.AB_PARTITION_ATTR_SLOT_ACTIVE; 
+        const active = (((partition.flags >> (AB_FLAG_OFFSET*8))&0xff) & AB_PARTITION_ATTR_SLOT_ACTIVE) == AB_PARTITION_ATTR_SLOT_ACTIVE; 
         if (slot == "_a" && active) {
           return "a";
         } else if (slot == "_b" && active) {
