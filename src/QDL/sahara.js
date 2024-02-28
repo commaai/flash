@@ -1,4 +1,4 @@
-import { CommandHandler, cmd_t, sahara_mode_t, status_t } from "./saharaDefs"
+import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./saharaDefs"
 import { concatUint8Array, packGenerator, loadFileFromLocal } from "./utils";
 
 export class Sahara {
@@ -15,8 +15,10 @@ export class Sahara {
     this.pktSize    = null;
     this.version    = null;
     this.ch         = new CommandHandler();
-    this.programmer = "0008e0e100000000_afca69d4235117e5_fhprg.bin";
+    // TODO: change to auto upload Loader
+    this.programmer = "0005f0e100000000_b155b8bf19297f47_fhprg_peek.bin";
     this.id         = null;
+    this.serial     = "";
     this.mode       = "";
   }
 
@@ -105,6 +107,35 @@ export class Sahara {
   }
 
 
+  async cmdExec(mcmd) {
+    let dataToSend = packGenerator([cmd_t.SAHARA_EXECUTE_REQ, 0xC, mcmd]);
+    await this.cdc.write(dataToSend);
+    let res = await this.getResponse();
+    if (res.hasOwnProperty("cmd")) {
+      let cmd = res["cmd"];
+      if (cmd == cmd_t.SAHARA_EXECUTE_RSP) {
+        let pkt = res["data"];
+        let data = packGenerator([cmd_t.SAHARA_EXECUTE_DATA, 0xC, mcmd]);
+        await this.cdc.write(data);
+        let payload = await this.cdc.read(pkt.data_len);
+        return payload;
+      } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
+        let pkt = res["data"];
+        console.error("error while executing command");
+      }
+      return null;
+    }
+    return res;
+  }
+
+
+  async cmdGetSerialNum() {
+    let res = await this.cmdExec(exec_cmd_t.SAHARA_EXEC_CMD_SERIAL_NUM_READ);
+    let data = new DataView(res.buffer, 0).getUint32(0, true);
+    return data.toString(16).padStart(8, '0');
+  }
+
+
   async enterCommandMode(version=2) {
     if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND)){
       return false;
@@ -130,9 +161,11 @@ export class Sahara {
       return "error"
     } else {
       try {
+        this.serial = await this.cmdGetSerialNum();
         await this.cmdModeSwitch(sahara_mode_t.SAHARA_MODE_COMMAND);
       } catch (error) {
         console.error(error);
+        return;
       }
     }
 

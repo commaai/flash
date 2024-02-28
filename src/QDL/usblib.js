@@ -19,7 +19,6 @@ export class usbClass {
   _registeredUsbListeners;
 
   constructor() {
-    this._
     this.device = null;
     this.epIn = null;
     this.epOut = null;

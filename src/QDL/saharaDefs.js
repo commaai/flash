@@ -16,6 +16,10 @@ export const cmd_t = {
   SAHARA_64BIT_MEMORY_READ_DATA : 0x12,
 }
 
+export const exec_cmd_t = {
+  SAHARA_EXEC_CMD_SERIAL_NUM_READ : 0x01
+}
+
 export const sahara_mode_t = {
   SAHARA_MODE_IMAGE_TX_PENDING : 0x0,
   SAHARA_MODE_COMMAND : 0x3
