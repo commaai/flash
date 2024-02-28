@@ -1,218 +1,337 @@
-import { usbClass } from "./usblib"
-import { Sahara } from  "./sahara"
-import { Firehose } from "./firehose"
-import { AB_FLAG_OFFSET, AB_PARTITION_ATTR_SLOT_ACTIVE } from "./gpt"
+'use client'
+import { useEffect, useRef, useState } from 'react'
+
+import { qdlDevice } from './qdlDevice.js'
+import * as Comlink from 'comlink'
+import { usePlausible } from 'next-plausible'
+
+import config from '@/config'
+import { download } from '@/QDL/blob'
+import { useImageWorker } from '@/QDL/image'
+import { createManifest } from '@/QDL/manifest'
+import { withProgress } from '@/QDL/progress'
+
+/**
+ * @typedef {import('./manifest.js').Image} Image
+ */
+
+export const Step = {
+  INITIALIZING: 0,
+  READY: 1,
+  CONNECTING: 2,
+  DOWNLOADING: 3,
+  UNPACKING: 4,
+  FLASHING: 6,
+  ERASING: 7,
+  DONE: 8,
+}
+
+export const Error = {
+  UNKNOWN: -1,
+  NONE: 0,
+  UNRECOGNIZED_DEVICE: 1,
+  LOST_CONNECTION: 2,
+  DOWNLOAD_FAILED: 3,
+  UNPACK_FAILED: 4,
+  CHECKSUM_MISMATCH: 5,
+  FLASH_FAILED: 6,
+  ERASE_FAILED: 7,
+  REQUIREMENTS_NOT_MET: 8,
+}
+
+function isRecognizedDevice(partitions) {
+  // check we have the expected partitions to make sure it's a comma three
+  const expectedPartitions = [
+    "ALIGN_TO_128K_1", "ALIGN_TO_128K_2", "ImageFv", "abl", "aop", "apdp", "bluetooth", "boot", "cache",
+    "cdt", "cmnlib", "cmnlib64", "ddr", "devcfg", "devinfo", "dip", "dsp", "fdemeta", "frp", "fsc", "fsg",
+    "hyp", "keymaster", "keystore", "limits", "logdump", "logfs", "mdtp", "mdtpsecapp", "misc", "modem",
+    "modemst1", "modemst2", "msadp", "persist", "qupfw", "rawdump", "sec", "splash", "spunvm", "ssd",
+    "sti", "storsec", "system", "systemrw", "toolsfv", "tz", "userdata", "vm-linux", "vm-system", "xbl",
+    "xbl_config"
+  ]
+  if (!partitions.every(partition => expectedPartitions.includes(partition))) {
+    console.error('[QDL] Unrecognised device (partitions)', partitions)
+    return false
+  }
+  return true;
+}
 
 
-export class qdlDevice {
-  cdc;
-  sahara;
-  mode;
+export function useQdl() {
+  const [step, _setStep] = useState(Step.INITIALIZING)
+  const [message, _setMessage] = useState('')
+  const [progress, setProgress] = useState(0)
+  const [error, _setError] = useState(Error.NONE)
 
-  constructor() {
-    this.mode = "";
-    this.cdc = new usbClass();
-    this.sahara = new Sahara(this.cdc);
-    this.firehose = new Firehose(this.cdc);
+  const [connected, setConnected] = useState(false)
+  const [serial, setSerial] = useState(null)
+
+  const [onContinue, setOnContinue] = useState(null)
+  const [onRetry, setOnRetry] = useState(null)
+
+  const imageWorker = useImageWorker()
+  const qdl = useRef(new qdlDevice())
+
+  /** @type {React.RefObject<Image[]>} */
+  const manifest = useRef(null)
+
+  const plausible = usePlausible()
+
+  function setStep(step) {
+    _setStep(step)
   }
 
+  function setMessage(message = '') {
+    if (message) console.info('[QDL]', message)
+    _setMessage(message)
+  }
 
-  async connectToSahara() {
-    while (!this.cdc.connected){
-      await this.cdc?.connect();
-      if (this.cdc.connected){
-        console.log("Device detected");
-        try {
-          let resp = await this.sahara?.connect();
-          if (resp.hasOwnProperty("mode")){
-            let mode = resp["mode"];
-            this.mode = mode;
-            console.log("Mode detected:", mode);
-            return resp;
+  function setError(error) {
+    _setError(error)
+  }
+  useEffect(() => {
+    setProgress(-1)
+    setMessage()
+
+    if (error) return
+    if (!imageWorker.current) {
+      console.debug('[QDL] Waiting for image worker')
+      return
+    }
+
+    switch (step) {
+      case Step.INITIALIZING: {
+        // Check that the browser supports WebUSB
+        if (typeof navigator.usb === 'undefined') {
+          console.error('[QDL] WebUSB not supported')
+          setError(Error.REQUIREMENTS_NOT_MET)
+          break
+        }
+
+        // Check that the browser supports Web Workers
+        if (typeof Worker === 'undefined') {
+          console.error('[QDL] Web Workers not supported')
+          setError(Error.REQUIREMENTS_NOT_MET)
+          break
+        }
+
+        // Check that the browser supports Storage API
+        if (typeof Storage === 'undefined') {
+          console.error('[QDL] Storage API not supported')
+          setError(Error.REQUIREMENTS_NOT_MET)
+          break
+        }
+
+        // TODO: change manifest once alt image is in release
+        imageWorker.current?.init()
+          .then(() => download(config.manifests['master']))
+          .then(blob => blob.text())
+          .then(text => {
+            manifest.current = createManifest(text)
+
+            // sanity check
+            if (manifest.current.length === 0) {
+              throw 'Manifest is empty'
+            }
+
+            console.debug('[QDL] Loaded manifest', manifest.current)
+            setStep(Step.READY)
+          })
+          .catch((err) => {
+            console.error('[QDL] Initialization error', err)
+            setError(Error.UNKNOWN)
+          })
+        break
+      }
+
+      case Step.READY: {
+        // wait for user interaction (we can't use WebUSB without user event)
+        setOnContinue(() => () => {
+          setOnContinue(null)
+          setStep(Step.CONNECTING)
+        })
+        break
+      }
+
+      case Step.CONNECTING: {
+        qdl.current.waitForConnect()
+          .then(() => {
+            console.info('[QDL] Connected')
+            return qdl.current.getDevicePartitions()
+              .then((partitions) => {
+
+                const recognized = isRecognizedDevice(partitions)
+                console.debug('[QDL] Device info', { recognized,  partitions})
+
+                if (!recognized) {
+                  setError(Error.UNRECOGNIZED_DEVICE)
+                  return
+                }
+
+                //setSerial(deviceInfo['serialno'] || 'unknown')
+                setConnected(true)
+                plausible('device-connected')
+                setStep(Step.DOWNLOADING)
+              })
+              .catch((err) => {
+                console.error('[QDL] Error getting device information', err)
+                setError(Error.UNKNOWN)
+              })
+          })
+          .catch((err) => {
+            console.error('[QDL] Connection lost', err)
+            setError(Error.LOST_CONNECTION)
+            setConnected(false)
+          })
+
+        qdl.current.connect()
+          .catch((err) => {
+            console.error('[QDL] Connection error', err)
+            setStep(Step.READY)
+        })
+        break
+      }
+
+      case Step.DOWNLOADING: {
+        setProgress(0)
+
+        async function downloadImages() {
+          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
+            setMessage(`Downloading ${image.name}`)
+            await imageWorker.current.downloadImage(image, Comlink.proxy(onProgress))
           }
-        } catch (error) {
-          console.error(error);
         }
+
+        downloadImages()
+          .then(() => {
+            console.debug('[QDL] Downloaded all images')
+            setStep(Step.UNPACKING)
+          })
+          .catch((err) => {
+            console.error('[QDL] Download error', err)
+            setError(Error.DOWNLOAD_FAILED)
+          })
+        break
+      }
+
+      case Step.UNPACKING: {
+        setProgress(0)
+
+        async function unpackImages() {
+          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
+            setMessage(`Unpacking ${image.name}`)
+            await imageWorker.current.unpackImage(image, Comlink.proxy(onProgress))
+          }
+        }
+
+        unpackImages()
+          .then(() => {
+            console.debug('[QDL] Unpacked all images')
+            setStep(Step.FLASHING)
+          })
+          .catch((err) => {
+            console.error('[QDL] Unpack error', err)
+            if (err.startsWith('Checksum mismatch')) {
+              setError(Error.CHECKSUM_MISMATCH)
+            } else {
+              setError(Error.UNPACK_FAILED)
+            }
+          })
+        break
+      }
+
+      case Step.FLASHING: {
+        setProgress(0)
+
+        async function flashDevice() {
+          const currentSlot = await qdl.current.getActiveSlot();
+          if (!['a', 'b'].includes(currentSlot)) {
+            throw `Unknown current slot ${currentSlot}`
+          }
+
+          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
+            const fileHandle = await imageWorker.current.getImage(image)
+            const blob = await fileHandle.getFile()
+
+            if (image.sparse) {
+              setMessage(`Erasing ${image.name}`)
+              await qdl.current.erase(image.name)
+            }
+            setMessage(`Flashing ${image.name}`)
+            await qdl.current.flashBlob(image.name, blob, onProgress)
+          }
+          console.debug('[QDL] Flashed all partitions')
+
+          const otherSlot = currentSlot === 'a' ? 'b' : 'a'
+          setMessage(`Changing slot to ${otherSlot}`)
+          await qdl.current.setActvieSlot(otherSlot);
+        }
+
+        flashDevice()
+          .then(() => {
+            console.debug('[QDL] Flash complete')
+            setStep(Step.ERASING)
+          })
+          .catch((err) => {
+            console.error('[QDL] Flashing error', err)
+            setError(Error.FLASH_FAILED)
+          })
+        break
+      }
+
+      case Step.ERASING: {
+        setProgress(0)
+
+        async function eraseDevice() {
+          setMessage('Erasing userdata')
+          await qdl.current.erase("userdata")
+          setProgress(0.9)
+
+          setMessage('Rebooting')
+          await qdl.current.reset();
+          setProgress(1)
+          setConnected(false)
+        }
+
+        eraseDevice()
+          .then(() => {
+            console.debug('[QDL] Erase complete')
+            setStep(Step.DONE)
+            plausible('completed')
+          })
+          .catch((err) => {
+            console.error('[QDL] Erase error', err)
+            setError(Error.ERASE_FAILED)
+          })
+        break
       }
     }
-    return {"mode" : "error"};
-  }
+  }, [imageWorker, step])
 
+  useEffect(() => {
+    if (error !== Error.NONE) {
+      console.debug('[QDL] error', error)
+      plausible('error', { props: { error }})
+      setProgress(-1)
+      setOnContinue(null)
 
-  async flashBlob(partitionName, blob) {
-    if (this.mode !== "firehose") {
-      console.error("Please try again, must be in command mode to flash")
-      return false;
+      setOnRetry(() => () => {
+        console.debug('[QDL] on retry')
+        window.location.reload()
+      })
     }
-    let startSector = 0;
-    let dp = await this.firehose?.detectPartition(partitionName);
-    if (dp[0]) {
-      let lun = dp[1];
-      const imgSize = blob.byteLength;
-      let imgSectors = Math.floor(imgSize/this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
-      if (imgSize % this.firehose.cfg.SECTOR_SIZE_IN_BYTES !== 0)
-        imgSectors += 1;
-      if (partitionName.toLowerCase() !== "gpt") {
-        const partition = dp[2];
-        if (imgSectors > partition.sectors) {
-          console.error("partition has fewer sectors compared to the flashing image");
-          return false;
-        }
-        startSector = partition.sector;
-        console.log(`Flashing ${partitionName}...`);
-        if (await this.firehose.cmdProgram(lun, startSector, blob)) {
-          console.log(`partition ${partitionName}: startSector ${partition.sector}, sectors ${partition.sectors}`);
-        } else {
-          console.error("Error writing image");
-        }
-      }
-    }
-    return true;
-  }
+  }, [error])
 
+  return {
+    step,
+    message,
+    progress,
+    error,
 
-  async erase(partitionName) {
-    if (this.mode !== "firehose") {
-      console.error("Please try again, must be in command mode to erase")
-      return false;
-    }
-    let luns = this.firehose.getLuns();
-    let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
-    for (const lun of luns) {
-      let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
-      if (guidGpt === null)
-        break;
-      if (guidGpt.partentries.hasOwnProperty(partitionName)) {
-        const partition = guidGpt.partentries[partitionName];
-        console.log(`Erasing ${partitionName}...`)
-        await this.firehose.cmdErase(lun, partition.sector, partition.sectors);
-        console.log(`Erased ${partitionName} starting at sector ${partition.sector} with sectors ${partition.sectors}`)
-      } else {
-        console.log(`Couldn't erase partition ${partitionName}. Either wrong type or not in lun ${lun}`);
-        continue;
-      }
-    }
-    return true;
-  }
+    connected,
+    serial,
 
-
-  async getDevicePartitions() {
-    const partitions = [];
-    const luns = this.firehose?.getLuns();
-    let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
-    try {
-      for (const lun of luns) {
-        let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
-
-        if (guidGpt === null)
-          return [];
-        for (const partitionName in guidGpt.partentries) {
-          let partition = partitionName;
-          if (partitionName.endsWith("_a") || partitionName.endsWith("_b"))
-            partition = partitionName.substring(0, partitionName.length-2);
-          if (partitions.includes(partition))
-            continue;
-          partitions.push(partition);
-        }
-      }
-      return partitions;
-    } catch (error) {
-      console.error(error);
-      return [];
-    }
-  }
-
-  
-  async getActiveSlot() {
-    if (this.mode !== "firehose") {
-      console.error("Please try again, must be in command mode to get active slot")
-      return false;
-    }
-
-    const luns = this.firehose?.getLuns();
-    let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
-    for (const lun of luns) {
-      let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
-      if (guidGpt === null)
-        return ""
-      for (const partitionName in guidGpt.partentries) {
-        const slot = partitionName.slice(-2);
-        const partition = guidGpt.partentries[partitionName];
-        const active = (((partition.flags >> (AB_FLAG_OFFSET*8))&0xff) & AB_PARTITION_ATTR_SLOT_ACTIVE) == AB_PARTITION_ATTR_SLOT_ACTIVE; 
-        if (slot == "_a" && active) {
-          return "a";
-        } else if (slot == "_b" && active) {
-          return "b";
-        }
-      }
-    }
-    console.error("Can't detect slot A or B");
-    return "";
-  }
-
-
-  async setActvieSlot(slot) {
-    if (this.mode !== "firehose") {
-      console.error("Please try again, must be in command mode to set active slot");
-      return false;
-    }
-    try {
-      await this.firehose.cmdSetActiveSlot(slot);
-      return true;
-    } catch (error) {
-      console.error(`Error while setting active slot: ${error}`)
-      return false;
-    }
-  }
-
-
-  async toCmdMode() {
-    let resp = await this.connectToSahara();
-    let mode = resp["mode"];
-    if (mode === "sahara")
-      await this.sahara?.uploadLoader(2); // version 2
-    await this.firehose?.configure();
-    this.mode = "firehose";
-    return true;
-  }
-
-
-  async reset() {
-    if (this.mode !== "firehose") {
-      console.error("Please try again, must be in command mode reset")
-      return false;
-    }
-    try {
-      await this.firehose?.cmdReset();
-    } catch (error) {
-      console.error(error);
-    }
-    return true;
-  }
-
-
-  // TODO: run() is for testing, will be deleted so that qdl.js is a module
-  async run() {
-    try {
-      let flashPartition = "boot";
-      let erasePartition = "cache";
-
-      await this.toCmdMode();
-
-      //let blob = await loadFileFromLocal();
-      //await this.flashBlob(flashPartition, blob);
-
-      //await this.erase(erasePartition)
-
-      let partitions = await this.getDevicePartitions();
-      console.log("Partitions:", partitions);
-
-      await this.reset();
-
-      return true;
-    } catch (error) {
-      console.error(error);
-      return false;
-    }
+    onContinue,
+    onRetry,
   }
 }

@@ -162,7 +162,6 @@ class gptPartition {
   
 
   create() {
-    // TODO: finish create function
     let buffer = new ArrayBuffer(16 + 16 + 8 + 8 + 8 + 72);
     let view = new DataView(buffer);
     let offset = 0;

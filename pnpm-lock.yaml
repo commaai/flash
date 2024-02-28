@@ -14,15 +14,15 @@ dependencies:
   comlink:
     specifier: ^4.4.1
     version: 4.4.1
+  crc-32:
+    specifier: ^1.2.2
+    version: 1.2.2
   eslint:
     specifier: 8.40.0
     version: 8.40.0
   eslint-config-next:
     specifier: 13.4.1
     version: 13.4.1(eslint@8.40.0)(typescript@5.1.6)
-  js-crc32:
-    specifier: ^1.0.1
-    version: 1.0.1
   jssha:
     specifier: ^3.3.1
     version: 3.3.1
@@ -1459,6 +1459,12 @@ packages:
       path-type: 4.0.0
     dev: true
 
+  /crc-32@1.2.2:
+    resolution: {integrity: sha512-ROmzCKrTnOwybPcJApAA6WBWij23HVfGVNKqqrZpuyZOHqK2CwHSvpGuyt/UNNvaIjEd8X5IFGp4Mh+Ie1IHJQ==}
+    engines: {node: '>=0.8'}
+    hasBin: true
+    dev: false
+
   /cross-spawn@7.0.3:
     resolution: {integrity: sha512-iRDPJKUPVEND7dHPO8rkbOnPpyDygcDFtWjpeWNCgy8WP2rXcxXL8TskReQl6OrB2G7+UJrags1q15Fudc7G6w==}
     engines: {node: '>= 8'}
@@ -2535,11 +2541,6 @@ packages:
   /jiti@1.19.1:
     resolution: {integrity: sha512-oVhqoRDaBXf7sjkll95LHVS6Myyyb1zaunVwk4Z0+WPSW4gjS0pl01zYKHScTuyEhQsFxV5L4DR5r+YqSyqyyg==}
     hasBin: true
-
-  /js-crc32@1.0.1:
-    resolution: {integrity: sha512-1Lj65x3vOd0SnuNsCY8EtLf531mTSDJKGBbSJfYDcRkDDVoPAtulzzqaWiZGUo9JvLKovaVEKdnyE3UospUg/g==}
-    engines: {node: '>=0.8'}
-    dev: false
 
   /js-sdsl@4.4.2:
     resolution: {integrity: sha512-dwXFwByc/ajSV6m5bcKAPwe4yDDF6D614pxmIi5odytzxRlwqF6nwoiCek80Ixc7Cvma5awClxrzFtxCQvcM8w==}

@@ -2,7 +2,8 @@
 import { useCallback } from 'react'
 import Image from 'next/image'
 
-import { Step, Error, useFastboot } from '@/utils/fastboot'
+//import { Step, Error, useFastboot } from '@/utils/fastboot'
+import { Step, Error, useQdl } from '@/QDL/qdl'
 
 import bolt from '@/assets/bolt.svg'
 import cable from '@/assets/cable.svg'
@@ -189,7 +190,7 @@ export default function Flash() {
 
     connected,
     serial,
-  } = useFastboot()
+  } = useQdl()
 
   const handleContinue = useCallback(() => {
     onContinue?.()

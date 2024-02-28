@@ -11,7 +11,6 @@ export class UsbError extends Error {
   }
 }
 
-// TODO: waitforconnect to check for valid device
 export class usbClass {
   device;
   epIn;
@@ -20,12 +19,14 @@ export class usbClass {
   _registeredUsbListeners;
 
   constructor() {
+    this._
     this.device = null;
     this.epIn = null;
     this.epOut = null;
     this._registeredUsbListeners = null;
     this.maxSize = 512;
   }
+
 
   get connected() {
     return (
@@ -34,6 +35,7 @@ export class usbClass {
       this.device.configurations[0].interfaces[0].claimed
     );
   }
+
 
   async _validateAndConnectDevice() {
     let ife = this.device?.configurations[0].interfaces[0].alternates[0];
@@ -70,9 +72,10 @@ export class usbClass {
         await this.device?.selectConfiguration(1);
         await this.device?.claimInterface(this.device.configuration.interfaces[0].interfaceNumber);
     } catch (error) {
-        throw error;
+      throw error;
     }
   }
+
 
   async connect() {
     console.log("Trying to connect Qualcomm device")
@@ -91,6 +94,7 @@ export class usbClass {
     console.log("USing USB device:", this.device);
 
     if (!this._registeredUsbListeners){
+
       console.log("Get in unregistered");
       navigator.usb.addEventListener("connect", async (event) =>{
         console.log("USB device connect:", event.device);
@@ -100,6 +104,7 @@ export class usbClass {
           await this._validateAndConnectDevice();
         } catch (error) {
           console.log("Error while connecting to the device");
+          throw error;
         }
       });
 
@@ -107,6 +112,7 @@ export class usbClass {
     }
     await this._validateAndConnectDevice();
   }
+
 
   async read(resplen=null){
     let respData = new Uint8Array();
