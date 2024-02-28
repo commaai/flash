@@ -31,7 +31,7 @@ class cfg {
     this.SECTOR_SIZE_IN_BYTES = 0;
     this.MemoryName = "UFS";
     this.prod_name = "Unknown";
-    this.maxlun = 99;
+    this.maxlun = 6;
   }
 }
 
