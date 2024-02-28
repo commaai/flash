@@ -168,7 +168,7 @@ export function useQdl() {
                   return
                 }
 
-                //setSerial(deviceInfo['serialno'] || 'unknown')
+                setSerial(qdl.current.sahara.serial || 'unknown')
                 setConnected(true)
                 plausible('device-connected')
                 setStep(Step.DOWNLOADING)

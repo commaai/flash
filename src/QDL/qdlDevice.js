@@ -1,25 +1,7 @@
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
-import { loadFileFromLocal } from "./utils"
 import { AB_FLAG_OFFSET, AB_PARTITION_ATTR_SLOT_ACTIVE } from "./gpt"
-
-
-function isRecognizedDevice(partitions) {
-  const expectedPartitions = [
-    "ALIGN_TO_128K_1", "ALIGN_TO_128K_2", "ImageFv", "abl", "aop", "apdp", "bluetooth", "boot", "cache",
-    "cdt", "cmnlib", "cmnlib64", "ddr", "devcfg", "devinfo", "dip", "dsp", "fdemeta", "frp", "fsc", "fsg",
-    "hyp", "keymaster", "keystore", "limits", "logdump", "logfs", "mdtp", "mdtpsecapp", "misc", "modem",
-    "modemst1", "modemst2", "msadp", "persist", "qupfw", "rawdump", "sec", "splash", "spunvm", "ssd",
-    "sti", "storsec", "system", "systemrw", "toolsfv", "tz", "userdata", "vm-linux", "vm-system", "xbl",
-    "xbl_config"
-  ]
-  if (!partitions.every(partition => expectedPartitions.includes(partition))) {
-    console.error("not expected device");
-    return false;
-  }
-  return true;
-}
 
 
 export class qdlDevice {
@@ -32,6 +14,16 @@ export class qdlDevice {
     this.cdc = new usbClass();
     this.sahara = new Sahara(this.cdc);
     this.firehose = new Firehose(this.cdc);
+    this._connectResolve = null;
+    this._connectReject = null;
+  }
+
+
+  async waitForConnect() {
+    return await new Promise((resolve, reject) => {
+      this._connectResolve = resolve;
+      this._connectReject = reject;
+    });
   }
 
 
@@ -57,7 +49,7 @@ export class qdlDevice {
   }
 
 
-  async flashBlob(partitionName, blob) {
+  async flashBlob(partitionName, blob, onProgress) {
     if (this.mode !== "firehose") {
       console.error("Please try again, must be in command mode to flash")
       return false;
@@ -78,7 +70,7 @@ export class qdlDevice {
         }
         startSector = partition.sector;
         console.log(`Flashing ${partitionName}...`);
-        if (await this.firehose.cmdProgram(lun, startSector, blob)) {
+        if (await this.firehose.cmdProgram(lun, startSector, blob, onProgress)) {
           console.log(`partition ${partitionName}: startSector ${partition.sector}, sectors ${partition.sectors}`);
         } else {
           console.error("Error writing image");
@@ -184,13 +176,28 @@ export class qdlDevice {
   }
 
 
-  async toCmdMode() {
-    let resp = await this.connectToSahara();
-    let mode = resp["mode"];
-    if (mode === "sahara")
-      await this.sahara?.uploadLoader(2); // version 2
-    await this.firehose?.configure();
-    this.mode = "firehose";
+  async connect() {
+    try {
+      let resp = await this.connectToSahara();
+      let mode = resp["mode"];
+      if (mode === "sahara")
+        await this.sahara?.uploadLoader(2); // version 2
+      await this.firehose?.configure();
+      this.mode = "firehose";
+    } catch (error) {
+      if (this._connectReject !== null) {
+        this._connectReject(error);
+        this._connectResolve = null;
+        this._connectReject = null;
+      }
+    }
+
+    if (this._connectResolve !== null) {
+      this._connectResolve(undefined);
+      this._connectResolve = null;
+      this._connectReject = null;
+    }
+
     return true;
   }
 
@@ -215,18 +222,15 @@ export class qdlDevice {
       let flashPartition = "boot";
       let erasePartition = "cache";
 
-      await this.toCmdMode();
+      await this.connect();
+
+      //let blob = await loadFileFromLocal();
+      //await this.flashBlob(flashPartition, blob);
+
+      //await this.erase(erasePartition)
 
       let partitions = await this.getDevicePartitions();
-      console.log("isRecognizedDevice:",isRecognizedDevice(partitions));
-
-      let slot = await this.getActiveSlot();
-      console.log("activeSlot:", slot);
-
-      let blob = await loadFileFromLocal();
-      await this.flashBlob(flashPartition, blob);
-
-      await this.erase(erasePartition);
+      console.log("Partitions:", partitions);
 
       await this.reset();
 
