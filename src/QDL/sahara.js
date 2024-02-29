@@ -16,7 +16,7 @@ export class Sahara {
     this.version    = null;
     this.ch         = new CommandHandler();
     // TODO: change to auto upload Loader
-    this.programmer = "0005f0e100000000_b155b8bf19297f47_fhprg_peek.bin";
+    this.programmer = "0008e0e100000000_afca69d4235117e5_fhprg.bin";
     this.id         = null;
     this.serial     = "";
     this.mode       = "";
@@ -152,7 +152,6 @@ export class Sahara {
     }
     return false;
   }
-
 
 
   async uploadLoader(version){

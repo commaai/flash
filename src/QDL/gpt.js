@@ -6,7 +6,6 @@ export const AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2);
 const AB_PARTITION_ATTR_UNBOOTABLE = (0x1 << 7);
 
 class structHelper {
-  pos = 0;
 
   constructor(data, pos = 0) {
     this.pos = pos;
@@ -14,28 +13,24 @@ class structHelper {
   }
 
   qword(littleEndian=true) {
-    const view = new DataView(this.data.slice(this.pos, this.pos+8).buffer, 0);
-    this.pos += 8;
+    const view = new DataView(this.data.slice(this.pos, this.pos+=8).buffer, 0);
     return Number(view.getBigUint64(0, littleEndian));
   }
 
   dword(littleEndian=true) {
-    let view = new DataView(this.data.slice(this.pos, this.pos+4).buffer, 0);
-    this.pos += 4;
+    let view = new DataView(this.data.slice(this.pos, this.pos+=4).buffer, 0);
     return view.getUint32(0, littleEndian);
   }
 
   bytes(rlen=1) {
-    const dat = this.data.slice(this.pos, this.pos+rlen);
-    this.pos += rlen;
+    const dat = this.data.slice(this.pos, this.pos+=rlen);
     if (rlen == 1)
       return dat[0];
     return dat;
   }
 
   toString(rlen=1) {
-    const dat = this.data.slice(this.pos, this.pos+rlen);
-    this.pos += rlen;
+    const dat = this.data.slice(this.pos, this.pos+=rlen);
     return dat;
   }
 }
@@ -129,7 +124,6 @@ const efiType = {
   0x9198EFFC : "EFI_VMWARE_RESERVED",
 }
 
-
 class gptHeader {
   constructor(data) {
     let sh = new structHelper(data);
@@ -202,7 +196,7 @@ class partf {
 export class gpt {
   constructor(numPartEntries=0, partEntrySize=0, partEntryStartLba=0) {
     this.numPartEntries     = numPartEntries;
-    this.partEntrySize      = partEntrySize;
+    this.partEntrySize      = partEntrySize; 
     this.partEntryStartLba  = partEntryStartLba;
     this.totalSectors       = null;
     this.header             = null;
@@ -295,9 +289,9 @@ export class gpt {
             const partentry = new gptPartition(sdata);
             let flags = partentry.flags;
             if (active) {
-              flags |= AB_PARTITION_ATTR_SLOT_ACTIVE << (AB_FLAG_OFFSET*8);
+              flags |= Number(BigInt(AB_PARTITION_ATTR_SLOT_ACTIVE) << (BigInt(AB_FLAG_OFFSET) * BigInt(8)));
             } else {
-              flags |= AB_PARTITION_ATTR_UNBOOTABLE << (AB_FLAG_OFFSET*9)
+              flags |= Number(BigInt(AB_PARTITION_ATTR_UNBOOTABLE) << (BigInt(AB_FLAG_OFFSET) * BigInt(8)));
             }
             partentry.flags = flags;
             let pdata = partentry.create();
@@ -318,9 +312,9 @@ export class gpt {
     const headeroffset      = this.header.current_lba * this.sectorSize;
     let headerdata          = data.slice(headeroffset, headeroffset+this.header.header_size);
 
-    headerdata.splice(0x58, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(partdata)), true)));
-    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(new Array(4).fill(0)), true)));
-    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(headerdata)), true)));
+    headerdata.splice(0x58, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(partdata).buffer), true)));
+    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(new Array(4).fill(0).buffer), true)));
+    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(headerdata).buffer), true)));
     data.splice(headeroffset, this.header.header_size, headerdata);
     return data;
   }

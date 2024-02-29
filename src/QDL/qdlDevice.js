@@ -1,6 +1,7 @@
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
+import { loadFileFromLocal } from "./utils"
 import { AB_FLAG_OFFSET, AB_PARTITION_ATTR_SLOT_ACTIVE } from "./gpt"
 
 
@@ -54,6 +55,7 @@ export class qdlDevice {
       console.error("Please try again, must be in command mode to flash")
       return false;
     }
+
     let startSector = 0;
     let dp = await this.firehose?.detectPartition(partitionName);
     const found = dp[0];
@@ -75,8 +77,12 @@ export class qdlDevice {
           console.log(`partition ${partitionName}: startSector ${partition.sector}, sectors ${partition.sectors}`);
         } else {
           console.error("Error writing image");
+          return false;
         }
       }
+    } else {
+      console.error(`Can't find partition ${partitionName}`);
+      return false;
     }
     return true;
   }
@@ -87,6 +93,7 @@ export class qdlDevice {
       console.error("Please try again, must be in command mode to erase")
       return false;
     }
+
     let luns = this.firehose.getLuns();
     let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
     for (const lun of luns) {
@@ -108,8 +115,13 @@ export class qdlDevice {
 
 
   async getDevicePartitions() {
-    const partitions = [];
-    const luns = this.firehose?.getLuns();
+    if (this.mode !== "firehose") {
+      console.error("Please try again, must be in command mode to get device partitions info");
+      return false;
+    }
+
+    const partitions      = [];
+    const luns            = this.firehose?.getLuns();
     let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
     try {
       for (const lun of luns) {
@@ -117,10 +129,9 @@ export class qdlDevice {
 
         if (guidGpt === null)
           return [];
-        for (const partitionName in guidGpt.partentries) {
-          let partition = partitionName;
-          if (partitionName.endsWith("_a") || partitionName.endsWith("_b"))
-            partition = partitionName.substring(0, partitionName.length-2);
+        for (let partition in guidGpt.partentries) {
+          if (partition.endsWith("_a") || partition.endsWith("_b"))
+            partition = partition.substring(0, partition.length-2);
           if (partitions.includes(partition))
             continue;
           partitions.push(partition);
@@ -145,11 +156,11 @@ export class qdlDevice {
     for (const lun of luns) {
       let [ data, guidGpt ] = await this.firehose.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
       if (guidGpt === null)
-        return ""
+        return "";
       for (const partitionName in guidGpt.partentries) {
         const slot = partitionName.slice(-2);
         const partition = guidGpt.partentries[partitionName];
-        const active = (((partition.flags >> (AB_FLAG_OFFSET*8))&0xff) & AB_PARTITION_ATTR_SLOT_ACTIVE) == AB_PARTITION_ATTR_SLOT_ACTIVE; 
+        const active = (((BigInt(partition.flags) >> (BigInt(AB_FLAG_OFFSET) * BigInt(8))) & BigInt(0xFF)) & BigInt(AB_PARTITION_ATTR_SLOT_ACTIVE)) === BigInt(AB_PARTITION_ATTR_SLOT_ACTIVE);
         if (slot == "_a" && active) {
           return "a";
         } else if (slot == "_b" && active) {
@@ -167,6 +178,7 @@ export class qdlDevice {
       console.error("Please try again, must be in command mode to set active slot");
       return false;
     }
+
     try {
       await this.firehose.cmdSetActiveSlot(slot);
       return true;
@@ -174,6 +186,17 @@ export class qdlDevice {
       console.error(`Error while setting active slot: ${error}`)
       return false;
     }
+  }
+
+
+  async toCmdMode() {
+    let resp = await this.connectToSahara();
+    let mode = resp["mode"];
+    if (mode === "sahara")
+      await this.sahara?.uploadLoader(2); // version 2
+    await this.firehose?.configure();
+    this.mode = "firehose";
+    return true;
   }
 
 
@@ -202,12 +225,12 @@ export class qdlDevice {
     return true;
   }
 
-
   async reset() {
     if (this.mode !== "firehose") {
       console.error("Please try again, must be in command mode reset")
       return false;
     }
+
     try {
       await this.firehose?.cmdReset();
     } catch (error) {
@@ -223,15 +246,15 @@ export class qdlDevice {
       let flashPartition = "boot";
       let erasePartition = "cache";
 
-      await this.connect();
+      await this.toCmdMode();
 
-      //let blob = await loadFileFromLocal();
-      //await this.flashBlob(flashPartition, blob);
+      let slot = await this.getActiveSlot();
+      console.log("activeSlot:", slot);
 
-      //await this.erase(erasePartition)
+      let blob = await loadFileFromLocal();
+      await this.flashBlob(flashPartition, blob);
 
-      let partitions = await this.getDevicePartitions();
-      console.log("Partitions:", partitions);
+      await this.erase(erasePartition);
 
       await this.reset();
 
