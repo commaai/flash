@@ -56,7 +56,8 @@ export class qdlDevice {
     }
     let startSector = 0;
     let dp = await this.firehose?.detectPartition(partitionName);
-    if (dp[0]) {
+    const found = dp[0];
+    if (found) {
       let lun = dp[1];
       const imgSize = blob.byteLength;
       let imgSectors = Math.floor(imgSize/this.firehose.cfg.SECTOR_SIZE_IN_BYTES);

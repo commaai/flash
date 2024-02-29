@@ -40,6 +40,7 @@ class structHelper {
   }
 }
 
+// TODO: is this needed? snapdrag845 uses uefi
 const efiType = {
   0x00000000 : "EFI_UNUSED",
   0x024DEE41 : "EFI_MBR",
@@ -128,6 +129,7 @@ const efiType = {
   0x9198EFFC : "EFI_VMWARE_RESERVED",
 }
 
+
 class gptHeader {
   constructor(data) {
     let sh = new structHelper(data);
@@ -200,7 +202,7 @@ class partf {
 export class gpt {
   constructor(numPartEntries=0, partEntrySize=0, partEntryStartLba=0) {
     this.numPartEntries     = numPartEntries;
-    this.partEntrySize      = partEntrySize; 
+    this.partEntrySize      = partEntrySize;
     this.partEntryStartLba  = partEntryStartLba;
     this.totalSectors       = null;
     this.header             = null;
