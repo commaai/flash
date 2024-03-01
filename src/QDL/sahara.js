@@ -1,5 +1,6 @@
 import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./saharaDefs"
-import { concatUint8Array, packGenerator, loadFileFromLocal } from "./utils";
+import { concatUint8Array, packGenerator, loadFileFromLocal, readBlobAsBuffer } from "./utils";
+import config from '@/config'
 
 export class Sahara {
   cdc;
@@ -25,7 +26,6 @@ export class Sahara {
   async connect() {
     try {
       let v = await this.cdc?.read(0xC * 0x4);
-      let v_text = new TextDecoder("utf-8").decode(v);
       if (v.length > 1){
         if (v[0] == 0x01){
           let pkt = this.ch.pkt_cmd_hdr(v);
@@ -154,6 +154,44 @@ export class Sahara {
   }
 
 
+  async downLoadLoader() {
+    let writable;
+    try {
+      const fileHandle = await root.getFileHandle(this.programmer, { create: true });
+      writable = await fileHandle.createWritable();
+    } catch (e) {
+      throw `Error opening file handle: ${e}`;
+    }
+
+    const programmerUrl = config.loader['url'];
+    const response = await fetch(programmerUrl, { mode: 'cors' })
+    if (!response.ok) {
+      throw `Fetch failed: ${response.status} ${response.statusText}`
+    }
+
+    try {
+      let processed = 0;
+      const contentLength = +response.headers.get('Content-Length');
+      const reader = response.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done)
+          break;
+        await writable.write(value);
+        processed += value.length;
+      }
+    } catch (e) {
+      throw `Could not read response body: ${e}`
+    }
+
+    try {
+      await writable.close()
+    } catch (e) {
+      throw `Error closing file handle: ${e}`
+    }
+  }
+
+
   async uploadLoader(version){
     if (!(await this.enterCommandMode(version))) {
       console.error("Failed to enter command mode in Sahara");
@@ -174,9 +212,11 @@ export class Sahara {
     }
 
     console.log("Uploading Programmer...");
-    let programmer = new Uint8Array(await loadFileFromLocal());
+    // TODO: change to auto download
+    //let programmer = new Uint8Array(await readBlobAsBuffer(await downloadLoader()));
+    let programmer = new Uint8Array(await readBlobAsBuffer(await loadFileFromLocal()));
     if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING, version=version))) {
-      return "";
+      return "error";
     }
 
     try {
@@ -190,11 +230,11 @@ export class Sahara {
           cmd = resp["cmd"];
         } else {
           console.error("Timeout while uploading loader. Wrong loader?");
-          return ""
+          return "error"
         }
         if (cmd == cmd_t.SAHARA_DONE_REQ){
           if (self.cmdDone()){
-            return ""
+            return "error"
           }
         }
         if ([cmd_t.SAHARA_64BIT_MEMORY_READ_DATA,cmd_t.SAHARA_READ_DATA].includes(cmd)) {

@@ -61,7 +61,11 @@ export function compareStringToBytes(compareString, array) {
 
 export async function loadFileFromLocal() {
   const [fileHandle] = await window.showOpenFilePicker();
-  const blob = await fileHandle.getFile();
+  let blob = await fileHandle.getFile();
+  return blob;
+}
+
+export function readBlobAsBuffer(blob) {
   return new Promise((resolve, reject) => {
     let reader = new FileReader();
     reader.onload = () => {

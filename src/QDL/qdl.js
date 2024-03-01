@@ -39,7 +39,13 @@ export const Error = {
   REQUIREMENTS_NOT_MET: 8,
 }
 
-function isRecognizedDevice(partitions) {
+function isRecognizedDevice(maxDownloadSize, slotCount, partitions) {
+
+  if (maxDownloadSize !== 104857600 || slotCount !== 2) {
+    console.error('[QDL] Unrecognised device (kernel, maxDownloadSize or slotCount)')
+    return false
+  }
+
   // check we have the expected partitions to make sure it's a comma three
   const expectedPartitions = [
     "ALIGN_TO_128K_1", "ALIGN_TO_128K_2", "ImageFv", "abl", "aop", "apdp", "bluetooth", "boot", "cache",
@@ -53,7 +59,7 @@ function isRecognizedDevice(partitions) {
     console.error('[QDL] Unrecognised device (partitions)', partitions)
     return false
   }
-  return true;
+  return true
 }
 
 
@@ -158,9 +164,9 @@ export function useQdl() {
           .then(() => {
             console.info('[QDL] Connected')
             return qdl.current.getDevicePartitions()
-              .then((partitions) => {
-
-                const recognized = isRecognizedDevice(partitions)
+              .then(([slotCount, partitions]) => {
+                const maxDownloadSize = qdl.current.firehose.cfg.MaxPayloadSizeToTargetInBytes;
+                const recognized = isRecognizedDevice(maxDownloadSize, slotCount, partitions)
                 console.debug('[QDL] Device info', { recognized,  partitions})
 
                 if (!recognized) {
@@ -183,7 +189,6 @@ export function useQdl() {
             setError(Error.LOST_CONNECTION)
             setConnected(false)
           })
-
         qdl.current.connect()
           .catch((err) => {
             console.error('[QDL] Connection error', err)

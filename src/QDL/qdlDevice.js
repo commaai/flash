@@ -120,6 +120,7 @@ export class qdlDevice {
       return false;
     }
 
+    const slots           = [];
     const partitions      = [];
     const luns            = this.firehose?.getLuns();
     let gptNumPartEntries = 0, gptPartEntrySize = 0, gptPartEntryStartLba = 0;
@@ -130,17 +131,20 @@ export class qdlDevice {
         if (guidGpt === null)
           return [];
         for (let partition in guidGpt.partentries) {
-          if (partition.endsWith("_a") || partition.endsWith("_b"))
+          let slot = partition.slice(-2);
+          if (slot === "_a" || slot === "_b") {
             partition = partition.substring(0, partition.length-2);
-          if (partitions.includes(partition))
-            continue;
-          partitions.push(partition);
+            if (!slots.includes(slot))
+              slots.push(slot);
+          }
+          if (!partitions.includes(partition))
+            partitions.push(partition);
         }
       }
-      return partitions;
+      return [slots.length, partitions];
     } catch (error) {
       console.error(error);
-      return [];
+      return [null, null];
     }
   }
 
