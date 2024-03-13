@@ -69,7 +69,7 @@ export class usbClass {
     try {
         await this.device?.open();
         await this.device?.selectConfiguration(1);
-        await this.device?.claimInterface(this.device.configuration.interfaces[0].interfaceNumber);
+        await this.device?.claimInterface(0);
     } catch (error) {
       throw error;
     }

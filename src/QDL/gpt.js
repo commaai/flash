@@ -1,9 +1,22 @@
 const { containsBytes } = require("./utils");
-const CRC32 = require("crc-32");
+var CRC32 = require("crc-32");
 
 export const AB_FLAG_OFFSET = 6;
 export const AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2);
 const AB_PARTITION_ATTR_UNBOOTABLE = (0x1 << 7);
+
+export const PART_ATT_PRIORITY_BIT = BigInt(48)
+export const PART_ATT_ACTIVE_BIT = BigInt(50)
+export const PART_ATT_MAX_RETRY_CNT_BIT = BigInt(51)
+export const MAX_PRIORITY = BigInt(3)
+export const PART_ATT_SUCCESS_BIT = BigInt(54)
+export const PART_ATT_UNBOOTABLE_BIT = BigInt(55)
+
+export const PART_ATT_PRIORITY_VAL = BigInt(0x3) << PART_ATT_PRIORITY_BIT
+export const PART_ATT_ACTIVE_VAL = BigInt(0x1) << PART_ATT_ACTIVE_BIT
+export const PART_ATT_MAX_RETRY_COUNT_VAL = BigInt(0x7) << PART_ATT_MAX_RETRY_CNT_BIT
+export const PART_ATT_SUCCESSFUL_VAL  = BigInt(0x1) << PART_ATT_SUCCESS_BIT
+export const PART_ATT_UNBOOTABLE_VAL = BigInt(0x1) << PART_ATT_UNBOOTABLE_BIT
 
 class structHelper {
 
@@ -145,7 +158,7 @@ class gptHeader {
 }
 
 
-class gptPartition {
+export class gptPartition {
   constructor(data) {
     let sh = new structHelper(data)
     this.type = sh.bytes(16);
@@ -162,14 +175,14 @@ class gptPartition {
     let view = new DataView(buffer);
     let offset = 0;
     for (let i = 0; i < this.type.length; i++) {
-      view.setUint8(offset++, this.type[i]);
+      view.setUint8(offset++, this.type[i], true);
     }
     for (let i = 0; i < this.unique.length; i++) {
-      view.setUint8(offset++, this.unique[i]);
+      view.setUint8(offset++, this.unique[i], true);
     }
-    let tmp = [this.first_lba, this.last_lba, this.flags];
+    let tmp = [BigInt(this.first_lba), BigInt(this.last_lba), BigInt(this.flags)];
     for (let i = 0; i < 3; i++) {
-      view.setBigInt64(offset, tmp[i]);
+      view.setBigUint64(offset, tmp[i], true);
       offset += 8;
     }
     for (let i = 0; i < 72; i++) {
@@ -202,6 +215,7 @@ export class gpt {
     this.header             = null;
     this.sectorSize         = null;
     this.partentries        = {};
+    this.header             = null;
   }
 
   parseHeader(gptData, sectorSize=512){
@@ -278,44 +292,22 @@ export class gpt {
   }
   
 
-  patch(data, partitionName="boot", active=true) {
-    for (const sectorSize of [512, 4096]) {
-      const result = this.parse(data, sectorSize);
-      if (result) {
-        for (const rname in this.partentries) {
-          if (partitionName.toLowerCase() === rname.toLowerCase()) {
-            const partition = this.partentries[rname];
-            const sdata = data.slice(partition.entryOffset, partition.entryOffset+this.header.part_entry_size);
-            const partentry = new gptPartition(sdata);
-            let flags = partentry.flags;
-            if (active) {
-              flags |= Number(BigInt(AB_PARTITION_ATTR_SLOT_ACTIVE) << (BigInt(AB_FLAG_OFFSET) * BigInt(8)));
-            } else {
-              flags |= Number(BigInt(AB_PARTITION_ATTR_UNBOOTABLE) << (BigInt(AB_FLAG_OFFSET) * BigInt(8)));
-            }
-            partentry.flags = flags;
-            let pdata = partentry.create();
-            return [ pdata, partition.entryOffset ];
-          }
-        }
-        break;
-      }
-    }
-  return [ null, null ];
-  }
-
-
   fixGptCrc(data) {
     const partentry_size    = this.header.num_part_entries * this.header.part_entry_size;
     const partentry_offset  = this.header.part_entry_start_lba * this.sectorSize;
-    const partdata          = data.slice(partentry_offset, partentry_offset + partentry_size);
+    const partdata          = Uint8Array.from(data.slice(partentry_offset, partentry_offset + partentry_size));
     const headeroffset      = this.header.current_lba * this.sectorSize;
-    let headerdata          = data.slice(headeroffset, headeroffset+this.header.header_size);
+    let headerdata          = Uint8Array.from(data.slice(headeroffset, headeroffset+this.header.header_size));
 
-    headerdata.splice(0x58, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(partdata).buffer), true)));
-    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(new Array(4).fill(0).buffer), true)));
-    headerdata.splice(0x10, 4, new Uint8Array(new DataView(new ArrayBuffer(4)).setUint8(0, CRC32.buf(Array.from(headerdata).buffer), true)));
-    data.splice(headeroffset, this.header.header_size, headerdata);
+    let view = new DataView(new ArrayBuffer(4))
+    view.setInt32(0, CRC32.buf(Buffer.from(partdata)), true)
+    headerdata.set(new Uint8Array(view.buffer), 0x58);
+    view.setInt32(0, 0, true);
+    headerdata.set(new Uint8Array(view.buffer) , 0x10);
+    view.setInt32(0, CRC32.buf(Buffer.from(headerdata)), true)
+    headerdata.set(new Uint8Array(view.buffer), 0x10);
+
+    data.set(headerdata, headeroffset)
     return data;
   }
 }

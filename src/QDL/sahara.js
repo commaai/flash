@@ -1,6 +1,6 @@
 import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./saharaDefs"
-import { concatUint8Array, packGenerator, loadFileFromLocal, readBlobAsBuffer } from "./utils";
-import config from '@/config'
+import { containsBytes, concatUint8Array, packGenerator, loadFileFromLocal, readBlobAsBuffer } from "./utils";
+import config from "@/config"
 
 export class Sahara {
   cdc;
@@ -18,6 +18,7 @@ export class Sahara {
     this.ch         = new CommandHandler();
     // TODO: change to auto upload Loader
     this.programmer = "0008e0e100000000_afca69d4235117e5_fhprg.bin";
+    //this.programmer = "6000000000010000_f8ab20526358c4fa_fhprg.bin"
     this.id         = null;
     this.serial     = "";
     this.mode       = "";
@@ -171,7 +172,7 @@ export class Sahara {
 
     try {
       let processed = 0;
-      const contentLength = +response.headers.get('Content-Length');
+      //const contentLength = +response.headers.get('Content-Length');
       const reader = response.body.getReader();
       while (true) {
         const { done, value } = await reader.read();

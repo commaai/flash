@@ -78,4 +78,13 @@ export function readBlobAsBuffer(blob) {
   });
 }
 
+export function fromUint8ArrayToNumber(array) {
+  let view = new DataView(array.buffer, 0);
+  if (array.length > 4) {
+    console.error("Only returns <= 32 bit number");
+    return null;
+  }
+  return view.getUint32(0, true);
+}
+
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
