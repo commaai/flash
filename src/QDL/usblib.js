@@ -141,9 +141,21 @@ export class usbClass {
         pktSize = cmdPacket.length;
       }
 
-    if (cmdPacket.length === 0 && force)
-      await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
+    if (cmdPacket.length === 0 && force) {
+      try {
+        await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
+      } catch(error) {
+        try {
+          await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
+        } catch(error) {
+          console.error(error);
+          return false;
+        }
+      }
+      return true;
+    }
 
+    let retry = 0;
     while (offset < cmdPacket.length){
       try {
         if (wait) {
@@ -154,8 +166,11 @@ export class usbClass {
         }
         offset += pktSize;
       } catch (error) {
-        console.error(error);
-        return false;
+        retry += 1;
+        if (retry == 3) {
+          console.error(error);
+          return false;
+        }
       }
     }
     return true;

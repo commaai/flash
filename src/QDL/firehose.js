@@ -398,6 +398,7 @@ export class Firehose {
           offset             += wlen;
           bytesToWriteSplit  -= wlen;
           bytesWritten       += wlen;
+          console.log(total - bytesWritten)
           onProgress(bytesWritten/total);
 
           //console.log("progress:", total - bytesWritten);

@@ -311,8 +311,15 @@ export async function* splitBlob(blob, splitSize = 1048576) {
   }
 
   let header   = await parseFileHeader(blob.slice(0, FILE_HEADER_SIZE));
+  if (header === null) {
+    yield blob;
+    return;
+  }
+
   header.crc32 = 0;
   blob         = blob.slice(FILE_HEADER_SIZE);
+
+
 
   for (let i = 0; i < header.total_chunks; i++) {
     let originalChunk  = await parseChunkHeader(blob.slice(0, CHUNK_HEADER_SIZE));
