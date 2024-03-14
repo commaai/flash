@@ -299,15 +299,15 @@ export class gpt {
     const headeroffset      = this.header.current_lba * this.sectorSize;
     let headerdata          = Uint8Array.from(data.slice(headeroffset, headeroffset+this.header.header_size));
 
-    let view = new DataView(new ArrayBuffer(4))
-    view.setInt32(0, CRC32.buf(Buffer.from(partdata)), true)
+    let view = new DataView(new ArrayBuffer(4));
+    view.setInt32(0, CRC32.buf(Buffer.from(partdata)), true);
     headerdata.set(new Uint8Array(view.buffer), 0x58);
     view.setInt32(0, 0, true);
     headerdata.set(new Uint8Array(view.buffer) , 0x10);
-    view.setInt32(0, CRC32.buf(Buffer.from(headerdata)), true)
+    view.setInt32(0, CRC32.buf(Buffer.from(headerdata)), true);
     headerdata.set(new Uint8Array(view.buffer), 0x10);
 
-    data.set(headerdata, headeroffset)
+    data.set(headerdata, headeroffset);
     return data;
   }
 }
