@@ -268,13 +268,15 @@ export function useQdl() {
               blob = await loadFileFromLocal();
             }
 
+            // TODO: delete this. writing full image in qdl regardless of sparse or non-sparse
             //if (image.sparse) {
             //  setMessage(`Erasing ${image.name}`)
             //  await qdl.current.erase(image.name)
             //}
 
             setMessage(`Flashing ${image.name}`)
-            await qdl.current.flashBlob(image.name, blob, onProgress)
+            const partitionName = image.name + `_${currentSlot}`;
+            await qdl.current.flashBlob(partitionName, blob, onProgress)
           }
           console.debug('[QDL] Flashed all partitions')
 
