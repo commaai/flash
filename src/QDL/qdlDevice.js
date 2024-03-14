@@ -137,6 +137,33 @@ export class qdlDevice {
   }
 
 
+  async resetUserdata() {
+    if (this.mode !== "firehose") {
+      console.error("Please try again, must be in command mode to flash")
+      return false;
+    }
+
+    let dp = await this.firehose?.detectPartition("userdata");
+    const found = dp[0];
+    if (found) {
+      const lun = dp[0], partition = dp[1];
+      const wData = new TextEncoder().encode("COMMA_ABL_RESET");
+      const startSector = partition.sector;
+      console.log("Writing reset flag to partition \"userdata\"");
+      if (await this.firehose.cmdProgram(lun, startSector, new Blob(wData.buffer, onProgress))) {
+        console.log("Successfully writing reset flag to userdata");
+      } else {
+        console.error("Error writing reset flag to userdata");
+        return false;
+      }
+    } else {
+      console.error("Can't find partition userdata");
+      return false;
+    }
+    return true;
+  }
+
+
   async getDevicePartitions() {
     if (this.mode !== "firehose") {
       console.error("Please try again, must be in command mode to get device partitions info");
