@@ -11,6 +11,9 @@ import { useImageWorker } from '@/QDL/image'
 import { createManifest } from '@/QDL/manifest'
 import { withProgress } from '@/QDL/progress'
 
+// TODO: remove after upload to cloud
+import { loadFileFromLocal } from './utils.js'
+
 /**
  * @typedef {import('./manifest.js').Image} Image
  */
@@ -255,13 +258,21 @@ export function useQdl() {
           }
 
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
-            const fileHandle = await imageWorker.current.getImage(image)
-            const blob = await fileHandle.getFile()
 
-            if (image.sparse) {
-              setMessage(`Erasing ${image.name}`)
-              await qdl.current.erase(image.name)
+            // TODO: remove manual upload after uploaded to cloud
+            let blob;
+            if (image.name !== "system") {
+              const fileHandle = await imageWorker.current.getImage(image)
+              blob = await fileHandle.getFile()
+            } else {
+              blob = await loadFileFromLocal();
             }
+
+            //if (image.sparse) {
+            //  setMessage(`Erasing ${image.name}`)
+            //  await qdl.current.erase(image.name)
+            //}
+
             setMessage(`Flashing ${image.name}`)
             await qdl.current.flashBlob(image.name, blob, onProgress)
           }
@@ -289,7 +300,9 @@ export function useQdl() {
 
         async function eraseDevice() {
           setMessage('Erasing userdata')
-          await qdl.current.erase("userdata")
+          // TODO: revert for this to work
+          //await qdl.current.erase("userdata")
+          //await qdl.current.resetUserdata()
           setProgress(0.9)
 
           setMessage('Rebooting')
