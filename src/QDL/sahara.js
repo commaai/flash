@@ -17,8 +17,8 @@ export class Sahara {
     this.version    = null;
     this.ch         = new CommandHandler();
     // TODO: change to auto upload Loader
-    this.programmer = "0008e0e100000000_afca69d4235117e5_fhprg.bin";
-    //this.programmer = "6000000000010000_f8ab20526358c4fa_fhprg.bin"
+    //this.programmer = "0008e0e100000000_afca69d4235117e5_fhprg.bin";
+    this.programmer = "6000000000010000_f8ab20526358c4fa_fhprg.bin"
     this.id         = null;
     this.serial     = "";
     this.mode       = "";

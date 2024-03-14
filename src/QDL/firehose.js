@@ -347,7 +347,7 @@ export class Firehose {
   }
 
 
-  async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress=()=>{}, test=true) {
+  async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress, test=true) {
     let total         = blob.size;
     let sparseformat  = false;
 
@@ -371,8 +371,7 @@ export class Firehose {
               ` start_sector=\"${startSector}\" />\n</data>`;
     let rsp     = await this.xmlSend(data);
 
-    let bytesWritten = 0;
-
+    let i = 0
     for await (let split of Sparse.splitBlob(blob)) {
       let offset            = 0;
       let bytesToWriteSplit = split.size;
@@ -397,11 +396,12 @@ export class Firehose {
 
           offset             += wlen;
           bytesToWriteSplit  -= wlen;
-          bytesWritten       += wlen;
-          console.log(total - bytesWritten)
-          onProgress(bytesWritten/total);
 
-          //console.log("progress:", total - bytesWritten);
+          if (i % 10 === 0)
+            onProgress((total-bytesToWriteSplit)/total);
+          i += 1;
+
+          //console.log(total - bytesWritten)
 
           if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0){
             let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
@@ -410,7 +410,6 @@ export class Firehose {
             wdata = concatUint8Array([wdata, fillArray]);
           }
           await this.cdc.write(wdata);
-          //console.log(`Progress: ${Math.floor(offset/total)*100}%`);
           await this.cdc.write(new Uint8Array(0), null, true, true);
         }
       }
@@ -429,6 +428,7 @@ export class Firehose {
       console.error("Error:", resposne);
       return false;
     }
+    onProgress(1.0);
     return true;
   }
 

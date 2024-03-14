@@ -39,10 +39,10 @@ export const Error = {
   REQUIREMENTS_NOT_MET: 8,
 }
 
-function isRecognizedDevice(maxDownloadSize, slotCount, partitions) {
+function isRecognizedDevice(slotCount, partitions) {
 
-  if (maxDownloadSize !== 104857600 || slotCount !== 2) {
-    console.error('[QDL] Unrecognised device (kernel, maxDownloadSize or slotCount)')
+  if (slotCount !== 2) {
+    console.error('[QDL] Unrecognised device (kernel, slotCount)')
     return false
   }
 

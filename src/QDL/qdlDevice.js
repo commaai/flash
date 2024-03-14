@@ -73,7 +73,7 @@ export class qdlDevice {
   }
 
 
-  async flashBlob(partitionName, blob, onProgress) {
+  async flashBlob(partitionName, blob, onProgress=(_progress)=>{}) {
     if (this.mode !== "firehose") {
       console.error("Please try again, must be in command mode to flash")
       return false;
@@ -96,7 +96,7 @@ export class qdlDevice {
         }
         startSector = partition.sector;
         console.log(`Flashing ${partitionName}...`);
-        if (await this.firehose.cmdProgram(lun, startSector, blob, onProgress)) {
+        if (await this.firehose.cmdProgram(lun, startSector, blob, (progress) => onProgress(progress))) {
           console.log(`partition ${partitionName}: startSector ${partition.sector}, sectors ${partition.sectors}`);
         } else {
           console.error("Error writing image");
@@ -313,8 +313,8 @@ export class qdlDevice {
       let [slotCount, partitions] = await this.getDevicePartitions();
       console.log("isRecognizedDevice:", isRecognizedDevice(slotCount, partitions));
 
-      //let blob = await loadFileFromLocal();
-      //await this.flashBlob(flashPartition+newSlot, blob);
+      let blob = await loadFileFromLocal();
+      await this.flashBlob(flashPartition+newSlot, blob);
 
       //await this.erase(erasePartition);
 
