@@ -300,8 +300,8 @@ function calcChunksRealDataBytes(chunk, blockSize) {
 }
 
 
-export async function* splitBlob(blob, splitSize = 104857600) {
-  const safeToSend = splitSize * 7/8;
+export async function* splitBlob(blob, splitSize = 1048576) {
+  const safeToSend = splitSize;
 
   if (blob.size <= MAX_DOWNLOAD_SIZE) {
     yield blob;

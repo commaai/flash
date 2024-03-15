@@ -398,21 +398,22 @@ export class Firehose {
               const fillArray = new Uint8Array(fillLen-wlen).fill(0x00);
               wdata = concatUint8Array([wdata, fillArray]);
             }
-            await this.cdc.write(wdata);
-            await this.cdc.write(new Uint8Array(0), null, true, true);
-            // ??? why do I need this for sparse?
+            let sts;
+            sts = await this.cdc.write(wdata);
+            sts = await this.cdc.write(new Uint8Array(0), null, true, true);
+            offset             += wlen;
+            bytesToWriteSplit  -= wlen;
+            bytesWritten       += wlen;
+            if (!sts) {
+              return false;
+            }
+            // ??? why do I need this for sparse? maybe because I split and doesn't fill the whole data?
             if (sparseformat && bytesWritten < total)
               await this.cdc.write(new Uint8Array(0), null, true, true);
 
             if (i % 10 === 0)
-              onProgress((total-bytesToWriteSplit)/total);
+              onProgress(bytesWritten/total);
             i += 1;
-            offset             += wlen;
-            bytesToWriteSplit  -= wlen;
-            bytesWritten       += wlen;
-
-            // TODO:delete
-            console.log(total - bytesWritten)
           }
         }
       console.log("waiting");
