@@ -12,7 +12,7 @@ import { createManifest } from '@/QDL/manifest'
 import { withProgress } from '@/QDL/progress'
 
 // TODO: remove after upload to cloud
-import { loadFileFromLocal } from './utils.js'
+import { loadFileFromLocal } from '@/QDL/utils.js'
 
 /**
  * @typedef {import('./manifest.js').Image} Image
@@ -45,7 +45,7 @@ export const Error = {
 function isRecognizedDevice(slotCount, partitions) {
 
   if (slotCount !== 2) {
-    console.error('[QDL] Unrecognised device (kernel, slotCount)')
+    console.error('[QDL] Unrecognised device (slotCount)')
     return false
   }
 
@@ -168,8 +168,7 @@ export function useQdl() {
             console.info('[QDL] Connected')
             return qdl.current.getDevicePartitions()
               .then(([slotCount, partitions]) => {
-                const maxDownloadSize = qdl.current.firehose.cfg.MaxPayloadSizeToTargetInBytes;
-                const recognized = isRecognizedDevice(maxDownloadSize, slotCount, partitions)
+                const recognized = isRecognizedDevice(slotCount, partitions)
                 console.debug('[QDL] Device info', { recognized,  partitions})
 
                 if (!recognized) {
@@ -228,7 +227,8 @@ export function useQdl() {
         async function unpackImages() {
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             setMessage(`Unpacking ${image.name}`)
-            await imageWorker.current.unpackImage(image, Comlink.proxy(onProgress))
+            if (image.name !== "system")
+              await imageWorker.current.unpackImage(image, Comlink.proxy(onProgress))
           }
         }
 
@@ -256,17 +256,16 @@ export function useQdl() {
           if (!['a', 'b'].includes(currentSlot)) {
             throw `Unknown current slot ${currentSlot}`
           }
+          const otherSlot = currentSlot === 'a' ? 'b' : 'a'
 
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
 
             // TODO: remove manual upload after uploaded to cloud
-            let blob;
-            if (image.name !== "system") {
-              const fileHandle = await imageWorker.current.getImage(image)
-              blob = await fileHandle.getFile()
-            } else {
-              blob = await loadFileFromLocal();
-            }
+            const fileHandle = await imageWorker.current.getImage(image)
+            const blob = await fileHandle.getFile()
+
+            if (image.name == "system")
+              continue;
 
             // TODO: delete this. writing full image in qdl regardless of sparse or non-sparse
             //if (image.sparse) {
@@ -275,12 +274,11 @@ export function useQdl() {
             //}
 
             setMessage(`Flashing ${image.name}`)
-            const partitionName = image.name + `_${currentSlot}`;
+            const partitionName = image.name + `_${otherSlot}`;
             await qdl.current.flashBlob(partitionName, blob, onProgress)
           }
           console.debug('[QDL] Flashed all partitions')
 
-          const otherSlot = currentSlot === 'a' ? 'b' : 'a'
           setMessage(`Changing slot to ${otherSlot}`)
           await qdl.current.setActvieSlot(otherSlot);
         }

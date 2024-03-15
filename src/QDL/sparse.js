@@ -11,7 +11,7 @@ const ChunkType = {
   Crc32 : 0xCAC4,
 }
 
-async function parseChunkHeader(blobChunkHeader) {
+export async function parseChunkHeader(blobChunkHeader) {
   let chunkHeader  = await readBlobAsBuffer(blobChunkHeader);
   let view         = new DataView(chunkHeader);
   return {
@@ -163,21 +163,19 @@ export class QCSparse {
         console.error("Fill chunk should have 4 bytes of fill");
         return -1;
       } else {
-        const buffer = await readBlobAsBuffer(this.blob.slice(this.blobOffset, this.blobOffset += 4));
+        const buffer = await readBlobAsBuffer(this.blob.slice(this.blobOffset, this.blobOffset += data_sz));
         let fill_bin = new Uint8Array(buffer);
-
-        const repetitions = Math.floor((blocks*this.blk_sz)/4);
-        let data = new Uint8Array(blocks*this.blk_sz);
-        for (let i = 0; i < blocks*this.blk; i+=4) {
+        const bufferSize = blocks*this.blk_sz;
+        let data = new Uint8Array(bufferSize);
+        for (let i = 0; i < bufferSize; i+=4)
           data.set(fill_bin, i);
-        }
         this.offset += blocks;
         return data;
       }
     } else if (chunk_type == ChunkType.Skip) {
       let byteToSend = blocks*this.blk_sz;
       this.offset += blocks;
-      return new Uint8Array(byteToSend).fill(0x00);
+      return new Uint8Array(byteToSend).fill(0);
     } else if (chunk_type == ChunkType.Crc32) {
       if (data_sz != 4) {
         console.error("CRC32 chunk should have 4 bytes of CRC");
@@ -302,8 +300,8 @@ function calcChunksRealDataBytes(chunk, blockSize) {
 }
 
 
-export async function* splitBlob(blob, splitSize = 1048576) {
-  const safeToSend = splitSize;
+export async function* splitBlob(blob, splitSize = 104857600) {
+  const safeToSend = splitSize * 7/8;
 
   if (blob.size <= MAX_DOWNLOAD_SIZE) {
     yield blob;

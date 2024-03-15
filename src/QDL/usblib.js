@@ -156,13 +156,13 @@ export class usbClass {
     }
 
     let retry = 0;
-    while (offset < cmdPacket.length){
+    while (offset < cmdPacket.length) {
       try {
         if (wait) {
           await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
         } else {
           this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
-          await sleep(80); 
+          await sleep(80);
         }
         offset += pktSize;
       } catch (error) {

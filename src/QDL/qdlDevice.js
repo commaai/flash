@@ -318,9 +318,8 @@ export class qdlDevice {
 
       //await this.erase(erasePartition);
 
-      //await this.setActvieSlot(newSlot);
+      await this.setActvieSlot(newSlot);
 
-      console.log("resetting")
       await this.reset();
 
       return true;

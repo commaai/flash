@@ -370,63 +370,65 @@ export class Firehose {
               ` physical_partition_number=\"${physicalPartitionNumber}\"` +
               ` start_sector=\"${startSector}\" />\n</data>`;
     let rsp     = await this.xmlSend(data);
+    let i = 0, bytesWritten = 0;
 
-    let i = 0
-    for await (let split of Sparse.splitBlob(blob)) {
-      let offset            = 0;
-      let bytesToWriteSplit = split.size;
-      let sparseSplit;
+    if (rsp.resp) {
+      for await (let split of Sparse.splitBlob(blob)) {
+        let offset            = 0;
+        let bytesToWriteSplit = split.size;
+        let sparseSplit;
 
-      if (sparseformat) {
-        let sparseSplitHeader = await Sparse.parseFileHeader(split.slice(0, Sparse.FILE_HEADER_SIZE));
-        sparseSplit = new Sparse.QCSparse(split, sparseSplitHeader);
-        bytesToWriteSplit     = await sparseSplit.getSize();
-      }
-
-      if (rsp.resp) {
-        while (bytesToWriteSplit > 0) {
-          let wlen = Math.min(bytesToWriteSplit, this.cfg.MaxPayloadSizeToTargetInBytes);
-          let wdata;
-          
-          if (sparseformat) {
-            wdata = await sparseSplit?.read(wlen);
-          } else {
-            wdata = new Uint8Array(await readBlobAsBuffer(split.slice(offset, offset + wlen)));
-          }
-
-          offset             += wlen;
-          bytesToWriteSplit  -= wlen;
-
-          if (i % 10 === 0)
-            onProgress((total-bytesToWriteSplit)/total);
-          i += 1;
-
-          //console.log(total - bytesWritten)
-
-          if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0){
-            let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
-                          this.cfg.SECTOR_SIZE_IN_BYTES;
-            const fillArray = new Uint8Array(fillLen-wlen).fill(0x00);
-            wdata = concatUint8Array([wdata, fillArray]);
-          }
-          await this.cdc.write(wdata);
-          await this.cdc.write(new Uint8Array(0), null, true, true);
+        if (sparseformat) {
+          let sparseSplitHeader = await Sparse.parseFileHeader(split.slice(0, Sparse.FILE_HEADER_SIZE));
+          sparseSplit = new Sparse.QCSparse(split, sparseSplitHeader);
+          bytesToWriteSplit     = await sparseSplit.getSize();
         }
-      }
-    }
-    console.log("waiting");
-    const wd  = await this.waitForData();
-    console.log("finish waiting")
-    const log = this.xml.getLog(wd);
-    const resposne = this.xml.getReponse(wd);
-    if (resposne.hasOwnProperty("value")) {
-      if (resposne["value"] !== "ACK") {
-        console.error("ERROR")
+
+          while (bytesToWriteSplit > 0) {
+            let wlen = Math.min(bytesToWriteSplit, this.cfg.MaxPayloadSizeToTargetInBytes);
+            let wdata;
+            if (sparseformat) {
+              wdata = await sparseSplit?.read(wlen);
+            } else {
+              wdata = new Uint8Array(await readBlobAsBuffer(split.slice(offset, offset + wlen)));
+            }
+            if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0){
+              let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
+                            this.cfg.SECTOR_SIZE_IN_BYTES;
+              const fillArray = new Uint8Array(fillLen-wlen).fill(0x00);
+              wdata = concatUint8Array([wdata, fillArray]);
+            }
+            await this.cdc.write(wdata);
+            await this.cdc.write(new Uint8Array(0), null, true, true);
+            // ??? why do I need this for sparse?
+            if (sparseformat && bytesWritten < total)
+              await this.cdc.write(new Uint8Array(0), null, true, true);
+
+            if (i % 10 === 0)
+              onProgress((total-bytesToWriteSplit)/total);
+            i += 1;
+            offset             += wlen;
+            bytesToWriteSplit  -= wlen;
+            bytesWritten       += wlen;
+
+            // TODO:delete
+            console.log(total - bytesWritten)
+          }
+        }
+      console.log("waiting");
+      const wd  = await this.waitForData();
+      console.log("finish waiting")
+      const log = this.xml.getLog(wd);
+      const resposne = this.xml.getReponse(wd);
+      if (resposne.hasOwnProperty("value")) {
+        if (resposne["value"] !== "ACK") {
+          console.error("ERROR")
+          return false;
+        }
+      } else {
+        console.error("Error:", resposne);
         return false;
       }
-    } else {
-      console.error("Error:", resposne);
-      return false;
     }
     onProgress(1.0);
     return true;
