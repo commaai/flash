@@ -124,7 +124,7 @@ export default function Home() {
           <p>
             It is recommended that you use a USB 3.0 cable when flashing since it will speed up the flashing time by a lot.
           </p>
-          <h3>Cannot enter fastboot or device says &quot;Press any key to continue&quot;</h3>
+          <h3>Cannot enter QDL</h3>
           <p>
             Try using a different USB cable or USB port. Sometimes USB 2.0 ports work better than USB 3.0 (blue) ports.
             If you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
