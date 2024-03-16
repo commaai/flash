@@ -44,7 +44,8 @@ export default function Home() {
             </li>
           </ul>
           <h3>Connecting for Linux</h3>
-          For Linux, run this command in your terminal prior to flashing your device.
+            For Linux, run this command in your terminal prior to flashing your device.
+            This helps the website to be able to connect to your device.
           <ul>
             <li style={{ fontSize: '13px' }}>
               curl -o- https://raw.githubusercontent.com/bongbui321/flash/testing/scripts/detach.sh | bash

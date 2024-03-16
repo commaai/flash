@@ -416,9 +416,7 @@ export class Firehose {
             i += 1;
           }
         }
-      console.log("waiting");
       const wd  = await this.waitForData();
-      console.log("finish waiting")
       const log = this.xml.getLog(wd);
       const resposne = this.xml.getReponse(wd);
       if (resposne.hasOwnProperty("value")) {
