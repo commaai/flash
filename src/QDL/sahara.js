@@ -1,5 +1,5 @@
 import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./saharaDefs"
-import { containsBytes, concatUint8Array, packGenerator, loadFileFromLocal, readBlobAsBuffer } from "./utils";
+import { concatUint8Array, packGenerator, loadFileFromLocal, readBlobAsBuffer } from "./utils";
 import config from "@/config"
 
 export class Sahara {
@@ -79,7 +79,7 @@ export class Sahara {
     try {
       let data      = await this.cdc?.read();
       let data_text = new TextDecoder('utf-8').decode(data.data);
-      if (data.length == 0){
+      if (data.length == 0) {
         return {};
       } else if (data_text.includes("<?xml")){
         return {"firehose" : "yes"};
