@@ -43,14 +43,6 @@ export default function Home() {
               Another USB-C cable to connect the device to your computer.
             </li>
           </ul>
-          <h3>Connecting for Linux</h3>
-            For Linux, run this command in your terminal prior to flashing your device.
-            This helps the website to be able to connect to your device.
-          <ul>
-            <li style={{ fontSize: '13px' }}>
-              curl -o- https://raw.githubusercontent.com/bongbui321/flash/qdl/scripts/detach.sh | bash
-            </li>
-          </ul>
           <h3>USB Driver</h3>
           <p>
             You need additional driver software for Windows before you connect
@@ -112,6 +104,14 @@ export default function Home() {
             After your device is in QDL mode, you can click the button to start flashing. A prompt may appear to
             select a device; choose the device starts with &quot;QUSB_BULK&quot;.
           </p>
+          <h4>Connecting for Linux</h4>
+            For Linux, run this command in your terminal prior to flashing your device.
+            This helps the website to be able to connect to your device.
+          <ul>
+            <li style={{ fontSize: '13px' }}>
+              curl -o- https://raw.githubusercontent.com/bongbui321/flash/qdl/scripts/detach.sh | bash
+            </li>
+          </ul>
           <p>
             The process can take 30+ minutes depending on your internet connection and system performance. Do not
             unplug the device until all steps are complete.
