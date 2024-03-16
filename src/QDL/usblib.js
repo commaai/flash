@@ -168,7 +168,6 @@ export class usbClass {
       } catch (error) {
         retry += 1;
         if (retry == 3) {
-          await sleep(20);
           console.error(error);
           return false;
         }
