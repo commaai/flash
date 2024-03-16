@@ -48,7 +48,7 @@ export default function Home() {
             This helps the website to be able to connect to your device.
           <ul>
             <li style={{ fontSize: '13px' }}>
-              curl -o- https://raw.githubusercontent.com/bongbui321/flash/testing/scripts/detach.sh | bash
+              curl -o- https://raw.githubusercontent.com/bongbui321/flash/qdl/scripts/detach.sh | bash
             </li>
           </ul>
           <h3>USB Driver</h3>
