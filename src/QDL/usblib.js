@@ -69,7 +69,14 @@ export class usbClass {
     try {
         await this.device?.open();
         await this.device?.selectConfiguration(1);
-        await this.device?.claimInterface(0);
+        try {
+          await this.device?.claimInterface(0);
+        } catch(error) {
+          await this.device?.reset();
+          await this.device?.forget();
+          await this.device?.close();
+          throw error;
+        }
     } catch (error) {
       throw error;
     }

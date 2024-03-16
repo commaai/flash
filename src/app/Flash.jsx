@@ -82,7 +82,9 @@ const errors = {
   },
   [Error.LOST_CONNECTION]: {
     status: 'Lost connection',
-    description: 'The connection to your device was lost. Check that your cables are connected properly and try again.',
+    description: 'The connection to your device was lost. Check that your cables are connected properly and try again. ' +
+                 'Unplug your device and wait a few seconds. ' +
+                 'If you are using Linux, make sure to follow the instructions to run a script before flashing.',
     icon: cable,
   },
   [Error.DOWNLOAD_FAILED]: {
