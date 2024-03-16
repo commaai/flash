@@ -17,7 +17,7 @@ export default function Home() {
   console.info(`flash.comma.ai version: ${version}`);
   return (
     <div className="flex flex-col lg:flex-row flex-wrap">
-      <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
+      <main className="p-10 md:p-12 lg:p-12 xl:p-12 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
         <section>
           <Image src={comma} alt="comma" width={128} height={128} className="dark:invert" />
           <h1>flash.comma.ai</h1>
@@ -41,6 +41,13 @@ export default function Home() {
             </li>
             <li>
               Another USB-C cable to connect the device to your computer.
+            </li>
+          </ul>
+          <h3>Connecting for Linux</h3>
+          For Linux, run this command in your terminal prior to flashing your device.
+          <ul>
+            <li style={{ fontSize: '13px' }}>
+              curl -o- https://raw.githubusercontent.com/bongbui321/flash/testing/scripts/detach.sh | bash
             </li>
           </ul>
           <h3>USB Driver</h3>
