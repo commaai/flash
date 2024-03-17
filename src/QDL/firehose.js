@@ -347,7 +347,7 @@ export class Firehose {
   }
 
 
-  async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress, test=true) {
+  async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress=()=>{}) {
     let total         = blob.size;
     let sparseformat  = false;
 
@@ -615,7 +615,7 @@ export class Firehose {
   }
 
 
-  async cmdErase(physicalPartitionNumber, startSector, numPartitionSectors) {
+  async cmdErase(physicalPartitionNumber, startSector, numPartitionSectors, onProgress) {
     const data = `<?xml version=\"1.0\" ?><data>\n` +
           `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
           ` num_partition_sectors=\"${numPartitionSectors}\"` +
@@ -634,7 +634,8 @@ export class Firehose {
         bytesToWrite -= wlen;
         pos += wlen;
         await this.cdc.write(new Uint8Array(0), null, true, true);
-        console.log(`Progress: ${Math.floor(pos/total)*100}%`);
+        //console.log(`Progress: ${Math.floor(pos/total)*100}%`);
+        onProgress(pos/total);
       }
 
       const res       = await this.waitForData();

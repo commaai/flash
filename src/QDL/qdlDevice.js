@@ -111,7 +111,7 @@ export class qdlDevice {
   }
 
 
-  async erase(partitionName) {
+  async erase(partitionName, onProgress=(_progress)=>{}) {
     if (this.mode !== "firehose") {
       console.error("Please try again, must be in command mode to erase")
       return false;
@@ -126,7 +126,7 @@ export class qdlDevice {
       if (guidGpt.partentries.hasOwnProperty(partitionName)) {
         const partition = guidGpt.partentries[partitionName];
         console.log(`Erasing ${partitionName}...`)
-        await this.firehose.cmdErase(lun, partition.sector, partition.sectors);
+        await this.firehose.cmdErase(lun, partition.sector, partition.sectors, (progress) => onProgress(progress));
         console.log(`Erased ${partitionName} starting at sector ${partition.sector} with sectors ${partition.sectors}`)
       } else {
         console.log(`Couldn't erase partition ${partitionName}. Either wrong type or not in lun ${lun}`);
@@ -150,7 +150,7 @@ export class qdlDevice {
       const wData = new TextEncoder().encode("COMMA_ABL_RESET");
       const startSector = partition.sector;
       console.log("Writing reset flag to partition \"userdata\"");
-      if (await this.firehose.cmdProgram(lun, startSector, new Blob(wData.buffer, onProgress))) {
+      if (await this.firehose.cmdProgram(lun, startSector, new Blob(wData.buffer))) {
         console.log("Successfully writing reset flag to userdata");
       } else {
         console.error("Error writing reset flag to userdata");

@@ -291,7 +291,9 @@ export function useQdl() {
         async function eraseDevice() {
           setMessage('Erasing userdata')
           // TODO: revert for this to work
-          //await qdl.current.erase("userdata")
+          //const erasePartitions = ["userdata"]
+          //for await (const [partition, onProgress] of withProgress(erasePartitions, setProgress))
+          //  await qdl.current.erase(partition, onProgress);
           //await qdl.current.resetUserdata()
           setProgress(0.9)
 
