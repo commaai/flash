@@ -4,6 +4,8 @@ const vendorID = 0x05c6;
 const productID = 0x9008;
 const QDL_USB_CLASS = 0xff;
 
+const BULK_TRANSFER_SIZE = 16384;
+
 export class UsbError extends Error {
   constructor(message) {
     super(message);
@@ -140,14 +142,6 @@ export class usbClass {
   }
 
   async write(cmdPacket, pktSize=null, wait=true, force=false) {
-    let offset = 0;
-    if (pktSize === null)
-      if (cmdPacket.length > this.epOut?.packetSize){
-        pktSize = this.epOut?.packetSize;
-      } else {
-        pktSize = cmdPacket.length;
-      }
-
     if (cmdPacket.length === 0 && force) {
       try {
         await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
@@ -163,6 +157,9 @@ export class usbClass {
     }
 
     let retry = 0;
+    let offset = 0;
+    if (pktSize === null)
+      pktSize = BULK_TRANSFER_SIZE;
     while (offset < cmdPacket.length) {
       try {
         if (wait) {
