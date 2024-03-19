@@ -2,6 +2,8 @@ import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./sa
 import { concatUint8Array, packGenerator, loadFileFromLocal, readBlobAsBuffer } from "./utils";
 import config from "@/config"
 
+let root;
+
 export class Sahara {
   cdc;
   ch; // CommandHandler
@@ -156,6 +158,7 @@ export class Sahara {
 
 
   async downLoadLoader() {
+    root = await navigator.storage.getDirectory();
     let writable;
     try {
       const fileHandle = await root.getFileHandle(this.programmer, { create: true });
@@ -172,7 +175,6 @@ export class Sahara {
 
     try {
       let processed = 0;
-      //const contentLength = +response.headers.get('Content-Length');
       const reader = response.body.getReader();
       while (true) {
         const { done, value } = await reader.read();
@@ -190,6 +192,16 @@ export class Sahara {
     } catch (e) {
       throw `Error closing file handle: ${e}`
     }
+  }
+
+  async getLoader() {
+    let fileHandle;
+    try {
+      fileHandle = await root.getFileHandle(this.programmer, { create: false })
+    } catch (e) {
+      throw `Error getting file handle: ${e}`
+    }
+    return await fileHandle.getFile();
   }
 
 
@@ -213,9 +225,9 @@ export class Sahara {
     }
 
     console.log("Uploading Programmer...");
-    // TODO: change to auto download
-    //let programmer = new Uint8Array(await readBlobAsBuffer(await downloadLoader()));
-    let programmer = new Uint8Array(await readBlobAsBuffer(await loadFileFromLocal()));
+    await this.downLoadLoader();
+    let loaderBlob = await this.getLoader();
+    let programmer = new Uint8Array(await readBlobAsBuffer(loaderBlob));
     if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING, version=version))) {
       return "error";
     }
