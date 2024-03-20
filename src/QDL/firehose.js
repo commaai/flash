@@ -378,48 +378,30 @@ export class Firehose {
       for await (let split of Sparse.splitBlob(blob)) {
         let offset            = 0;
         let bytesToWriteSplit = split.size;
-        let sparseSplit;
 
-        if (sparseformat) {
-          let sparseSplitHeader = await Sparse.parseFileHeader(split.slice(0, Sparse.FILE_HEADER_SIZE));
-          sparseSplit = new Sparse.QCSparse(split, sparseSplitHeader);
-          bytesToWriteSplit     = await sparseSplit.getSize();
-        }
-
-          while (bytesToWriteSplit > 0) {
-            let wlen = Math.min(bytesToWriteSplit, this.cfg.MaxPayloadSizeToTargetInBytes);
-            let wdata;
-            if (sparseformat) {
-              wdata = await sparseSplit?.read(wlen);
-            } else {
-              wdata = new Uint8Array(await readBlobAsBuffer(split.slice(offset, offset + wlen)));
-            }
-            if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0){
-              let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
-                            this.cfg.SECTOR_SIZE_IN_BYTES;
-              const fillArray = new Uint8Array(fillLen-wlen).fill(0x00);
-              wdata = concatUint8Array([wdata, fillArray]);
-            }
-            let sts;
-            sts = await this.cdc.write(wdata);
-            sts = await this.cdc.write(new Uint8Array(0), null, true, true);
-            offset             += wlen;
-            bytesToWriteSplit  -= wlen;
-            bytesWritten       += wlen;
-            if (!sts) {
-              return false;
-            }
-            // ??? why do I need this for sparse? maybe because I split and doesn't fill the whole data?
-            if (sparseformat && bytesWritten < total && wlen < this.cfg.MaxPayloadSizeToTargetInBytes)
-              await this.cdc.write(new Uint8Array(0), null, true, true);
-
-            if (i % 10 === 0)
-              onProgress(bytesWritten/total);
-            i += 1;
+        while (bytesToWriteSplit > 0) {
+          const wlen = Math.min(bytesToWriteSplit, this.cfg.MaxPayloadSizeToTargetInBytes);
+          let wdata = new Uint8Array(await readBlobAsBuffer(split.slice(offset, offset + wlen)));
+          if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0){
+            let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
+                          this.cfg.SECTOR_SIZE_IN_BYTES;
+            const fillArray = new Uint8Array(fillLen-wlen).fill(0x00);
+            wdata = concatUint8Array([wdata, fillArray]);
           }
+          await this.cdc.write(wdata);
+          await this.cdc.write(new Uint8Array(0), null, true, true);
+          offset             += wlen;
+          bytesToWriteSplit  -= wlen;
+          bytesWritten       += wlen;
+          // ??? why do I need this for sparse? maybe because I split and doesn't fill the whole data?
+          if (sparseformat && bytesWritten < total)
+            await this.cdc.write(new Uint8Array(0), null, true, true);
+          if (i % 10 === 0)
+            onProgress(bytesWritten/total);
+          i += 1;
         }
+      }
       const wd  = await this.waitForData();
-      const log = this.xml.getLog(wd);
       const resposne = this.xml.getReponse(wd);
       if (resposne.hasOwnProperty("value")) {
         if (resposne["value"] !== "ACK") {

@@ -30,7 +30,7 @@ export class qdlDevice {
   async connectToSahara() {
     while (!this.cdc.connected){
       await this.cdc?.connect();
-      if (this.cdc.connected){
+      if (this.cdc.connected) {
         console.log("Device detected");
         try {
           let resp = await this.sahara?.connect();
