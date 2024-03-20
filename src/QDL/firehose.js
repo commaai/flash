@@ -347,17 +347,19 @@ export class Firehose {
   }
 
 
-  async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress=()=>{}) {
+  async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress=()=>{}, userdataReset=false) {
     let total         = blob.size;
     let sparseformat  = false;
 
-    let sparseHeader = await Sparse.parseFileHeader(blob.slice(0, Sparse.FILE_HEADER_SIZE));
-    let sparseImage;
-    if (sparseHeader !== null) {
-      sparseImage   = new Sparse.QCSparse(blob, sparseHeader)
-      sparseformat  = true;
-      total         = await sparseImage.getSize();
-      console.log("size of image:", total);
+    if (!userdataReset) {
+      let sparseHeader = await Sparse.parseFileHeader(blob.slice(0, Sparse.FILE_HEADER_SIZE));
+      let sparseImage;
+      if (sparseHeader !== null) {
+        sparseImage   = new Sparse.QCSparse(blob, sparseHeader)
+        sparseformat  = true;
+        total         = await sparseImage.getSize();
+        console.log("size of image:", total);
+      }
     }
 
     let numPartitionSectors = Math.floor(total/this.cfg.SECTOR_SIZE_IN_BYTES);

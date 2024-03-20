@@ -1,31 +1,7 @@
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
-import { loadFileFromLocal } from "./utils"
 import { AB_FLAG_OFFSET, AB_PARTITION_ATTR_SLOT_ACTIVE } from "./gpt"
-
-function isRecognizedDevice(slotCount, partitions) {
-
-  if (slotCount !== 2) {
-    console.error('[QDL] Unrecognised device (kernel, slotCount)')
-    return false
-  }
-
-  // check we have the expected partitions to make sure it's a comma three
-  const expectedPartitions = [
-    "ALIGN_TO_128K_1", "ALIGN_TO_128K_2", "ImageFv", "abl", "aop", "apdp", "bluetooth", "boot", "cache",
-    "cdt", "cmnlib", "cmnlib64", "ddr", "devcfg", "devinfo", "dip", "dsp", "fdemeta", "frp", "fsc", "fsg",
-    "hyp", "keymaster", "keystore", "limits", "logdump", "logfs", "mdtp", "mdtpsecapp", "misc", "modem",
-    "modemst1", "modemst2", "msadp", "persist", "qupfw", "rawdump", "sec", "splash", "spunvm", "ssd",
-    "sti", "storsec", "system", "systemrw", "toolsfv", "tz", "userdata", "vm-linux", "vm-system", "xbl",
-    "xbl_config"
-  ]
-  if (!partitions.every(partition => expectedPartitions.includes(partition))) {
-    console.error('[QDL] Unrecognised device (partitions)', partitions)
-    return false
-  }
-  return true
-}
 
 
 export class qdlDevice {
@@ -146,11 +122,11 @@ export class qdlDevice {
     let dp = await this.firehose?.detectPartition("userdata");
     const found = dp[0];
     if (found) {
-      const lun = dp[0], partition = dp[1];
-      const wData = new TextEncoder().encode("COMMA_ABL_RESET");
+      const lun = dp[1], partition = dp[2];
+      const wData = new TextEncoder().encode("COMMA_RESET");
       const startSector = partition.sector;
       console.log("Writing reset flag to partition \"userdata\"");
-      if (await this.firehose.cmdProgram(lun, startSector, new Blob(wData.buffer))) {
+      if (await this.firehose.cmdProgram(lun, startSector, new Blob([wData.buffer]), () => {}, true)) {
         console.log("Successfully writing reset flag to userdata");
       } else {
         console.error("Error writing reset flag to userdata");

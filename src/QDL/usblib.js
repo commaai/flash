@@ -149,8 +149,7 @@ export class usbClass {
         try {
           await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
         } catch(error) {
-          console.error(error);
-          return false;
+          throw new Error("Error while writing:", error);
         }
       }
       return true;
@@ -172,8 +171,7 @@ export class usbClass {
       } catch (error) {
         retry += 1;
         if (retry == 3) {
-          console.error(error);
-          return false;
+          throw new Error("Error while writing:", error);
         }
       }
     }
