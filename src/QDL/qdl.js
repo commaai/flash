@@ -11,9 +11,6 @@ import { useImageWorker } from '@/QDL/image'
 import { createManifest } from '@/QDL/manifest'
 import { withProgress } from '@/QDL/progress'
 
-// TODO: remove after upload to cloud
-import { loadFileFromLocal } from '@/QDL/utils.js'
-
 /**
  * @typedef {import('./manifest.js').Image} Image
  */
