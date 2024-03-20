@@ -227,7 +227,6 @@ export function useQdl() {
         async function unpackImages() {
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             setMessage(`Unpacking ${image.name}`)
-            if (image.name === "system") continue
             await imageWorker.current.unpackImage(image, Comlink.proxy(onProgress))
           }
         }
