@@ -103,7 +103,13 @@ export class usbClass {
 
     if (!this._registeredUsbListeners){
 
-      console.log("Get in unregistered");
+      navigator.usb.addEventListener("disconnect", async (event) => {
+        if (event.device === this.device) {
+          console.log("USB device disconnected");
+          throw new Error("device was disconnected during flashing process");
+        }
+      });
+
       navigator.usb.addEventListener("connect", async (event) =>{
         console.log("USB device connect:", event.device);
         this.device = event.device;
