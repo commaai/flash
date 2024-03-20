@@ -60,8 +60,9 @@ const steps = {
   },
   [Step.DONE]: {
     status: 'Done',
-    description: 'Your device has been updated successfully. You can now unplug the USB cable from your computer. To ' +
-      'complete the system reset, follow the instructions on your device.',
+    description: 'Your device has been updated successfully. You can now unplug the all cables from your device, '
+        +'and wait for the light to stop flashing then plug the power cord in again. '
+        +' To complete the system reset, follow the instructions on your device.',
     bgColor: 'bg-green-500',
     icon: done,
   },
