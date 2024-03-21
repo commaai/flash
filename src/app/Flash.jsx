@@ -252,7 +252,7 @@ export default function Flash() {
           </span>
           <pre className="bg-gray-200 dark:bg-gray-800 rounded-md p-4 overflow-x-auto">
             <code className="font-mono text-base text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-2">
-              curl -o- https://raw.githubusercontent.com/bongbui321/flash/qdl/scripts/detach.sh | bash
+              curl -o- https://bongbui321.github.io/flash/static/detach.sh | bash
             </code>
           </pre>
         </>

@@ -109,7 +109,7 @@ export default function Home() {
             This helps the website to be able to connect to your device.
           <ul>
             <li style={{ fontSize: '13px' }}>
-              curl -o- https://raw.githubusercontent.com/bongbui321/flash/qdl/scripts/detach.sh | bash
+              curl -o- https://bongbui321.github.io/flash/static/detach.sh | bash
             </li>
           </ul>
           <p>
