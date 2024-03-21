@@ -1,5 +1,6 @@
 'use client'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
+import { CopyToClipboard } from 'react-copy-to-clipboard'
 import Image from 'next/image'
 
 //import { Step, Error, useFastboot } from '@/utils/fastboot'
@@ -225,6 +226,15 @@ export default function Flash() {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
   }
 
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 1000);
+  };
+
   return (
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
@@ -250,14 +260,18 @@ export default function Flash() {
           <span className={`text-xl dark:text-white px-8 max-w-xl`}>
             If you are on Linux, make sure to run the script below in your terminal after plugging in your device.
           </span>
-          <pre className="bg-gray-200 dark:bg-gray-800 rounded-md p-4 overflow-x-auto">
-            <code className="font-mono text-base text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-2">
-              curl -o- https://bongbui321.github.io/flash/static/detach.sh | bash
-            </code>
-          </pre>
+          <div className="flex items-center">
+            <pre className="bg-gray-200 dark:bg-gray-800 rounded-md p-4 overflow-x-auto inline-block">
+              <code className="font-mono text-base text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-3">
+                curl -o- https://bongbui321.github.io/flash/static/detach.sh | bash
+                <CopyToClipboard text="curl -o- https://bongbui321.github.io/flash/static/detach.sh | bash">
+                  <button onClick={handleCopy} className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}>Copy</button>
+                </CopyToClipboard>
+              </code>
+            </pre>
+          </div>
         </>
-        )
-      }
+      )}
       {error && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
