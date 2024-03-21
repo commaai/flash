@@ -34,7 +34,7 @@ export class qdlDevice {
       if (this.cdc.connected) {
         console.log("Device detected");
         try {
-          let resp = await runWithTimeout(this.sahara?.connect(), 2000);
+          let resp = await runWithTimeout(this.sahara?.connect(), 10000);
           if (resp.hasOwnProperty("mode")){
             let mode = resp["mode"];
             this.mode = mode;
