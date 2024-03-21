@@ -1,5 +1,5 @@
 import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./saharaDefs"
-import { concatUint8Array, packGenerator, loadFileFromLocal, readBlobAsBuffer } from "./utils";
+import { concatUint8Array, packGenerator, readBlobAsBuffer } from "./utils";
 import config from "@/config"
 
 let root;
@@ -18,8 +18,6 @@ export class Sahara {
     this.pktSize    = null;
     this.version    = null;
     this.ch         = new CommandHandler();
-    // TODO: change to auto upload Loader
-    //this.programmer = "0008e0e100000000_afca69d4235117e5_fhprg.bin";
     this.programmer = "6000000000010000_f8ab20526358c4fa_fhprg.bin"
     this.id         = null;
     this.serial     = "";

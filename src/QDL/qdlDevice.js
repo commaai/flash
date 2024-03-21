@@ -2,6 +2,7 @@ import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
 import { AB_FLAG_OFFSET, AB_PARTITION_ATTR_SLOT_ACTIVE } from "./gpt"
+import { runWithTimeout } from "./utils"
 
 
 export class qdlDevice {
@@ -33,7 +34,7 @@ export class qdlDevice {
       if (this.cdc.connected) {
         console.log("Device detected");
         try {
-          let resp = await this.sahara?.connect();
+          let resp = await runWithTimeout(this.sahara?.connect(), 2000);
           if (resp.hasOwnProperty("mode")){
             let mode = resp["mode"];
             this.mode = mode;
@@ -41,7 +42,7 @@ export class qdlDevice {
             return resp;
           }
         } catch (error) {
-          console.error(error);
+          throw new Error(`${error}`);
         }
       }
     }
