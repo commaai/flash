@@ -63,7 +63,7 @@ export default function Home() {
               <li>
                 Fill in three fields. The first field is just a description and
                 you can fill in anything.  The next two fields are very important.
-                Fill them in with <code>18D1</code> and <code>D00D</code> respectively.
+                Fill them in with <code>05C6</code> and <code>9008</code> respectively.
                 Press &quot;Install Driver&quot; and give it a few minutes to install.
                 <Image
                   src={zadigForm}
