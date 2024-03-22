@@ -558,8 +558,9 @@ export class Firehose {
       console.error(error);
       return false
     }
-    let activeBootLunId = (slot === "a") ? 1 : 2;
+    const activeBootLunId = (slot === "a") ? 1 : 2;
     await this.cmdSetBootLunId(activeBootLunId);
+    console.log(`Successfully set slot ${slot} active`);
     return true;
   }
 
@@ -578,7 +579,6 @@ export class Firehose {
     if (rsp.resp) {
       //console.log("Patch:\n--------------------\n");
       //console.log(rsp.data);
-      console.log(`Patched successfully`);
       return true;
     } else {
       console.error(`Error: ${rsp.error}`);
