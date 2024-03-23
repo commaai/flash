@@ -257,7 +257,6 @@ export class qdlDevice {
       this._connectResolve = null;
       this._connectReject = null;
     }
-
     return true;
   }
 

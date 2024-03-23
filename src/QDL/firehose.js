@@ -82,7 +82,7 @@ export class Firehose {
         }
         rData = concatUint8Array([rData, tmp]);
       } catch (error) {
-        console.error(error);
+        throw new Error("Error connecting with Firehose:", error)
       }
     }
 

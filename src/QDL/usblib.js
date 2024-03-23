@@ -141,7 +141,7 @@ export class usbClass {
         resplen = respData.length;
         covered += respData.length;
       } catch (error) {
-        console.error(error);
+        throw new Error("Errow while reading:", error)
       }
     }
     return respData;
