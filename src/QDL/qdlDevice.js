@@ -7,19 +7,19 @@ import { concatUint8Array, runWithTimeout } from "./utils"
 
 export class qdlDevice {
   constructor() {
-    this.mode = "";
-    this.cdc = new usbClass();
-    this.sahara = new Sahara(this.cdc);
-    this.firehose = new Firehose(this.cdc);
-    this._connectResolve = null;
-    this._connectReject = null;
+    this.mode             = "";
+    this.cdc              = new usbClass();
+    this.sahara           = new Sahara(this.cdc);
+    this.firehose         = new Firehose(this.cdc);
+    this._connectResolve  = null;
+    this._connectReject   = null;
   }
 
 
   async waitForConnect() {
     return await new Promise((resolve, reject) => {
       this._connectResolve = resolve;
-      this._connectReject = reject;
+      this._connectReject  = reject;
     });
   }
 

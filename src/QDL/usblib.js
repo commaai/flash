@@ -8,10 +8,10 @@ const BULK_TRANSFER_SIZE = 16384;
 
 export class usbClass {
   constructor() {
-    this.device = null;
-    this.epIn = null;
-    this.epOut = null;
-    this.maxSize = 512;
+    this.device   = null;
+    this.epIn     = null;
+    this.epOut    = null;
+    this.maxSize  = 512;
   }
 
 
