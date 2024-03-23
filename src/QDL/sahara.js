@@ -212,7 +212,7 @@ export class Sahara {
         this.serial = await this.cmdGetSerialNum();
         await this.cmdModeSwitch(sahara_mode_t.SAHARA_MODE_COMMAND);
       } catch (error) {
-        console.error(error);
+        throw new Error("Error while uploading loader:", error);
         return;
       }
     }
