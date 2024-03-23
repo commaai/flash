@@ -2,7 +2,7 @@
 set -e
 
 config="1.0"
-device=$(lsusb | egrep 05c6:9008)
+device=$(lsusb | grep 05c6:9008)
 if [ -z "$device" ]; then
     echo "Error: No device found"
     exit 1

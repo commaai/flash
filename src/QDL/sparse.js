@@ -6,19 +6,19 @@ const CHUNK_HEADER_SIZE = 12;
 const MAX_DOWNLOAD_SIZE = 1024 * 1024 * 1024; // 1 GiB
 
 const ChunkType = {
-  Raw : 0xCAC1,
-  Fill : 0xCAC2,
-  Skip : 0xCAC3,
+  Raw   : 0xCAC1,
+  Fill  : 0xCAC2,
+  Skip  : 0xCAC3,
   Crc32 : 0xCAC4,
 }
 
 
 class QCSparse {
   constructor(blob, header) {
-    this.blob = blob;
-    this.blk_sz = header.blk_sz;
+    this.blob         = blob;
+    this.blk_sz       = header.blk_sz;
     this.total_chunks = header.total_chunks;
-    this.blobOffset = 0;
+    this.blobOffset   = 0;
   }
 
 
@@ -178,7 +178,7 @@ function calcChunksRealDataBytes(chunk, blockSize) {
     case ChunkType.Crc32:
       return 0;
     default:
-      return null;
+      throw new Error("Sparse - Unknown chunk type");
   }
 }
 

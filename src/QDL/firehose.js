@@ -16,7 +16,6 @@ class response {
 
 class cfg {
   constructor() {
-    this.TargetName                       = "";
     this.ZLPAwareHost                     = 1;
     this.SkipStorageInit                  = 0;
     this.SkipWrite                        = 0;

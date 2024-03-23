@@ -6,26 +6,22 @@ import config from "@/config"
 export class Sahara {
   constructor(cdc) {
     this.cdc        = cdc;
-    this.pktSize    = null;
-    this.version    = null;
     this.ch         = new CommandHandler();
     this.programmer = "6000000000010000_f8ab20526358c4fa_fhprg.bin";
     this.id         = null;
     this.serial     = "";
     this.mode       = "";
-    this.rootDir       = null;
+    this.rootDir    = null;
   }
 
 
   async connect() {
-    let v = await this.cdc?.read(0xC * 0x4);
+    const v = await this.cdc?.read(0xC * 0x4);
     if (v.length > 1) {
       if (v[0] == 0x01) {
         let pkt = this.ch.pkt_cmd_hdr(v);
         if (pkt.cmd === cmd_t.SAHARA_HELLO_REQ) {
-          let rsp      = this.ch.pkt_hello_req(v);
-          this.pktSize = rsp.cmd_packet_length;
-          this.version = rsp.version;
+          const rsp = this.ch.pkt_hello_req(v);
           return { "mode" : "sahara", "cmd" : cmd_t.SAHARA_HELLO_REQ, "data" : rsp };
         }
       }
@@ -35,31 +31,20 @@ export class Sahara {
 
 
   async cmdHello(mode, version=2, version_min=1, max_cmd_len=0) {
-    let cmd            = cmd_t.SAHARA_HELLO_RSP;
-    let len            = 0x30;
+    const cmd          = cmd_t.SAHARA_HELLO_RSP;
+    const len          = 0x30;
     const elements     = [cmd, len, version, version_min, max_cmd_len, mode, 1, 2, 3, 4, 5, 6];
     const responseData = packGenerator(elements);
-
-    try {
-      await this.cdc?.write(responseData);
-      return true;
-    } catch (error) {
-      console.log(`${error}`);
-      return false;
-    }
+    await this.cdc?.write(responseData);
+    return true;
   }
 
 
   async cmdModeSwitch(mode) {
     const elements = [cmd_t.SAHARA_SWITCH_MODE, 0xC, mode];
     let data       = packGenerator(elements);
-
-    try {
-      await this.cdc?.write(data);
-      return true;
-    } catch (error) {
-      throw new Error(`Sahara - ${error}`);
-    }
+    await this.cdc?.write(data);
+    return true;
   }
 
 
@@ -119,15 +104,16 @@ export class Sahara {
 
   async cmdGetSerialNum() {
     let res = await this.cmdExec(exec_cmd_t.SAHARA_EXEC_CMD_SERIAL_NUM_READ);
+    if (res === null)
+      throw new Error("Sahara - Unable to get serial number of device");
     let data = new DataView(res.buffer, 0).getUint32(0, true);
     return data.toString(16).padStart(8, '0');
   }
 
 
   async enterCommandMode() {
-    if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND)) {
+    if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND))
       return false;
-    }
     let res = await this.getResponse();
     if (res.hasOwnProperty("cmd")) {
       if (res["cmd"] === cmd_t.SAHARA_END_TRANSFER) {
@@ -273,7 +259,7 @@ export class Sahara {
             }
           }
         } else {
-          throw new Error("Sahara - Received invalid resposne");
+          throw new Error("Sahara - Received invalid response");
         }
       }
     }

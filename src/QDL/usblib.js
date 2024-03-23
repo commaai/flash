@@ -63,7 +63,7 @@ export class usbClass {
           await this.device?.reset();
           await this.device?.forget();
           await this.device?.close();
-          throw new Error(`USB - ${error}`);
+          console.error(error);
         }
     } catch (error) {
       throw new Error(`USB - ${error}`);
