@@ -2,47 +2,36 @@ import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./sa
 import { concatUint8Array, packGenerator, readBlobAsBuffer } from "./utils";
 import config from "@/config"
 
-let root;
 
 export class Sahara {
-  cdc;
-  ch; // CommandHandler
-  pktSize;
-  version;
-  programmer;
-  id;
-  mode;
-
   constructor(cdc) {
     this.cdc        = cdc;
     this.pktSize    = null;
     this.version    = null;
     this.ch         = new CommandHandler();
-    this.programmer = "6000000000010000_f8ab20526358c4fa_fhprg.bin"
+    this.programmer = "6000000000010000_f8ab20526358c4fa_fhprg.bin";
     this.id         = null;
     this.serial     = "";
     this.mode       = "";
+    this.rootDir       = null;
   }
 
+
   async connect() {
-    try {
-      let v = await this.cdc?.read(0xC * 0x4);
-      if (v.length > 1){
-        if (v[0] == 0x01){
-          let pkt = this.ch.pkt_cmd_hdr(v);
-          if (pkt.cmd === cmd_t.SAHARA_HELLO_REQ) {
-            let rsp      = this.ch.pkt_hello_req(v);
-            this.pktSize = rsp.cmd_packet_length;
-            this.version = rsp.version;
-            return { "mode" : "sahara", "cmd" : cmd_t.SAHARA_HELLO_REQ, "data" : rsp };
-          }
+    let v = await this.cdc?.read(0xC * 0x4);
+    if (v.length > 1) {
+      if (v[0] == 0x01) {
+        let pkt = this.ch.pkt_cmd_hdr(v);
+        if (pkt.cmd === cmd_t.SAHARA_HELLO_REQ) {
+          let rsp      = this.ch.pkt_hello_req(v);
+          this.pktSize = rsp.cmd_packet_length;
+          this.version = rsp.version;
+          return { "mode" : "sahara", "cmd" : cmd_t.SAHARA_HELLO_REQ, "data" : rsp };
         }
       }
-    } catch (error) {
-      console.error(error);
     }
-    return { "mode" : "error" };
-  } 
+    throw new Error("Unable to connect to Sahara");
+  }
 
 
   async cmdHello(mode, version=2, version_min=1, max_cmd_len=0) {
@@ -55,13 +44,13 @@ export class Sahara {
       await this.cdc?.write(responseData);
       return true;
     } catch (error) {
-      console.error(error);
+      console.log(`${error}`);
       return false;
     }
   }
 
 
-  async cmdModeSwitch(mode){
+  async cmdModeSwitch(mode) {
     const elements = [cmd_t.SAHARA_SWITCH_MODE, 0xC, mode];
     let data       = packGenerator(elements);
 
@@ -69,8 +58,7 @@ export class Sahara {
       await this.cdc?.write(data);
       return true;
     } catch (error) {
-      console.error(error);
-      return false;
+      throw new Error(`Sahara - ${error}`);
     }
   }
 
@@ -81,7 +69,7 @@ export class Sahara {
       let data_text = new TextDecoder('utf-8').decode(data.data);
       if (data.length == 0) {
         return {};
-      } else if (data_text.includes("<?xml")){
+      } else if (data_text.includes("<?xml")) {
         return {"firehose" : "yes"};
       }
       let pkt = this.ch.pkt_cmd_hdr(data);
@@ -89,7 +77,7 @@ export class Sahara {
         return { "cmd" : pkt.cmd, "data" : this.ch.pkt_hello_req(data) };
       } else if (pkt.cmd === cmd_t.SAHARA_DONE_RSP) {
         return {"cmd": pkt.cmd, "data":this.ch.pkt_done(data)}
-      } else if (pkt.cmd === cmd_t.SAHARA_END_TRANSFER){
+      } else if (pkt.cmd === cmd_t.SAHARA_END_TRANSFER) {
         return {"cmd": pkt.cmd, "data": this.ch.pkt_image_end(data)};
       } else if (pkt.cmd === cmd_t.SAHARA_64BIT_MEMORY_READ_DATA) {
         return {"cmd": pkt.cmd, "data": this.ch.pkt_read_data_64(data)}
@@ -121,8 +109,7 @@ export class Sahara {
         let payload = await this.cdc.read(pkt.data_len);
         return payload;
       } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
-        let pkt = res["data"];
-        console.error("error while executing command");
+        throw new Error("Sahara - error while executing command");
       }
       return null;
     }
@@ -137,17 +124,17 @@ export class Sahara {
   }
 
 
-  async enterCommandMode(version=2) {
-    if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND)){
+  async enterCommandMode() {
+    if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND)) {
       return false;
     }
     let res = await this.getResponse();
-    if (res.hasOwnProperty("cmd")){
-      if (res["cmd"] === cmd_t.SAHARA_END_TRANSFER){
-        if (res.hasOwnProperty("data")){
+    if (res.hasOwnProperty("cmd")) {
+      if (res["cmd"] === cmd_t.SAHARA_END_TRANSFER) {
+        if (res.hasOwnProperty("data")) {
           return false;
         }
-      } else if (res["cmd"] === cmd_t.SAHARA_CMD_READY){
+      } else if (res["cmd"] === cmd_t.SAHARA_CMD_READY) {
         return true;
       }
     }
@@ -156,19 +143,19 @@ export class Sahara {
 
 
   async downLoadLoader() {
-    root = await navigator.storage.getDirectory();
+    this.rootDir = await navigator.storage.getDirectory();
     let writable;
     try {
-      const fileHandle = await root.getFileHandle(this.programmer, { create: true });
+      const fileHandle = await this.rootDir.getFileHandle(this.programmer, { create: true });
       writable = await fileHandle.createWritable();
-    } catch (e) {
-      throw `Error opening file handle: ${e}`;
+    } catch (error) {
+      throw new Error(`Sahara - ${error}`);
     }
 
     const programmerUrl = config.loader['url'];
     const response = await fetch(programmerUrl, { mode: 'cors' })
     if (!response.ok) {
-      throw `Fetch failed: ${response.status} ${response.statusText}`
+      throw new Error(`Sahara - Failed to fetch Loader: ${response.status} ${response.statusText}`);
     }
 
     try {
@@ -181,138 +168,112 @@ export class Sahara {
         await writable.write(value);
         processed += value.length;
       }
-    } catch (e) {
-      throw `Could not read response body: ${e}`
+    } catch (error) {
+      throw new Error(`Sahara - Could not read response body: ${error}`);
     }
 
     try {
       await writable.close()
-    } catch (e) {
-      throw `Error closing file handle: ${e}`
+    } catch (error) {
+      throw new Error(`Sahara - Error closing file handle: ${error}`);
     }
   }
+
 
   async getLoader() {
     let fileHandle;
     try {
-      fileHandle = await root.getFileHandle(this.programmer, { create: false })
-    } catch (e) {
-      throw `Error getting file handle: ${e}`
+      fileHandle = await this.rootDir.getFileHandle(this.programmer, { create: false })
+    } catch (error) {
+      throw new Error(`Sahara - Error getting file handle: ${error}`);
     }
     return await fileHandle.getFile();
   }
 
 
-  async uploadLoader(version){
-    if (!(await this.enterCommandMode(version))) {
-      console.error("Failed to enter command mode in Sahara");
-      return "error"
+  async uploadLoader() {
+    if (!(await this.enterCommandMode())) {
+      throw new Error("Sahara - Failed to enter command mode in Sahara");
     } else {
-      try {
-        this.serial = await this.cmdGetSerialNum();
-        await this.cmdModeSwitch(sahara_mode_t.SAHARA_MODE_COMMAND);
-      } catch (error) {
-        throw new Error("Error while uploading loader:", error);
-        return;
-      }
+      this.serial = await this.cmdGetSerialNum();
+      await this.cmdModeSwitch(sahara_mode_t.SAHARA_MODE_COMMAND);
     }
 
-    let connectResp = await this.connect();
-    if ((connectResp["mode"] != "sahara")) {
-      return "";
-    }
-
+    await this.connect();
     console.log("Uploading Programmer...");
     await this.downLoadLoader();
-    let loaderBlob = await this.getLoader();
+    const loaderBlob = await this.getLoader();
     let programmer = new Uint8Array(await readBlobAsBuffer(loaderBlob));
-    if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING, version=version))) {
-      return "error";
-    }
+    if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING)))
+      throw new Error("Sahara - Error while uploading loader");
 
-    try {
-      let datalen = programmer.length;
-      let done    = false;
-      let loop    = 0;
-      while (datalen >= 0 || done){
-        let resp = await this.getResponse();
-        let cmd
-        if (resp.hasOwnProperty("cmd")){
-          cmd = resp["cmd"];
+    let datalen = programmer.length;
+    let loop    = 0;
+    while (datalen >= 0) {
+      let resp = await this.getResponse();
+      let cmd;
+      if (resp.hasOwnProperty("cmd")) {
+        cmd = resp["cmd"];
+      } else {
+        throw new Error("Sahara - Timeout while uploading loader. Wrong loader?");
+      }
+      if (cmd == cmd_t.SAHARA_64BIT_MEMORY_READ_DATA) {
+        if (loop == 0)
+          console.log("64-bit mode detected");
+        let pkt = resp["data"];
+        this.id = pkt.image_id;
+        if (this.id >= 0xC) {
+          this.mode = "firehose";
+          if (loop == 0)
+            console.log("Firehose mode detected, uploading...");
         } else {
-          console.error("Timeout while uploading loader. Wrong loader?");
-          return "error"
+          throw new Error("Sahara - Unknown sahara id");
         }
-        if (cmd == cmd_t.SAHARA_DONE_REQ){
-          if (self.cmdDone()){
-            return "error"
-          }
+
+        loop += 1;
+        let dataOffset = pkt.data_offset;
+        let dataLen    = pkt.data_len;
+        if (dataOffset + dataLen > programmer.length) {
+          const fillerArray = new Uint8Array(dataOffset+dataLen-programmer.length).fill(0xff);
+          programmer = concatUint8Array([programmer, fillerArray]);
         }
-        if ([cmd_t.SAHARA_64BIT_MEMORY_READ_DATA,cmd_t.SAHARA_READ_DATA].includes(cmd)) {
-          if (cmd == cmd_t.SAHARA_64BIT_MEMORY_READ_DATA)
-            if (loop == 0)
-              console.log("64-bit mode detected");
-          let pkt = resp["data"];
-          this.id = pkt.image_id;
-          if (this.id >= 0xC){
-            this.mode = "firehose";
-            if (loop == 0)
-              console.log("Firehose mode detected, uploading...");
+        let dataToSend = programmer.slice(dataOffset, dataOffset+dataLen);
+        await this.cdc?.write(dataToSend);
+        datalen -= dataLen;
+      } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
+        let pkt = resp["data"];
+        if (pkt.image_tx_status == status_t.SAHARA_STATUS_SUCCESS) {
+          if (await this.cmdDone()) {
+            console.log("Loader successfully uploaded");
           } else {
-            console.error("Unknown sahara id");
-            return "error";
+            throw new Error("Sahara - Failed to upload Loader");
           }
-
-          loop += 1;
-          let dataOffset = pkt.data_offset;
-          let dataLen    = pkt.data_len;
-          if (dataOffset + dataLen > programmer.length) {
-            const fillerArray = new Uint8Array(dataOffset+dataLen-programmer.length).fill(0xff);
-            programmer = concatUint8Array([programmer, fillerArray]);
-          }
-          let dataToSend = programmer.slice(dataOffset, dataOffset+dataLen); // Uint8Array
-          await this.cdc?.write(dataToSend);
-          datalen -= dataLen;
-
-        } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
-          let pkt = resp["data"];
-          if (pkt.image_tx_status == status_t.SAHARA_STATUS_SUCCESS){
-            if (await this.cmdDone()){
-              console.log("Loader successfully uploaded");
-            } else {
-              console.error("Error on uploading loader.");
-            }
-            return this.mode;
-          }
+          return this.mode;
         }
       }
-    } catch (error) {
-      throw new Error(`${error}`);
     }
     return this.mode;
   }
 
 
-  async cmdDone(){
+  async cmdDone() {
     const toSendData = packGenerator([cmd_t.SAHARA_DONE_REQ, 0x8]);
     if (await this.cdc.write(toSendData)) {
       let res = await this.getResponse();
-      for (let i = 0; i < 500; i += 1)
-        continue;
-      if (res.hasOwnProperty("cmd")){
+      if (res.hasOwnProperty("cmd")) {
         let cmd = res["cmd"];
-        if (cmd == cmd_t.SAHARA_DONE_RSP){
-          return true
-        } else if (cmd == cmd_t.SAHARA_END_TRANSFER){
+        if (cmd == cmd_t.SAHARA_DONE_RSP) {
+          return true;
+        } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
           if (res.hasOwnProperty("data")) {
             let pkt = res["data"];
-            if (pkt.iamge_txt_status == status_t.SAHARA_NAK_INVALID_CMD){
+            if (pkt.iamge_txt_status == status_t.SAHARA_NAK_INVALID_CMD) {
               console.error("Invalid transfer command received");
               return false;
             }
           }
         } else {
-          console.error("received invalid resposne");
+          throw new Error("Sahara - Received invalid resposne");
         }
       }
     }

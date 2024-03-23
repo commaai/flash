@@ -23,6 +23,7 @@ export class xmlParser {
     return content;
   }
 
+
   getLog(input) {
     let tInput = new TextDecoder().decode(input);
     let lines = tInput.split("<?xml");

@@ -3,28 +3,14 @@ import { concatUint8Array, sleep } from "./utils";
 const vendorID = 0x05c6;
 const productID = 0x9008;
 const QDL_USB_CLASS = 0xff;
-
 const BULK_TRANSFER_SIZE = 16384;
 
-export class UsbError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "UsbError";
-  }
-}
 
 export class usbClass {
-  device;
-  epIn;
-  epOut;
-
-  _registeredUsbListeners;
-
   constructor() {
     this.device = null;
     this.epIn = null;
     this.epOut = null;
-    this._registeredUsbListeners = null;
     this.maxSize = 512;
   }
 
@@ -41,7 +27,7 @@ export class usbClass {
   async _validateAndConnectDevice() {
     let ife = this.device?.configurations[0].interfaces[0].alternates[0];
     if (ife.endpoints.length !== 2) {
-      throw new UsbError("Attempted to connect to null device");
+      throw new Error("USB - Attempted to connect to null device");
     }
 
     this.epIn = null;
@@ -49,19 +35,19 @@ export class usbClass {
 
     for (let endpoint of ife.endpoints) {
       if (endpoint.type !== "bulk") {
-        throw new UsbError("Interface endpoint is not bulk");
+        throw new Error("USB - Interface endpoint is not bulk");
       }
       if (endpoint.direction === "in") {
         if (this.epIn === null) {
           this.epIn = endpoint;
         } else {
-          throw new UsbError("Interface has multiple IN endpoints");
+          throw new Error("USB - Interface has multiple IN endpoints");
         }
       } else if (endpoint.direction === "out") {
         if (this.epOut === null) {
           this.epOut = endpoint;
         } else {
-          throw new UsbError("Interface has multiple OUT endpoints");
+          throw new Error("USB - Interface has multiple OUT endpoints");
         }
       }
       this.maxSize = this.epIn.packetSize;
@@ -77,19 +63,15 @@ export class usbClass {
           await this.device?.reset();
           await this.device?.forget();
           await this.device?.close();
-          throw error;
+          throw new Error(`USB - ${error}`);
         }
     } catch (error) {
-      throw error;
+      throw new Error(`USB - ${error}`);
     }
   }
 
 
   async connect() {
-    console.log("Trying to connect Qualcomm device")
-    let devices = await navigator.usb.getDevices();
-    console.log("Found these USB devices:", devices);
-
     this.device = await navigator.usb.requestDevice({
       filters: [
         {
@@ -101,37 +83,25 @@ export class usbClass {
     });
     console.log("USing USB device:", this.device);
 
-    if (!this._registeredUsbListeners){
-
-      navigator.usb.addEventListener("disconnect", async (event) => {
-        if (event.device === this.device) {
-          console.log("USB device disconnected");
-          throw new Error("device was disconnected during flashing process");
-        }
-      });
-
-      navigator.usb.addEventListener("connect", async (event) =>{
-        console.log("USB device connect:", event.device);
-        this.device = event.device;
-
-        try {
-          await this._validateAndConnectDevice();
-        } catch (error) {
-          console.log("Error while connecting to the device");
-          throw error;
-        }
-      });
-
-      this._registeredUsbListeners = true;
-    }
+    navigator.usb.addEventListener("connect", async (event) =>{
+      console.log("USB device connect:", event.device);
+      this.device = event.device;
+      try {
+        await this._validateAndConnectDevice();
+      } catch (error) {
+        console.log("Error while connecting to the device");
+        throw error;
+      }
+    });
     await this._validateAndConnectDevice();
   }
 
 
-  async read(resplen=null){
+  async read(resplen=null) {
     let respData = new Uint8Array();
     let covered = 0;
-    if ((resplen === null)) 
+
+    if (resplen === null)
       resplen = this.epIn.packetSize;
 
     while (covered < resplen) {
@@ -141,27 +111,27 @@ export class usbClass {
         resplen = respData.length;
         covered += respData.length;
       } catch (error) {
-        throw new Error("Errow while reading:", error)
+        throw new Error("USB - Reading error:", error)
       }
     }
     return respData;
   }
 
-  async write(cmdPacket, pktSize=null, wait=true, force=false) {
-    if (cmdPacket.length === 0 && force) {
+
+  async write(cmdPacket, pktSize=null, wait=true) {
+    if (cmdPacket.length === 0) {
       try {
         await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
       } catch(error) {
         try {
           await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
         } catch(error) {
-          throw new Error("Error while writing:", error);
+          throw new Error("USB - Writing error:", error);
         }
       }
       return true;
     }
 
-    let retry = 0;
     let offset = 0;
     if (pktSize === null)
       pktSize = BULK_TRANSFER_SIZE;
@@ -170,15 +140,14 @@ export class usbClass {
         if (wait) {
           await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
         } else {
+          // this is a hack, webusb doesn't have timed out catching
+          // this only happens in sahara.configure(). The loader receive the packet but doesn't respond back  (same as edl repo).
           this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
-          await sleep(80);
+          await sleep(80); // wait for 80ms to make sure Loader receives packets
         }
         offset += pktSize;
       } catch (error) {
-        retry += 1;
-        if (retry == 3) {
-          throw new Error("Error while writing:", error);
-        }
+        throw new Error("USB - Writing error:", error);
       }
     }
     return true;

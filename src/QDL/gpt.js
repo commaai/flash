@@ -3,37 +3,35 @@ var CRC32 = require("crc-32");
 
 export const AB_FLAG_OFFSET = 6;
 export const AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2);
-const AB_PARTITION_ATTR_UNBOOTABLE = (0x1 << 7);
-
 export const PART_ATT_PRIORITY_BIT = BigInt(48)
 export const PART_ATT_ACTIVE_BIT = BigInt(50)
-export const PART_ATT_MAX_RETRY_CNT_BIT = BigInt(51)
-export const MAX_PRIORITY = BigInt(3)
-export const PART_ATT_SUCCESS_BIT = BigInt(54)
-export const PART_ATT_UNBOOTABLE_BIT = BigInt(55)
-
-export const PART_ATT_PRIORITY_VAL = BigInt(0x3) << PART_ATT_PRIORITY_BIT
 export const PART_ATT_ACTIVE_VAL = BigInt(0x1) << PART_ATT_ACTIVE_BIT
-export const PART_ATT_MAX_RETRY_COUNT_VAL = BigInt(0x7) << PART_ATT_MAX_RETRY_CNT_BIT
-export const PART_ATT_SUCCESSFUL_VAL  = BigInt(0x1) << PART_ATT_SUCCESS_BIT
-export const PART_ATT_UNBOOTABLE_VAL = BigInt(0x1) << PART_ATT_UNBOOTABLE_BIT
+
+
+const efiType = {
+  0x00000000 : "EFI_UNUSED",
+  0xEBD0A0A2 : "EFI_BASIC_DATA",
+}
+
 
 class structHelper {
-
   constructor(data, pos = 0) {
     this.pos = pos;
     this.data = data;
   }
+
 
   qword(littleEndian=true) {
     const view = new DataView(this.data.slice(this.pos, this.pos+=8).buffer, 0);
     return Number(view.getBigUint64(0, littleEndian));
   }
 
+
   dword(littleEndian=true) {
     let view = new DataView(this.data.slice(this.pos, this.pos+=4).buffer, 0);
     return view.getUint32(0, littleEndian);
   }
+
 
   bytes(rlen=1) {
     const dat = this.data.slice(this.pos, this.pos+=rlen);
@@ -42,133 +40,46 @@ class structHelper {
     return dat;
   }
 
+
   toString(rlen=1) {
     const dat = this.data.slice(this.pos, this.pos+=rlen);
     return dat;
   }
 }
 
-// TODO: is this needed? snapdrag845 uses uefi
-const efiType = {
-  0x00000000 : "EFI_UNUSED",
-  0x024DEE41 : "EFI_MBR",
-  0xC12A7328 : "EFI_SYSTEM",
-  0x21686148 : "EFI_BIOS_BOOT",
-  0xD3BFE2DE : "EFI_IFFS",
-  0xF4019732 : "EFI_SONY_BOOT",
-  0xBFBFAFE7 : "EFI_LENOVO_BOOT",
-  0xE3C9E316 : "EFI_MSR ",
-  0xEBD0A0A2 : "EFI_BASIC_DATA",
-  0x5808C8AA : "EFI_LDM_META",
-  0xAF9B60A0 : "EFI_LDM",
-  0xDE94BBA4 : "EFI_RECOVERY",
-  0x37AFFC90 : "EFI_GPFS ",
-  0xE75CAF8F : "EFI_STORAGE_SPACES ",
-  0x75894C1E : "EFI_HPUX_DATA",
-  0xE2A1E728 : "EFI_HPUX_SERVICE",
-  0x0FC63DAF : "EFI_LINUX_DAYA",
-  0xA19D880F : "EFI_LINUX_RAID",
-  0x44479540 : "EFI_LINUX_ROOT32",
-  0x4F68BCE3 : "EFI_LINUX_ROOT64",
-  0x69DAD710 : "EFI_LINUX_ROOT_ARM32",
-  0xB921B045 : "EFI_LINUX_ROOT_ARM64",
-  0x0657FD6D : "EFI_LINUX_SWAP",
-  0xE6D6D379 : "EFI_LINUX_LVM",
-  0x933AC7E1 : "EFI_LINUX_HOME",
-  0x3B8F8425 : "EFI_LINUX_SRV",
-  0x7FFEC5C9 : "EFI_LINUX_DM_CRYPT",
-  0xCA7D7CCB : "EFI_LINUX_LUKS",
-  0x8DA63339 : "EFI_LINUX_RESERVED",
-  0x83BD6B9D : "EFI_FREEBSD_BOOT",
-  0x516E7CB4 : "EFI_FREEBSD_DATA",
-  0x516E7CB5 : "EFI_FREEBSD_SWAP",
-  0x516E7CB6 : "EFI_FREEBSD_UFS",
-  0x516E7CB8 : "EFI_FREEBSD_VINUM",
-  0x516E7CBA : "EFI_FREEBSD_ZFS",
-  0x48465300 : "EFI_OSX_HFS",
-  0x55465300 : "EFI_OSX_UFS",
-  0x6A898CC3 : "EFI_OSX_ZFS",
-  0x52414944 : "EFI_OSX_RAID",
-  0x52414944 : "EFI_OSX_RAID_OFFLINE",
-  0x426F6F74 : "EFI_OSX_RECOVERY",
-  0x4C616265 : "EFI_OSX_LABEL",
-  0x5265636F : "EFI_OSX_TV_RECOVERY",
-  0x53746F72 : "EFI_OSX_CORE_STORAGE",
-  0x6A82CB45 : "EFI_SOLARIS_BOOT",
-  0x6A85CF4D : "EFI_SOLARIS_ROOT",
-  0x6A87C46F : "EFI_SOLARIS_SWAP",
-  0x6A8B642B : "EFI_SOLARIS_BACKUP",
-  0x6A898CC3 : "EFI_SOLARIS_USR",
-  0x6A8EF2E9 : "EFI_SOLARIS_VAR",
-  0x6A90BA39 : "EFI_SOLARIS_HOME",
-  0x6A9283A5 : "EFI_SOLARIS_ALTERNATE",
-  0x6A945A3B : "EFI_SOLARIS_RESERVED1",
-  0x6A9630D1 : "EFI_SOLARIS_RESERVED2",
-  0x6A980767 : "EFI_SOLARIS_RESERVED3",
-  0x6A96237F : "EFI_SOLARIS_RESERVED4",
-  0x6A8D2AC7 : "EFI_SOLARIS_RESERVED5",
-  0x49F48D32 : "EFI_NETBSD_SWAP",
-  0x49F48D5A : "EFI_NETBSD_FFS",
-  0x49F48D82 : "EFI_NETBSD_LFS",
-  0x49F48DAA : "EFI_NETBSD_RAID",
-  0x2DB519C4 : "EFI_NETBSD_CONCAT",
-  0x2DB519EC : "EFI_NETBSD_ENCRYPT",
-  0xFE3A2A5D : "EFI_CHROMEOS_KERNEL",
-  0x3CB8E202 : "EFI_CHROMEOS_ROOTFS",
-  0x2E0A753D : "EFI_CHROMEOS_FUTURE",
-  0x42465331 : "EFI_HAIKU",
-  0x85D5E45E : "EFI_MIDNIGHTBSD_BOOT",
-  0x85D5E45A : "EFI_MIDNIGHTBSD_DATA",
-  0x85D5E45B : "EFI_MIDNIGHTBSD_SWAP",
-  0x0394EF8B : "EFI_MIDNIGHTBSD_UFS",
-  0x85D5E45C : "EFI_MIDNIGHTBSD_VINUM",
-  0x85D5E45D : "EFI_MIDNIGHTBSD_ZFS",
-  0x45B0969E : "EFI_CEPH_JOURNAL",
-  0x45B0969E : "EFI_CEPH_ENCRYPT",
-  0x4FBD7E29 : "EFI_CEPH_OSD",
-  0x4FBD7E29 : "EFI_CEPH_ENCRYPT_OSD",
-  0x89C57F98 : "EFI_CEPH_CREATE",
-  0x89C57F98 : "EFI_CEPH_ENCRYPT_CREATE",
-  0x824CC7A0 : "EFI_OPENBSD",
-  0xCEF5A9AD : "EFI_QNX",
-  0xC91818F9 : "EFI_PLAN9",
-  0x9D275380 : "EFI_VMWARE_VMKCORE",
-  0xAA31E02A : "EFI_VMWARE_VMFS",
-  0x9198EFFC : "EFI_VMWARE_RESERVED",
-}
 
 class gptHeader {
   constructor(data) {
-    let sh = new structHelper(data);
-    this.signature = sh.bytes(8);
-    this.revision = sh.dword();
-    this.header_size = sh.dword();
-    this.crc32 = sh.dword();
-    this.reserved = sh.dword();
-    this.current_lba = sh.qword();
-    this.backup_lba = sh.qword();
-    this.first_usable_lba = sh.qword();
-    this.last_usable_lba = sh.qword();
-    this.disk_guid = sh.bytes(16);
-    this.part_entry_start_lba = sh.qword();
-    this.num_part_entries = sh.dword();
-    this.part_entry_size = sh.dword();
-    this.crc32_part_entries = sh.dword();
+    let sh                      = new structHelper(data);
+    this.signature              = sh.bytes(8);
+    this.revision               = sh.dword();
+    this.header_size            = sh.dword();
+    this.crc32                  = sh.dword();
+    this.reserved               = sh.dword();
+    this.current_lba            = sh.qword();
+    this.backup_lba             = sh.qword();
+    this.first_usable_lba       = sh.qword();
+    this.last_usable_lba        = sh.qword();
+    this.disk_guid              = sh.bytes(16);
+    this.part_entry_start_lba   = sh.qword();
+    this.num_part_entries       = sh.dword();
+    this.part_entry_size        = sh.dword();
+    this.crc32_part_entries     = sh.dword();
   }
 }
 
 
 export class gptPartition {
   constructor(data) {
-    let sh = new structHelper(data)
-    this.type = sh.bytes(16);
-    this.unique = sh.bytes(16);
-    this.first_lba = sh.qword();
-    this.last_lba = sh.qword();
-    this.flags = sh.qword();
-    this.name = sh.toString(72);
+    let sh          = new structHelper(data)
+    this.type       = sh.bytes(16);
+    this.unique     = sh.bytes(16);
+    this.first_lba  = sh.qword();
+    this.last_lba   = sh.qword();
+    this.flags      = sh.qword();
+    this.name       = sh.toString(72);
   }
-  
+
 
   create() {
     let buffer = new ArrayBuffer(16 + 16 + 8 + 8 + 8 + 72);
@@ -209,7 +120,7 @@ class partf {
 export class gpt {
   constructor(numPartEntries=0, partEntrySize=0, partEntryStartLba=0) {
     this.numPartEntries     = numPartEntries;
-    this.partEntrySize      = partEntrySize; 
+    this.partEntrySize      = partEntrySize;
     this.partEntryStartLba  = partEntryStartLba;
     this.totalSectors       = null;
     this.header             = null;
@@ -218,9 +129,10 @@ export class gpt {
     this.header             = null;
   }
 
-  parseHeader(gptData, sectorSize=512){
+  parseHeader(gptData, sectorSize=512) {
     return new gptHeader(gptData.slice(sectorSize, sectorSize + 0x5C));
   }
+
 
   parse(gptData, sectorSize=512) {
     this.header     = new gptHeader(gptData.slice(sectorSize, sectorSize + 0x5C));
@@ -257,7 +169,6 @@ export class gpt {
       const guid5   = Array.from(partentry.unique.subarray(0xA, 0x10))
           .map(byte => byte.toString(16).padStart(2, '0'))
           .join('');
-
       pa.unique             =`${guid1.toString(16).padStart(8, '0')}-
                               ${guid2.toString(16).padStart(4, '0')}-
                               ${guid3.toString(16).padStart(4, '0')}-
@@ -268,29 +179,25 @@ export class gpt {
       pa.flags              = partentry.flags;
       pa.entryOffset        = start + (idx * entrySize);
       const typeOfPartentry = new DataView(partentry.type.slice(0, 0x4).buffer, 0).getUint32(0, true);
-
       if (efiType.hasOwnProperty(typeOfPartentry)) {
         pa.type = efiType[typeOfPartentry];
       } else {
         pa.type = typeOfPartentry.toString(16);
       }
-
       let nullIndex       = Array.from(partentry.name).findIndex(
                               (element, index) => index % 2 === 0 && element === 0
                             );
       let nameWithoutNull = partentry.name.slice(0, nullIndex);
       let decodedName     = new TextDecoder('utf-16').decode(nameWithoutNull);
       pa.name             = decodedName;
-
       if (pa.type == "EFI_UNUSED")
         continue;
-
       this.partentries[pa.name] = pa;
     }
     this.totalsectors = this.header.first_usable_lba + this.header.last_usable_lba;
     return true;
   }
-  
+
 
   fixGptCrc(data) {
     const partentry_size    = this.header.num_part_entries * this.header.part_entry_size;

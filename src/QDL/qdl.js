@@ -256,7 +256,6 @@ export function useQdl() {
 
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
 
-            // TODO: remove manual upload after uploaded to cloud
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
 

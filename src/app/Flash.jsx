@@ -62,8 +62,8 @@ const steps = {
   [Step.DONE]: {
     status: 'Done',
     description: 'Your device has been updated successfully. You can now unplug the all cables from your device, '
-        +'and wait for the light to stop blinking then plug the power cord in again. '
-        +' To complete the system reset, follow the instructions on your device.',
+                 +'and wait for the light to stop blinking then plug the power cord in again. '
+                 +' To complete the system reset, follow the instructions on your device.',
     bgColor: 'bg-green-500',
     icon: done,
   },
@@ -72,7 +72,8 @@ const steps = {
 const errors = {
   [Error.UNKNOWN]: {
     status: 'Unknown error',
-    description: 'An unknown error has occurred. Restart your browser and try again.',
+    description: 'An unknown error has occurred. Unplug your device and wait for 20s. ' +
+                 'Restart your browser and try again.',
     bgColor: 'bg-red-500',
     icon: exclamation,
   },
@@ -90,7 +91,8 @@ const errors = {
   },
   [Error.DOWNLOAD_FAILED]: {
     status: 'Download failed',
-    description: 'The system image could not be downloaded. Check your internet connection and try again.',
+    description:'The system image could not be downloaded. Unpluck your device and wait for 20s. ' +
+                'Check your internet connection and try again.',
     icon: cloudError,
   },
   [Error.CHECKSUM_MISMATCH]: {
