@@ -249,6 +249,7 @@ export class qdlDevice {
         this._connectResolve = null;
         this._connectReject = null;
       }
+      throw new Error(`${error}`);
     }
 
     if (this._connectResolve !== null) {

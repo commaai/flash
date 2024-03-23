@@ -287,8 +287,7 @@ export class Sahara {
         }
       }
     } catch (error) {
-      console.error(error);
-      return "error";
+      throw new Error(`${error}`);
     }
     return this.mode;
   }
