@@ -118,7 +118,7 @@ const errors = {
   },
 }
 
-const detachScripts = [
+const detachScript = [
   "bus=$(lsusb | grep 05c6:9008 | awk '{print $2}' | sed 's/Bus //;s/^0*//')",
   "port=$(lsusb -t | grep Driver=qcserial | awk -F'Port ' '{print $2}' | cut -d ':' -f 1)",
   "echo -n \"$bus-$port:1.0\" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null"
@@ -266,20 +266,20 @@ export default function Flash() {
       {(title === "Lost connection" || title === "Ready") && isLinux && (
         <>
           <span className={`text-l dark:text-white px-2 max-w-xl`}>
-            It seems that you're on Linux, make sure to run the script below in your terminal after plugging in your device.
+            It seems that you`&apos;`re on Linux, make sure to run the script below in your terminal after plugging in your device.
           </span>
           <div className="relative mt-2">
             <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
               <div className="relative">
                 <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m">
-                  {detachScripts.map((line, index) => (
+                  {detachScript.map((line, index) => (
                     <span key={index} className="block">
                       {line}
                     </span>
                   ))}
                 </pre>
                 <div className="absolute top-2 right-2">
-                  <CopyToClipboard text={detachScripts.join('\n')}>
+                  <CopyToClipboard text={detachScript.join('\n')}>
                     <button
                       onClick={handleCopy}
                       className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
