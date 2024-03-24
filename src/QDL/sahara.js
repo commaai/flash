@@ -107,7 +107,7 @@ export class Sahara {
     if (res === null)
       throw new Error("Sahara - Unable to get serial number of device");
     let data = new DataView(res.buffer, 0).getUint32(0, true);
-    return data.toString(16).padStart(8, '0');
+    return data.toString();
   }
 
 
