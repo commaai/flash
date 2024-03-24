@@ -271,7 +271,7 @@ export default function Flash() {
           <div className="relative mt-2">
             <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
               <div className="relative">
-                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow">
+                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m">
                   {detachScripts.map((line, index) => (
                     <span key={index} className="block">
                       {line}
