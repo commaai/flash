@@ -7,6 +7,7 @@ import fastbootPorts from '@/assets/fastboot-ports.svg'
 import zadigCreateNewDevice from '@/assets/zadig_create_new_device.png'
 import zadigForm from '@/assets/zadig_form.png'
 
+
 const Flash = dynamic(() => import('./Flash'), {
   loading: () => <p className="text-black dark:text-white">Loading...</p>,
   ssr: false,
@@ -104,14 +105,6 @@ export default function Home() {
             After your device is in QDL mode, you can click the button to start flashing. A prompt may appear to
             select a device; choose the device starts with &quot;QUSB_BULK&quot;.
           </p>
-          <h4>Connecting for Linux</h4>
-            For Linux, run this command in your terminal prior to flashing your device.
-            This helps the website to be able to connect to your device.
-          <ul>
-            <li style={{ fontSize: '13px' }}>
-              curl -o- https://bongbui321.github.io/flash/static/detach.sh | bash
-            </li>
-          </ul>
           <p>
             The process can take 30+ minutes depending on your internet connection and system performance. Do not
             unplug the device until all steps are complete.
@@ -133,7 +126,7 @@ export default function Home() {
           </p>
           <h3>My device&apos;s screen is blank</h3>
           <p>
-            The device screen will be blank in QDL mode, but you can verify that it is in QDL if the device shows up 
+            The device screen will be blank in QDL mode, but you can verify that it is in QDL if the device shows up
             when you press the Flash icon.
           </p>
           <h3>After flashing, device says unable to mount data partition</h3>

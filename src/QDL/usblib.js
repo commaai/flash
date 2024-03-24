@@ -8,10 +8,10 @@ const BULK_TRANSFER_SIZE = 16384;
 
 export class usbClass {
   constructor() {
-    this.device   = null;
-    this.epIn     = null;
-    this.epOut    = null;
-    this.maxSize  = 512;
+    this.device = null;
+    this.epIn = null;
+    this.epOut = null;
+    this.maxSize = 512;
   }
 
 
@@ -75,7 +75,7 @@ export class usbClass {
     this.device = await navigator.usb.requestDevice({
       filters: [
         {
-          vendorID  : vendorID,
+          vendorID : vendorID,
           productID : productID,
           classCode : QDL_USB_CLASS,
         },
@@ -111,7 +111,7 @@ export class usbClass {
         resplen = respData.length;
         covered += respData.length;
       } catch (error) {
-        throw new Error("USB - Reading error:", error)
+        throw error;
       }
     }
     return respData;
@@ -126,7 +126,7 @@ export class usbClass {
         try {
           await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
         } catch(error) {
-          throw new Error("USB - Writing error:", error);
+          throw error;
         }
       }
       return true;
@@ -147,7 +147,7 @@ export class usbClass {
         }
         offset += pktSize;
       } catch (error) {
-        throw new Error("USB - Writing error:", error);
+        throw error;
       }
     }
     return true;

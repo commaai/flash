@@ -3,7 +3,7 @@ import * as Comlink from 'comlink'
 import jsSHA from 'jssha'
 import { XzReadableStream } from 'xz-decompress';
 
-import { Image } from '@/QDL/manifest'
+import { Image } from '@/utils/manifest'
 
 /**
  * Chunk callback
@@ -130,7 +130,7 @@ const imageWorker = {
     let complete
     try {
       const reader = (new XzReadableStream(archiveFile.stream())).getReader()
-      
+
       await readChunks(reader, imageSize, {
         onChunk: async (chunk) => {
           await writable.write(chunk)

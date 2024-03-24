@@ -88,24 +88,24 @@ export function fromUint8ArrayToNumber(array) {
 
 
 export function runWithTimeout(promise, timeout) {
-    return new Promise((resolve, reject) => {
-      let timedOut = false;
-      let tid = setTimeout(() => {
-        timedOut = true;
-        reject(new Error(`Timed out while trying to connect ${timeout}`));
-      }, timeout);
-      promise
-        .then((val) => {
-          if (!timedOut)
-            resolve(val);
-        })
-        .catch((err) => {
-          if (!timedOut)
-            reject(err);
-        })
-        .finally(() => {
-          if (!timedOut)
-            clearTimeout(tid);
-        });
-    });
+  return new Promise((resolve, reject) => {
+    let timedOut = false;
+    let tid = setTimeout(() => {
+      timedOut = true;
+      reject(new Error(`Timed out while trying to connect ${timeout}`));
+    }, timeout);
+    promise
+      .then((val) => {
+        if (!timedOut)
+          resolve(val);
+      })
+      .catch((err) => {
+        if (!timedOut)
+          reject(err);
+      })
+      .finally(() => {
+        if (!timedOut)
+          clearTimeout(tid);
+      });
+  });
 }

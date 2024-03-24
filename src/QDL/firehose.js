@@ -6,37 +6,37 @@ import * as Sparse from "./sparse";
 
 class response {
   constructor(resp=false, data=new Uint8Array(), error="", log=[]) {
-    this.resp   = resp;
-    this.data   = data;
-    this.error  = error;
-    this.log    = log;
+    this.resp = resp;
+    this.data = data;
+    this.error = error;
+    this.log = log;
   }
 }
 
 
 class cfg {
   constructor() {
-    this.ZLPAwareHost                     = 1;
-    this.SkipStorageInit                  = 0;
-    this.SkipWrite                        = 0;
-    this.MaxPayloadSizeToTargetInBytes    = 1048576;
-    this.MaxPayloadSizeFromTargetInBytes  = 4096;
-    this.MaxXMLSizeInBytes                = 4096;
-    this.bit64                            = true;
-    this.total_blocks                     = 0;
-    this.block_size                       = 0;
-    this.SECTOR_SIZE_IN_BYTES             = 4096;
-    this.MemoryName                       = "UFS";
-    this.maxlun                           = 6;
+    this.ZLPAwareHost = 1;
+    this.SkipStorageInit = 0;
+    this.SkipWrite = 0;
+    this.MaxPayloadSizeToTargetInBytes = 1048576;
+    this.MaxPayloadSizeFromTargetInBytes = 4096;
+    this.MaxXMLSizeInBytes = 4096;
+    this.bit64 = true;
+    this.total_blocks = 0;
+    this.block_size = 0;
+    this.SECTOR_SIZE_IN_BYTES = 4096;
+    this.MemoryName = "UFS";
+    this.maxlun = 6;
   }
 }
 
 
 export class Firehose {
   constructor(cdc) {
-    this.cdc  = cdc;
-    this.xml  = new xmlParser();
-    this.cfg  = new cfg();
+    this.cdc = cdc;
+    this.xml = new xmlParser();
+    this.cfg = new cfg();
     this.luns = [];
   }
 
@@ -54,7 +54,7 @@ export class Firehose {
     let dataToSend = new TextEncoder().encode(data).slice(0, this.cfg.MaxXMLSizeInBytes);
     await this.cdc?.write(dataToSend, null, wait);
 
-    let rData   = new Uint8Array();
+    let rData = new Uint8Array();
     let counter = 0;
     let timeout = 0;
     while (!(containsBytes("<response value", rData))) {
@@ -68,7 +68,7 @@ export class Firehose {
       rData = concatUint8Array([rData, tmp]);
     }
 
-    const resp   = this.xml.getReponse(rData);
+    const resp = this.xml.getReponse(rData);
     const status = this.getStatus(resp);
     if (resp.hasOwnProperty("rawmode")) {
       if (resp["rawmode"] == "false") {
@@ -117,9 +117,9 @@ export class Firehose {
   async detectPartition(partitionName, sendFull=false) {
     const luns = this.luns;
     for (const lun of luns) {
-      const gptNumPartEntries     = 0;
-      const gptPartEntrySize      = 0;
-      const gptPartEntryStartLba  = 0;
+      const gptNumPartEntries = 0;
+      const gptPartEntrySize = 0;
+      const gptPartEntryStartLba = 0;
       const [ data, guidGpt ] = await this.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
       if (guidGpt === null) {
         break;
@@ -141,13 +141,13 @@ export class Firehose {
       return [null, null];
     }
 
-    let data     = resp.data;
-    let guidGpt  = new gpt.gpt(gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
+    let data = resp.data;
+    let guidGpt = new gpt.gpt(gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
     const header = guidGpt.parseHeader(data, this.cfg.SECTOR_SIZE_IN_BYTES);
     if (containsBytes("EFI PART", header.signature)) {
       const gptSize = (header.part_entry_start_lba * this.cfg.SECTOR_SIZE_IN_BYTES) +
                       header.num_part_entries * header.part_entry_size;
-      let sectors   = Math.floor(gptSize / this.cfg.SECTOR_SIZE_IN_BYTES);
+      let sectors = Math.floor(gptSize / this.cfg.SECTOR_SIZE_IN_BYTES);
       if (gptSize % this.cfg.SECTOR_SIZE_IN_BYTES != 0)
         sectors += 1;
       if (sectors == 0 || sectors > 64)
@@ -169,22 +169,22 @@ export class Firehose {
         ` physical_partition_number=\"${physicalPartitionNumber}\"` +
         ` start_sector=\"${startSector}\"/>\n</data>`
 
-    let rsp     = await this.xmlSend(data);
+    let rsp = await this.xmlSend(data);
     let resData = new Uint8Array();
     if (!rsp.resp) {
       return rsp;
     } else {
       let bytesToRead = this.cfg.SECTOR_SIZE_IN_BYTES * numPartitionSectors;
       while (bytesToRead > 0) {
-        let tmp     = await this.cdc.read(Math.min(this.cdc.maxSize, bytesToRead));
-        const size  = tmp.length;
-        bytesToRead-= size;
-        resData     = concatUint8Array([resData, tmp]);
+        let tmp = await this.cdc.read(Math.min(this.cdc.maxSize, bytesToRead));
+        const size = tmp.length;
+        bytesToRead -= size;
+        resData = concatUint8Array([resData, tmp]);
       }
 
-      const wd    = await this.waitForData();
-      const info  = this.xml.getLog(wd);
-      rsp         = this.xml.getReponse(wd);
+      const wd = await this.waitForData();
+      const info = this.xml.getLog(wd);
+      rsp = this.xml.getReponse(wd);
       if (rsp.hasOwnProperty("value")) {
         if (rsp["value"] !== "ACK") {
           return new response(false, resData, info);
@@ -203,7 +203,7 @@ export class Firehose {
 
 
   async waitForData() {
-    let tmp     = new Uint8Array();
+    let tmp = new Uint8Array();
     let timeout = 0;
 
     while (!containsBytes("response value", tmp)) {
@@ -221,30 +221,30 @@ export class Firehose {
 
 
   async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress=()=>{}) {
-    let total         = blob.size;
-    let sparseformat  = false;
+    let total = blob.size;
+    let sparseformat = false;
 
     let sparseHeader = await Sparse.parseFileHeader(blob.slice(0, Sparse.FILE_HEADER_SIZE));
     if (sparseHeader !== null) {
-      sparseformat  = true;
-      total         = await Sparse.getSparseRealSize(blob, sparseHeader);
+      sparseformat = true;
+      total = await Sparse.getSparseRealSize(blob, sparseHeader);
     }
 
     let numPartitionSectors = Math.floor(total/this.cfg.SECTOR_SIZE_IN_BYTES);
     if (total % this.cfg.SECTOR_SIZE_IN_BYTES != 0)
       numPartitionSectors += 1;
 
-    const data  = `<?xml version=\"1.0\" ?><data>\n` +
+    const data = `<?xml version=\"1.0\" ?><data>\n` +
               `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
               ` num_partition_sectors=\"${numPartitionSectors}\"` +
               ` physical_partition_number=\"${physicalPartitionNumber}\"` +
               ` start_sector=\"${startSector}\" />\n</data>`;
-    let rsp     = await this.xmlSend(data);
+    let rsp = await this.xmlSend(data);
     let i = 0, bytesWritten = 0;
 
     if (rsp.resp) {
       for await (let split of Sparse.splitBlob(blob)) {
-        let offset            = 0;
+        let offset = 0;
         let bytesToWriteSplit = split.size;
 
         while (bytesToWriteSplit > 0) {
@@ -258,9 +258,9 @@ export class Firehose {
           }
           await this.cdc.write(wdata);
           await this.cdc.write(new Uint8Array(0), null, true);
-          offset             += wlen;
-          bytesWritten       += wlen;
-          bytesToWriteSplit  -= wlen;
+          offset += wlen;
+          bytesWritten += wlen;
+          bytesToWriteSplit -= wlen;
 
           // Need this for sprase image when the data.length < MaxPayloadSizeToTargetInBytes
           // Add ~2.4s to total flash time
@@ -307,9 +307,9 @@ export class Firehose {
 
 
   async cmdPatchMultiple(lun, startSector, byteOffset, patchData) {
-    const writeSize     = patchData.length;
+    const writeSize = patchData.length;
     const sizeEachPatch = 4;
-    let offset          = 0;
+    let offset = 0;
     for (let i = 0; i < writeSize; i += sizeEachPatch) {
       const pdataSubset = fromUint8ArrayToNumber(patchData.slice(offset, offset+sizeEachPatch));
       await this.cmdPatch(lun, startSector, byteOffset+offset, pdataSubset, sizeEachPatch);
@@ -350,9 +350,9 @@ export class Firehose {
 
     partEntryA.flags = this.setPartitionFlags(partEntryA.flags, slot_a_status, isBoot);
     partEntryB.flags = this.setPartitionFlags(partEntryB.flags, slot_b_status, isBoot);
-    const tmp        = partEntryB.type;
-    partEntryB.type  = partEntryA.type;
-    partEntryA.type  = tmp;
+    const tmp = partEntryB.type;
+    partEntryB.type = partEntryA.type;
+    partEntryA.type = tmp;
     const pDataA = partEntryA.create(), pDataB = partEntryB.create();
 
     return [pDataA, partA.entryOffset, pDataB, partB.entryOffset];
@@ -360,8 +360,8 @@ export class Firehose {
 
 
   async cmdSetActiveSlot(slot) {
-    slot          = slot.toLowerCase();
-    const luns    = this.luns
+    slot = slot.toLowerCase();
+    const luns = this.luns
     let slot_a_status, slot_b_status;
 
     if (slot == "a") {
@@ -376,7 +376,7 @@ export class Firehose {
       if (guidGptA === null)
         throw new Error("Firehose - Error while getting gpt header data");
       for (const partitionNameA in guidGptA.partentries) {
-        let slotSuffix      = partitionNameA.toLowerCase().slice(-2);
+        let slotSuffix = partitionNameA.toLowerCase().slice(-2);
         if (slotSuffix === "_a") {
           const partitionNameB = partitionNameA.slice(0, partitionNameA.length-1) + "b";
           let sts, lunB, headerB, guidGptB;
@@ -450,19 +450,19 @@ export class Firehose {
       console.log(`Successfully set bootID to lun ${lun}`);
       return true;
     } else {
-      throw new Error(`Firehose - Failed to set boot lun ${lun}`);
+      throw `Firehose - Failed to set boot lun ${lun}`;
     }
   }
 
 
   async cmdReset() {
-    let data  = "<?xml version=\"1.0\" ?><data><power value=\"reset\"/></data>";
-    let val   = await this.xmlSend(data);
+    let data = "<?xml version=\"1.0\" ?><data><power value=\"reset\"/></data>";
+    let val = await this.xmlSend(data);
     if (val.resp) {
       console.log("Reset succeeded");
       return true;
     } else {
-      throw new Error("Firehose - Reset failed");
+      throw "Firehose - Reset failed";
     }
   }
 }

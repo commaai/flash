@@ -5,13 +5,13 @@ import config from "@/config"
 
 export class Sahara {
   constructor(cdc) {
-    this.cdc        = cdc;
-    this.ch         = new CommandHandler();
+    this.cdc = cdc;
+    this.ch = new CommandHandler();
     this.programmer = "6000000000010000_f8ab20526358c4fa_fhprg.bin";
-    this.id         = null;
-    this.serial     = "";
-    this.mode       = "";
-    this.rootDir    = null;
+    this.id = null;
+    this.serial = "";
+    this.mode = "";
+    this.rootDir = null;
   }
 
 
@@ -31,9 +31,9 @@ export class Sahara {
 
 
   async cmdHello(mode, version=2, version_min=1, max_cmd_len=0) {
-    const cmd          = cmd_t.SAHARA_HELLO_RSP;
-    const len          = 0x30;
-    const elements     = [cmd, len, version, version_min, max_cmd_len, mode, 1, 2, 3, 4, 5, 6];
+    const cmd = cmd_t.SAHARA_HELLO_RSP;
+    const len = 0x30;
+    const elements = [cmd, len, version, version_min, max_cmd_len, mode, 1, 2, 3, 4, 5, 6];
     const responseData = packGenerator(elements);
     await this.cdc?.write(responseData);
     return true;
@@ -42,7 +42,7 @@ export class Sahara {
 
   async cmdModeSwitch(mode) {
     const elements = [cmd_t.SAHARA_SWITCH_MODE, 0xC, mode];
-    let data       = packGenerator(elements);
+    let data = packGenerator(elements);
     await this.cdc?.write(data);
     return true;
   }
@@ -50,7 +50,7 @@ export class Sahara {
 
   async getResponse() {
     try {
-      let data      = await this.cdc?.read();
+      let data = await this.cdc?.read();
       let data_text = new TextDecoder('utf-8').decode(data.data);
       if (data.length == 0) {
         return {};

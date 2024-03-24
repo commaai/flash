@@ -6,27 +6,27 @@ const CHUNK_HEADER_SIZE = 12;
 const MAX_DOWNLOAD_SIZE = 1024 * 1024 * 1024; // 1 GiB
 
 const ChunkType = {
-  Raw   : 0xCAC1,
-  Fill  : 0xCAC2,
-  Skip  : 0xCAC3,
+  Raw : 0xCAC1,
+  Fill : 0xCAC2,
+  Skip : 0xCAC3,
   Crc32 : 0xCAC4,
 }
 
 
 class QCSparse {
   constructor(blob, header) {
-    this.blob         = blob;
-    this.blk_sz       = header.blk_sz;
+    this.blob = blob;
+    this.blk_sz = header.blk_sz;
     this.total_chunks = header.total_chunks;
-    this.blobOffset   = 0;
+    this.blobOffset = 0;
   }
 
 
   async getChunkSize() {
-    let chunkHeader  = await parseChunkHeader(this.blob.slice(this.blobOffset, this.blobOffset + CHUNK_HEADER_SIZE));
+    let chunkHeader = await parseChunkHeader(this.blob.slice(this.blobOffset, this.blobOffset + CHUNK_HEADER_SIZE));
     const chunk_type = chunkHeader.type;
-    const blocks     = chunkHeader.blocks;
-    const data_sz    = chunkHeader.dataBytes;
+    const blocks = chunkHeader.blocks;
+    const data_sz = chunkHeader.dataBytes;
     this.blobOffset += CHUNK_HEADER_SIZE + data_sz;
 
     if (chunk_type == ChunkType.Raw) {
@@ -79,30 +79,30 @@ export async function getSparseRealSize(blob, header) {
 
 
 async function parseChunkHeader(blobChunkHeader) {
-  let chunkHeader  = await readBlobAsBuffer(blobChunkHeader);
-  let view         = new DataView(chunkHeader);
+  let chunkHeader = await readBlobAsBuffer(blobChunkHeader);
+  let view = new DataView(chunkHeader);
   return {
-    type       : view.getUint16(0, true),
-    blocks     : view.getUint32(4, true),
-    dataBytes  : view.getUint32(8, true) - CHUNK_HEADER_SIZE,
-    data       : null,
+    type : view.getUint16(0, true),
+    blocks : view.getUint32(4, true),
+    dataBytes : view.getUint32(8, true) - CHUNK_HEADER_SIZE,
+    data : null,
   }
 }
 
 
 export async function parseFileHeader(blobHeader) {
-  let header  = await readBlobAsBuffer(blobHeader);
-  let view    = new DataView(header);
+  let header = await readBlobAsBuffer(blobHeader);
+  let view = new DataView(header);
 
-  let magic          = view.getUint32(0, true);
-  let major_version  = view.getUint16(4, true);
-  let minor_version  = view.getUint16(6, true);
-  let file_hdr_sz    = view.getUint16(8, true);
-  let chunk_hdr_sz   = view.getUint16(10, true);
-  let blk_sz         = view.getUint32(12, true);
-  let total_blks     = view.getUint32(16, true);
-  let total_chunks   = view.getUint32(20, true);
-  let crc32          = view.getUint32(24, true);
+  let magic = view.getUint32(0, true);
+  let major_version = view.getUint16(4, true);
+  let minor_version = view.getUint16(6, true);
+  let file_hdr_sz = view.getUint16(8, true);
+  let chunk_hdr_sz = view.getUint16(10, true);
+  let blk_sz = view.getUint32(12, true);
+  let total_blks = view.getUint32(16, true);
+  let total_chunks = view.getUint32(20, true);
+  let crc32 = view.getUint32(24, true);
 
   if (magic != FILE_MAGIC) {
     return null;
@@ -117,29 +117,29 @@ export async function parseFileHeader(blobHeader) {
   }
 
   return {
-    magic         : magic,
+    magic : magic,
     major_version : major_version,
     minor_version : minor_version,
-    file_hdr_sz   : file_hdr_sz,
-    chunk_hdr_sz  : chunk_hdr_sz,
-    blk_sz        : blk_sz,
-    total_blks    : total_blks,
-    total_chunks  : total_chunks,
-    crc32         : crc32,
+    file_hdr_sz : file_hdr_sz,
+    chunk_hdr_sz : chunk_hdr_sz,
+    blk_sz : blk_sz,
+    total_blks : total_blks,
+    total_chunks : total_chunks,
+    crc32 : crc32,
   }
 }
 
 
 async function populate(chunks, blockSize) {
   const nBlocks = calcChunksBlocks(chunks);
-  let ret       = new Uint8Array(nBlocks*blockSize);
-  let offset    = 0;
+  let ret = new Uint8Array(nBlocks*blockSize);
+  let offset = 0;
 
   for (const chunk of chunks) {
     const chunk_type = chunk.type;
-    const blocks     = chunk.blocks;
-    const data_sz    = chunk.dataBytes;
-    const data       = chunk.data;
+    const blocks = chunk.blocks;
+    const data_sz = chunk.dataBytes;
+    const data = chunk.data;
 
     if (chunk_type == ChunkType.Raw) {
       let rawData = new Uint8Array(await readBlobAsBuffer(data));
@@ -202,21 +202,21 @@ export async function* splitBlob(blob, splitSize = 1048576 /* maxPayloadSizeToTa
   }
 
   header.crc32 = 0;
-  blob         = blob.slice(FILE_HEADER_SIZE);
+  blob = blob.slice(FILE_HEADER_SIZE);
   let splitChunks = [];
   for (let i = 0; i < header.total_chunks; i++) {
-    let originalChunk  = await parseChunkHeader(blob.slice(0, CHUNK_HEADER_SIZE));
+    let originalChunk = await parseChunkHeader(blob.slice(0, CHUNK_HEADER_SIZE));
     originalChunk.data = blob.slice(CHUNK_HEADER_SIZE, CHUNK_HEADER_SIZE + originalChunk.dataBytes);
     blob = blob.slice(CHUNK_HEADER_SIZE + originalChunk.dataBytes);
 
-    let chunksToProcess  = [];
+    let chunksToProcess = [];
     let realBytesToWrite = calcChunksRealDataBytes(originalChunk, header.blk_sz)
 
     const isChunkTypeSkip = originalChunk.type == ChunkType.Skip;
     const isChunkTypeFill = originalChunk.type == ChunkType.Fill;
 
     if (realBytesToWrite > safeToSend) {
-      let bytesToWrite      = isChunkTypeSkip ? 1 : originalChunk.dataBytes;
+      let bytesToWrite = isChunkTypeSkip ? 1 : originalChunk.dataBytes;
       let originalChunkData = originalChunk.data;
 
       while (bytesToWrite > 0) {
@@ -227,20 +227,20 @@ export async function* splitBlob(blob, splitSize = 1048576 /* maxPayloadSizeToTa
           while (realBytesToWrite > 0) {
             const realSend = Math.min(safeToSend, realBytesToWrite);
             tmpChunk = {
-              type      : originalChunk.type,
-              blocks    : realSend / header.blk_sz,
+              type : originalChunk.type,
+              blocks : realSend / header.blk_sz,
               dataBytes : isChunkTypeSkip ? 0 : toSend,
-              data      : isChunkTypeSkip ? new Blob([]) : originalChunkData.slice(0, toSend),
+              data : isChunkTypeSkip ? new Blob([]) : originalChunkData.slice(0, toSend),
             }
             chunksToProcess.push(tmpChunk);
             realBytesToWrite -= realSend;
           }
         } else {
           tmpChunk = {
-            type      : originalChunk.type,
-            blocks    : toSend / header.blk_sz,
+            type : originalChunk.type,
+            blocks : toSend / header.blk_sz,
             dataBytes : toSend,
-            data      : originalChunkData.slice(0, toSend),
+            data : originalChunkData.slice(0, toSend),
           }
           chunksToProcess.push(tmpChunk);
         }
