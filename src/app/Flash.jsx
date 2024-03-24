@@ -265,13 +265,13 @@ export default function Flash() {
       <span className={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
       {(title === "Lost connection" || title === "Ready") && isLinux && (
         <>
-          <span className={`text-l dark:text-white px-2`}>
+          <span className={`text-l dark:text-white px-2 max-w-xl`}>
             It seems that you're on Linux, make sure to run the script below in your terminal after plugging in your device.
           </span>
           <div className="relative mt-2">
             <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
               <div className="relative">
-                <pre className="font-mono text-base text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-5">
+                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow">
                   {detachScripts.map((line, index) => (
                     <span key={index} className="block">
                       {line}
