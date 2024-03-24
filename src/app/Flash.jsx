@@ -266,7 +266,7 @@ export default function Flash() {
       {(title === "Lost connection" || title === "Ready") && isLinux && (
         <>
           <span className={`text-l dark:text-white px-2 max-w-xl`}>
-            It seems that you`&apos;`re on Linux, make sure to run the script below in your terminal after plugging in your device.
+            It seems that you&apos;re on Linux, make sure to run the script below in your terminal after plugging in your device.
           </span>
           <div className="relative mt-2">
             <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
