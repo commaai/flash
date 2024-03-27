@@ -118,15 +118,10 @@ class partf {
 
 
 export class gpt {
-  constructor(numPartEntries=0, partEntrySize=0, partEntryStartLba=0) {
-    this.numPartEntries = numPartEntries;
-    this.partEntrySize = partEntrySize;
-    this.partEntryStartLba = partEntryStartLba;
-    this.totalSectors = null;
+  constructor() {
     this.header = null;
     this.sectorSize = null;
     this.partentries = {};
-    this.header = null;
   }
 
   parseHeader(gptData, sectorSize=512) {
@@ -145,20 +140,16 @@ export class gpt {
       return false;
     }
 
-    let start;
-    if (this.partEntryStartLba != 0) {
-      start = self.partEntryStartLba;
-    } else {
-      start = this.header.part_entry_start_lba * sectorSize;
-    }
+    // mbr (even for backup gpt header to ensure offset consistency) + gpt header + part_table
+    let start = 2 * sectorSize;
 
     let entrySize = this.header.part_entry_size;
     this.partentries = {};
     let numPartEntries = this.header.num_part_entries;
     for (let idx = 0; idx < numPartEntries; idx++) {
       const data = gptData.slice(start + (idx * entrySize), start + (idx * entrySize) + entrySize);
-      if (new DataView(data.slice(16,32).buffer, 0).getUint16(0, true) == 0)
-         break;
+      if (new DataView(data.slice(16,32).buffer, 0).getUint32(0, true) == 0)
+        break;
 
       let partentry = new gptPartition(data);
       let pa = new partf();
@@ -194,17 +185,16 @@ export class gpt {
         continue;
       this.partentries[pa.name] = pa;
     }
-    this.totalsectors = this.header.first_usable_lba + this.header.last_usable_lba;
     return true;
   }
 
 
   fixGptCrc(data) {
-    const partentry_size = this.header.num_part_entries * this.header.part_entry_size;
-    const partentry_offset = this.header.part_entry_start_lba * this.sectorSize;
-    const partdata = Uint8Array.from(data.slice(partentry_offset, partentry_offset + partentry_size));
-    const headeroffset = this.header.current_lba * this.sectorSize;
-    let headerdata = Uint8Array.from(data.slice(headeroffset, headeroffset+this.header.header_size));
+    const headerOffset = this.sectorSize;
+    const partentryOffset = 2 * this.sectorSize;
+    const partentrySize = this.header.num_part_entries * this.header.part_entry_size;
+    const partdata = Uint8Array.from(data.slice(partentryOffset, partentryOffset + partentrySize));
+    let headerdata = Uint8Array.from(data.slice(headerOffset, headerOffset + this.header.header_size));
 
     let view = new DataView(new ArrayBuffer(4));
     view.setInt32(0, CRC32.buf(Buffer.from(partdata)), true);
@@ -214,7 +204,59 @@ export class gpt {
     view.setInt32(0, CRC32.buf(Buffer.from(headerdata)), true);
     headerdata.set(new Uint8Array(view.buffer), 0x10);
 
-    data.set(headerdata, headeroffset);
+    data.set(headerdata, headerOffset);
     return data;
   }
+}
+
+
+// 0x003a as inactive and 0x006f for active boot partitions. This follows fastboot standard
+export function setPartitionFlags(flags, active, isBoot) {
+  let newFlags = BigInt(flags);
+  if (active) {
+    if (isBoot) {
+      newFlags = BigInt(0x006f) << PART_ATT_PRIORITY_BIT;
+    } else {
+      newFlags |= PART_ATT_ACTIVE_VAL;
+    }
+  } else {
+    if (isBoot) {
+      newFlags = BigInt(0x003a) << PART_ATT_PRIORITY_BIT;
+    } else {
+      newFlags &= ~PART_ATT_ACTIVE_VAL;
+    }
+  }
+  return Number(newFlags);
+}
+
+
+function checkHeaderCrc(gptData, guidGpt) {
+  const headerOffset = guidGpt.sectorSize;
+  const headerSize = guidGpt.header.header_size;
+
+  const header = gptData.slice(headerOffset, headerOffset + headerSize);
+  const testHeader = new Uint8Array(guidGpt.fixGptCrc(gptData).buffer).slice(headerOffset, headerOffset + headerSize);
+  const headerCrc = header.slice(0x10, 0x10 + 4), testHeaderCrc = testHeader.slice(0x10, 0x10 + 4);
+  const partTableCrc = header.slice(0x58, 0x58 + 4), testPartTableCrc = testHeader.slice(0x58, 0x58 + 4);
+  return [Buffer.from(headerCrc).toString('hex') !== Buffer.from(testHeaderCrc).toString('hex') ||
+          Buffer.from(partTableCrc).toString('hex') !== Buffer.from(testPartTableCrc).toString('hex'),
+          Buffer.from(partTableCrc).toString('hex')]
+}
+
+
+export function ensureGptHdrConsistency(gptData, backupGptData, guidGpt, backupGuidGpt) {
+  const partTableOffset = guidGpt.sectorSize * 2;
+
+  const [primCorrupted, primPartTableCrc] = checkHeaderCrc(gptData, guidGpt);
+  const [backupCorrupted, backupPartTableCrc] = checkHeaderCrc(backupGptData, backupGuidGpt);
+
+  const headerConsistency = primPartTableCrc === backupPartTableCrc;
+  if (primCorrupted || !headerConsistency) {
+    if (backupCorrupted)
+      throw "Both primary and backup gpt headers are corrupted, cannot recover";
+    gptData.set(backupGptData.slice(partTableOffset), partTableOffset);
+    gptData = guidGpt.fixGptCrc(gptData);
+  }
+
+  return gptData;
 }

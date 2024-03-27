@@ -27,7 +27,7 @@ export class usbClass {
   async _validateAndConnectDevice() {
     let ife = this.device?.configurations[0].interfaces[0].alternates[0];
     if (ife.endpoints.length !== 2) {
-      throw new Error("USB - Attempted to connect to null device");
+      throw "USB - Attempted to connect to null device";
     }
 
     this.epIn = null;
@@ -35,19 +35,19 @@ export class usbClass {
 
     for (let endpoint of ife.endpoints) {
       if (endpoint.type !== "bulk") {
-        throw new Error("USB - Interface endpoint is not bulk");
+        throw "USB - Interface endpoint is not bulk";
       }
       if (endpoint.direction === "in") {
         if (this.epIn === null) {
           this.epIn = endpoint;
         } else {
-          throw new Error("USB - Interface has multiple IN endpoints");
+          throw "USB - Interface has multiple IN endpoints";
         }
       } else if (endpoint.direction === "out") {
         if (this.epOut === null) {
           this.epOut = endpoint;
         } else {
-          throw new Error("USB - Interface has multiple OUT endpoints");
+          throw "USB - Interface has multiple OUT endpoints";
         }
       }
       this.maxSize = this.epIn.packetSize;
@@ -66,7 +66,7 @@ export class usbClass {
           console.error(error);
         }
     } catch (error) {
-      throw new Error(`USB - ${error}`);
+      throw `USB - ${error}`;
     }
   }
 

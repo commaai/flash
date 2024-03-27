@@ -94,7 +94,7 @@ export class Sahara {
         let payload = await this.cdc.read(pkt.data_len);
         return payload;
       } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
-        throw new Error("Sahara - error while executing command");
+        throw "Sahara - error while executing command";
       }
       return null;
     }
@@ -105,9 +105,9 @@ export class Sahara {
   async cmdGetSerialNum() {
     let res = await this.cmdExec(exec_cmd_t.SAHARA_EXEC_CMD_SERIAL_NUM_READ);
     if (res === null)
-      throw new Error("Sahara - Unable to get serial number of device");
+      throw "Sahara - Unable to get serial number of device";
     let data = new DataView(res.buffer, 0).getUint32(0, true);
-    return data.toString();
+    return "0x"+data.toString(16).padStart(8,'0');
   }
 
 
@@ -135,13 +135,13 @@ export class Sahara {
       const fileHandle = await this.rootDir.getFileHandle(this.programmer, { create: true });
       writable = await fileHandle.createWritable();
     } catch (error) {
-      throw new Error(`Sahara - ${error}`);
+      throw `Sahara - ${error}`;
     }
 
     const programmerUrl = config.loader['url'];
     const response = await fetch(programmerUrl, { mode: 'cors' })
     if (!response.ok) {
-      throw new Error(`Sahara - Failed to fetch Loader: ${response.status} ${response.statusText}`);
+      throw `Sahara - Failed to fetch Loader: ${response.status} ${response.statusText}`;
     }
 
     try {
@@ -155,13 +155,13 @@ export class Sahara {
         processed += value.length;
       }
     } catch (error) {
-      throw new Error(`Sahara - Could not read response body: ${error}`);
+      throw `Sahara - Could not read response body: ${error}`;
     }
 
     try {
       await writable.close()
     } catch (error) {
-      throw new Error(`Sahara - Error closing file handle: ${error}`);
+      throw `Sahara - Error closing file handle: ${error}`;
     }
   }
 
@@ -171,7 +171,7 @@ export class Sahara {
     try {
       fileHandle = await this.rootDir.getFileHandle(this.programmer, { create: false })
     } catch (error) {
-      throw new Error(`Sahara - Error getting file handle: ${error}`);
+      throw `Sahara - Error getting file handle: ${error}`;
     }
     return await fileHandle.getFile();
   }
@@ -179,7 +179,7 @@ export class Sahara {
 
   async uploadLoader() {
     if (!(await this.enterCommandMode())) {
-      throw new Error("Sahara - Failed to enter command mode in Sahara");
+      throw "Sahara - Failed to enter command mode in Sahara";
     } else {
       this.serial = await this.cmdGetSerialNum();
       await this.cmdModeSwitch(sahara_mode_t.SAHARA_MODE_COMMAND);
@@ -191,7 +191,7 @@ export class Sahara {
     const loaderBlob = await this.getLoader();
     let programmer = new Uint8Array(await readBlobAsBuffer(loaderBlob));
     if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING)))
-      throw new Error("Sahara - Error while uploading loader");
+      throw "Sahara - Error while uploading loader";
 
     let datalen = programmer.length;
     let loop    = 0;
@@ -201,7 +201,7 @@ export class Sahara {
       if (resp.hasOwnProperty("cmd")) {
         cmd = resp["cmd"];
       } else {
-        throw new Error("Sahara - Timeout while uploading loader. Wrong loader?");
+        throw "Sahara - Timeout while uploading loader. Wrong loader?";
       }
       if (cmd == cmd_t.SAHARA_64BIT_MEMORY_READ_DATA) {
         if (loop == 0)
@@ -213,7 +213,7 @@ export class Sahara {
           if (loop == 0)
             console.log("Firehose mode detected, uploading...");
         } else {
-          throw new Error("Sahara - Unknown sahara id");
+          throw "Sahara - Unknown sahara id";
         }
 
         loop += 1;
@@ -232,7 +232,7 @@ export class Sahara {
           if (await this.cmdDone()) {
             console.log("Loader successfully uploaded");
           } else {
-            throw new Error("Sahara - Failed to upload Loader");
+            throw "Sahara - Failed to upload Loader";
           }
           return this.mode;
         }
@@ -259,7 +259,7 @@ export class Sahara {
             }
           }
         } else {
-          throw new Error("Sahara - Received invalid response");
+          throw "Sahara - Received invalid response";
         }
       }
     }

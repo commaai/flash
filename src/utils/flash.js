@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 
+import { concatUint8Array } from '@/QDL/utils'
 import { qdlDevice } from '@/QDL/qdl'
 import * as Comlink from 'comlink'
 import { usePlausible } from 'next-plausible'
@@ -163,7 +164,7 @@ export function useQdl() {
         qdl.current.waitForConnect()
           .then(() => {
             console.info('[QDL] Connected')
-            return qdl.current.getDevicePartitions()
+            return qdl.current.getDevicePartitionsInfo()
               .then(([slotCount, partitions]) => {
                 const recognized = isRecognizedDevice(slotCount, partitions)
                 console.debug('[QDL] Device info', { recognized,  partitions})
@@ -254,19 +255,21 @@ export function useQdl() {
           }
           const otherSlot = currentSlot === 'a' ? 'b' : 'a'
 
-          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
+          // this ensure backup gpt header not updated if crash during setactiveslot and users try to boot up
+          await qdl.current.erase("xbl" + `_${currentSlot}`)
 
+          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
 
             setMessage(`Flashing ${image.name}`)
-            const partitionName = image.name + `_${otherSlot}`;
+            const partitionName = image.name + `_${otherSlot}`
             await qdl.current.flashBlob(partitionName, blob, onProgress)
           }
           console.debug('[QDL] Flashed all partitions')
 
           setMessage(`Changing slot to ${otherSlot}`)
-          await qdl.current.setActvieSlot(otherSlot);
+          await qdl.current.setActiveSlot(otherSlot);
         }
 
         flashDevice()
@@ -284,9 +287,21 @@ export function useQdl() {
       case Step.ERASING: {
         setProgress(0)
 
+        async function resetUserdata() {
+          let dp = await qdl.current.detectPartition("userdata")
+          const found = dp[0]
+          if (found) {
+            const lun = dp[1], partition = dp[2]
+            let wData = new TextEncoder().encode("COMMA_RESET")
+            wData = concatUint8Array([wData, new Uint8Array(28).fill(0)]) // make bigger than sparseHeaderSize
+            const startSector = partition.sector
+            await qdl.current.firehose.cmdProgram(lun, startSector, new Blob([wData.buffer]))
+          }
+        }
+
         async function eraseDevice() {
           setMessage('Erasing userdata')
-          await qdl.current.resetUserdata()
+          await resetUserdata()
           setProgress(0.9)
 
           setMessage('Rebooting')

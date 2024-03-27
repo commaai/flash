@@ -1,6 +1,5 @@
 import { xmlParser } from "./xmlParser"
-import { concatUint8Array, containsBytes, compareStringToBytes, sleep, fromUint8ArrayToNumber, readBlobAsBuffer } from "./utils"
-import * as gpt from "./gpt"
+import { concatUint8Array, containsBytes, compareStringToBytes, sleep, readBlobAsBuffer } from "./utils"
 import * as Sparse from "./sparse";
 
 
@@ -88,6 +87,14 @@ export class Firehose {
   }
 
 
+  getLuns() {
+    let luns = [];
+    for (let i=0; i < this.cfg.maxlun; i++)
+      luns.push(i);
+    return luns;
+  }
+
+
   async configure() {
     let connectCmd = `<?xml version=\"1.0\" encoding=\"UTF-8\" ?><data>` +
               `<configure MemoryName=\"${this.cfg.MemoryName}\" ` +
@@ -105,62 +112,6 @@ export class Firehose {
     return true;
   }
 
-
-  getLuns() {
-    let luns = [];
-    for (let i=0; i < this.cfg.maxlun; i++)
-      luns.push(i);
-    return luns;
-  }
-
-
-  async detectPartition(partitionName, sendFull=false) {
-    const luns = this.luns;
-    for (const lun of luns) {
-      const gptNumPartEntries = 0;
-      const gptPartEntrySize = 0;
-      const gptPartEntryStartLba = 0;
-      const [ data, guidGpt ] = await this.getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
-      if (guidGpt === null) {
-        break;
-      } else {
-        if (guidGpt.partentries.hasOwnProperty(partitionName)) {
-          return sendFull ? [true, lun, data, guidGpt] : [true, lun, guidGpt.partentries[partitionName]];
-        }
-      }
-    }
-    return [false];
-  }
-
-
-  async getGpt(lun, gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba) {
-    let resp;
-    resp = await this.cmdReadBuffer(lun, 0, 2);
-    if (!resp.resp) {
-      console.error(resp.error);
-      return [null, null];
-    }
-
-    let data = resp.data;
-    let guidGpt = new gpt.gpt(gptNumPartEntries, gptPartEntrySize, gptPartEntryStartLba);
-    const header = guidGpt.parseHeader(data, this.cfg.SECTOR_SIZE_IN_BYTES);
-    if (containsBytes("EFI PART", header.signature)) {
-      const gptSize = (header.part_entry_start_lba * this.cfg.SECTOR_SIZE_IN_BYTES) +
-                      header.num_part_entries * header.part_entry_size;
-      let sectors = Math.floor(gptSize / this.cfg.SECTOR_SIZE_IN_BYTES);
-      if (gptSize % this.cfg.SECTOR_SIZE_IN_BYTES != 0)
-        sectors += 1;
-      if (sectors == 0 || sectors > 64)
-        sectors = 64;
-      data = await this.cmdReadBuffer(lun, 0, sectors);
-      if (compareStringToBytes("", data.data))
-        return [null, null];
-      guidGpt.parse(data.data, this.cfg.SECTOR_SIZE_IN_BYTES);
-      return [data.data, guidGpt];
-    } else {
-      return [null, null];
-    }
-  }
 
 
   async cmdReadBuffer(physicalPartitionNumber, startSector, numPartitionSectors) {
@@ -230,8 +181,8 @@ export class Firehose {
       total = await Sparse.getSparseRealSize(blob, sparseHeader);
     }
 
-    let numPartitionSectors = Math.floor(total/this.cfg.SECTOR_SIZE_IN_BYTES);
-    if (total % this.cfg.SECTOR_SIZE_IN_BYTES != 0)
+    let numPartitionSectors = Math.floor(total / this.cfg.SECTOR_SIZE_IN_BYTES);
+    if (total % this.cfg.SECTOR_SIZE_IN_BYTES !== 0)
       numPartitionSectors += 1;
 
     const data = `<?xml version=\"1.0\" ?><data>\n` +
@@ -239,8 +190,9 @@ export class Firehose {
               ` num_partition_sectors=\"${numPartitionSectors}\"` +
               ` physical_partition_number=\"${physicalPartitionNumber}\"` +
               ` start_sector=\"${startSector}\" />\n</data>`;
+    let i = 0;
+    let bytesWritten = 0;
     let rsp = await this.xmlSend(data);
-    let i = 0, bytesWritten = 0;
 
     if (rsp.resp) {
       for await (let split of Sparse.splitBlob(blob)) {
@@ -272,6 +224,7 @@ export class Firehose {
           i += 1;
         }
       }
+
       const wd  = await this.waitForData();
       const response = this.xml.getReponse(wd);
       if (response.hasOwnProperty("value")) {
@@ -282,6 +235,7 @@ export class Firehose {
         return false;
       }
     }
+
     onProgress(1.0);
     return true;
   }
@@ -301,144 +255,44 @@ export class Firehose {
     if (rsp.resp) {
       return true;
     } else {
-      throw new Error(`Firehose - ${rsp.error}`);
+      throw `Firehose - ${rsp.error}`;
     }
   }
 
 
-  async cmdPatchMultiple(lun, startSector, byteOffset, patchData) {
-    const writeSize = patchData.length;
-    const sizeEachPatch = 4;
-    let offset = 0;
-    for (let i = 0; i < writeSize; i += sizeEachPatch) {
-      const pdataSubset = fromUint8ArrayToNumber(patchData.slice(offset, offset+sizeEachPatch));
-      await this.cmdPatch(lun, startSector, byteOffset+offset, pdataSubset, sizeEachPatch);
-      offset += sizeEachPatch;
-    }
-    return true;
-  }
+  async cmdErase(physicalPartitionNumber, startSector, numPartitionSectors, onProgress) {
+    const data = `<?xml version=\"1.0\" ?><data>\n` +
+          `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
+          ` num_partition_sectors=\"${numPartitionSectors}\"` +
+          ` physical_partition_number=\"${physicalPartitionNumber}\"` +
+          ` start_sector=\"${startSector}\" />\n</data>`;
 
+    let pos = 0;
+    let rsp = await this.xmlSend(data)
+    let bytesToWrite = this.cfg.SECTOR_SIZE_IN_BYTES * numPartitionSectors;
+    let empty = new Uint8Array(this.cfg.MaxPayloadSizeToTargetInBytes).fill(0);
+    const total = bytesToWrite;
 
-  // 0x003a as inactive and 0x006f for active boot partitions. This follows fastboot standard
-  setPartitionFlags(flags, active, isBoot) {
-    let newFlags = BigInt(flags);
-    if (active) {
-      if (isBoot) {
-        newFlags = BigInt(0x006f) << gpt.PART_ATT_PRIORITY_BIT;
-      } else {
-        newFlags |= gpt.PART_ATT_ACTIVE_VAL;
+    if (rsp.resp) {
+      while (bytesToWrite > 0) {
+        let wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeToTargetInBytes);
+        await this.cdc.write(empty.slice(0, wlen));
+        bytesToWrite -= wlen;
+        pos += wlen;
+        await this.cdc.write(new Uint8Array(0));
+        onProgress(pos / total);
       }
-    } else {
-      if (isBoot) {
-        newFlags = BigInt(0x003a) << gpt.PART_ATT_PRIORITY_BIT;
-      } else {
-        newFlags &= ~gpt.PART_ATT_ACTIVE_VAL;
-      }
-    }
-    return Number(newFlags);
-  }
 
-
-  patchSetActiveHelper(headerA, headerB, guidGpt, partA, partB, slot_a_status, slot_b_status, isBoot) {
-    const partEntrySize = guidGpt.header.part_entry_size;
-
-    const sdataA = headerA.slice(partA.entryOffset, partA.entryOffset+partEntrySize);
-    const sdataB = headerB.slice(partB.entryOffset, partB.entryOffset+partEntrySize);
-
-    const partEntryA = new gpt.gptPartition(sdataA);
-    const partEntryB = new gpt.gptPartition(sdataB);
-
-    partEntryA.flags = this.setPartitionFlags(partEntryA.flags, slot_a_status, isBoot);
-    partEntryB.flags = this.setPartitionFlags(partEntryB.flags, slot_b_status, isBoot);
-    const tmp = partEntryB.type;
-    partEntryB.type = partEntryA.type;
-    partEntryA.type = tmp;
-    const pDataA = partEntryA.create(), pDataB = partEntryB.create();
-
-    return [pDataA, partA.entryOffset, pDataB, partB.entryOffset];
-  }
-
-
-  async cmdSetActiveSlot(slot) {
-    slot = slot.toLowerCase();
-    const luns = this.luns
-    let slot_a_status, slot_b_status;
-
-    if (slot == "a") {
-      slot_a_status = true;
-    } else if (slot == "b") {
-      slot_a_status = false;
-    }
-    slot_b_status = !slot_a_status;
-
-    for (const lunA of luns) {
-      let [ headerA, guidGptA ] = await this.getGpt(lunA, 0, 0, 0);
-      if (guidGptA === null)
-        throw new Error("Firehose - Error while getting gpt header data");
-      for (const partitionNameA in guidGptA.partentries) {
-        let slotSuffix = partitionNameA.toLowerCase().slice(-2);
-        if (slotSuffix === "_a") {
-          const partitionNameB = partitionNameA.slice(0, partitionNameA.length-1) + "b";
-          let sts, lunB, headerB, guidGptB;
-          if (guidGptA.partentries.hasOwnProperty(partitionNameB)) {
-            lunB = lunA;
-            headerB = headerA;
-            guidGptB = guidGptA;
-          } else {
-            const resp = await this.detectPartition(partitionNameB, true);
-            sts = resp[0];
-            if (!sts)
-              throw new Error(`Firehose - Cannot find partition ${partitionNameB}`);
-            [sts, lunB, headerB, guidGptB] = resp;
-          }
-
-          const partA = guidGptA.partentries[partitionNameA];
-          const partB = guidGptB.partentries[partitionNameB];
-
-          let isBoot = false;
-          if (partitionNameA === "boot_a")
-            isBoot = true;
-          const [pDataA, pOffsetA, pDataB, pOffsetB] = this.patchSetActiveHelper(
-            headerA, headerB, guidGptA, partA, partB, slot_a_status, slot_b_status, isBoot
-          );
-
-          headerA.set(pDataA, pOffsetA);
-          const newHeaderA = guidGptA.fixGptCrc(headerA);
-          if (lunA === lunB)
-            headerB = newHeaderA;
-          headerB.set(pDataB, pOffsetB);
-          const newHeaderB = guidGptB.fixGptCrc(headerB);
-
-          if (headerA !== null) {
-            const startSectorPatchA = Math.floor(pOffsetA / this.cfg.SECTOR_SIZE_IN_BYTES);
-            const byteOffsetPatchA = pOffsetA % this.cfg.SECTOR_SIZE_IN_BYTES;
-            await this.cmdPatchMultiple(lunA, startSectorPatchA, byteOffsetPatchA, pDataA);
-
-
-            // gpt header updated by slot B if in the same lun
-            if (lunA !== lunB) {
-              const headerOffsetA = guidGptA.header.current_lba * guidGptA.sectorSize;
-              const startSectorHdrA = guidGptA.header.current_lba;
-              const pHeaderA = newHeaderA.slice(headerOffsetA, headerOffsetA+guidGptA.header.header_size);
-              await this.cmdPatchMultiple(lunA, startSectorHdrA, 0, pHeaderA);
-            }
-          }
-          if (headerB !== null) {
-            const startSectorPatchB = Math.floor(pOffsetB /this.cfg.SECTOR_SIZE_IN_BYTES);
-            const byteOffsetPatchB = pOffsetB % this.cfg.SECTOR_SIZE_IN_BYTES;
-            await this.cmdPatchMultiple(lunB, startSectorPatchB, byteOffsetPatchB, pDataB);
-
-            const headerOffsetB = guidGptB.header.current_lba * guidGptB.sectorSize;
-            const startSectorHdrB = guidGptB.header.current_lba;
-            const pHeaderB = newHeaderB.slice(headerOffsetB, headerOffsetB+guidGptB.header.header_size);
-            await this.cmdPatchMultiple(lunB, startSectorHdrB, 0, pHeaderB);
-          }
+      const res = await this.waitForData();
+      const response = this.xml.getReponse(res);
+      if (response.hasOwnProperty("value")) {
+        if (response["value"] !== "ACK") {
+            throw "Failed to erase: NAK";
         }
+      } else {
+        throw "Failed to erase no return value";
       }
     }
-    const activeBootLunId = (slot === "a") ? 1 : 2;
-    await this.cmdSetBootLunId(activeBootLunId);
-    console.log(`Successfully set slot ${slot} active`);
     return true;
   }
 
