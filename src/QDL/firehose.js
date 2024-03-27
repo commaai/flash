@@ -22,8 +22,6 @@ class cfg {
     this.MaxPayloadSizeFromTargetInBytes = 4096;
     this.MaxXMLSizeInBytes = 4096;
     this.bit64 = true;
-    this.total_blocks = 0;
-    this.block_size = 0;
     this.SECTOR_SIZE_IN_BYTES = 4096;
     this.MemoryName = "UFS";
     this.maxlun = 6;

@@ -80,9 +80,9 @@ export class qdlDevice {
     let guidGpt = new gpt.gpt();
     const header = guidGpt.parseHeader(data, this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
     if (containsBytes("EFI PART", header.signature)) {
-      const partTableSize = header.num_part_entries * header.part_entry_size;
+      const partTableSize = header.numPartEntries * header.partEntrySize;
       const sectors = Math.floor(partTableSize / this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
-      data = concatUint8Array([data, (await this.firehose.cmdReadBuffer(lun, header.part_entry_start_lba, sectors)).data]);
+      data = concatUint8Array([data, (await this.firehose.cmdReadBuffer(lun, header.partEntryStartLba, sectors)).data]);
       guidGpt.parse(data, this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
       return [data, guidGpt];
     } else {
@@ -168,8 +168,8 @@ export class qdlDevice {
         throw "Cannot get active slot."
       for (const partitionName in guidGpt.partentries) {
         const slot = partitionName.slice(-2);
-        // backup gpt header is more reliable
-        const [ backupGptData, backupGuidGpt ] = await this.getGpt(lun, guidGpt.header.backup_lba);
+        // backup gpt header is more reliable, since it would always has the non-corrupted gpt header
+        const [ backupGptData, backupGuidGpt ] = await this.getGpt(lun, guidGpt.header.backupLba);
         const partition = backupGuidGpt.partentries[partitionName];
         const active = (((BigInt(partition.flags) >> (BigInt(gpt.AB_FLAG_OFFSET) * BigInt(8))))
                       & BigInt(gpt.AB_PARTITION_ATTR_SLOT_ACTIVE)) === BigInt(gpt.AB_PARTITION_ATTR_SLOT_ACTIVE);
@@ -198,7 +198,7 @@ export class qdlDevice {
 
 
   patchSetActiveHelper(gptDataA, gptDataB, guidGpt, partA, partB, slot_a_status, slot_b_status, isBoot) {
-    const partEntrySize = guidGpt.header.part_entry_size;
+    const partEntrySize = guidGpt.header.partEntrySize;
 
     const sdataA = gptDataA.slice(partA.entryOffset, partA.entryOffset+partEntrySize);
     const sdataB = gptDataB.slice(partB.entryOffset, partB.entryOffset+partEntrySize);
@@ -232,7 +232,7 @@ export class qdlDevice {
     for (const lunA of luns) {
       let checkGptHeader = false;
       let [ gptDataA, guidGptA ] = await this.getGpt(lunA);
-      let [ backupGptDataA, backupGuidGptA ] = await this.getGpt(lunA, guidGptA.header.backup_lba);
+      let [ backupGptDataA, backupGuidGptA ] = await this.getGpt(lunA, guidGptA.header.backupLba);
       if (guidGptA === null)
         throw "Firehose - Error while getting gpt header data";
       for (const partitionNameA in guidGptA.partentries) {
@@ -253,7 +253,7 @@ export class qdlDevice {
             if (!sts)
               throw `Firehose - Cannot find partition ${partitionNameB}`;
             [ sts, lunB, gptDataB, guidGptB ] = resp;
-            [ backupGptDataB, backupGuidGptB ] = await this.getGpt(lunB, guidGptB.header.backup_lba);
+            [ backupGptDataB, backupGuidGptB ] = await this.getGpt(lunB, guidGptB.header.backupLba);
           }
 
           if (!checkGptHeader) {
@@ -288,9 +288,9 @@ export class qdlDevice {
 
             // gpt header updated by slot B if in the same lun
             if (lunA !== lunB) {
-              const headerOffsetA = guidGptA.header.current_lba * guidGptA.sectorSize;
-              const startSectorHdrA = guidGptA.header.current_lba;
-              const pHeaderA = newGptDataA.slice(headerOffsetA, headerOffsetA + guidGptA.header.header_size);
+              const headerOffsetA = guidGptA.sectorSize;
+              const startSectorHdrA = guidGptA.header.currentLba;
+              const pHeaderA = newGptDataA.slice(headerOffsetA, headerOffsetA + guidGptA.header.headerSize);
               await this.cmdPatchMultiple(lunA, startSectorHdrA, 0, pHeaderA);
             }
           }
@@ -299,9 +299,9 @@ export class qdlDevice {
             const byteOffsetPatchB = pOffsetB % this.firehose.cfg.SECTOR_SIZE_IN_BYTES;
             await this.cmdPatchMultiple(lunB, startSectorPatchB, byteOffsetPatchB, pDataB);
 
-            const headerOffsetB = guidGptB.header.current_lba * guidGptB.sectorSize;
-            const startSectorHdrB = guidGptB.header.current_lba;
-            const pHeaderB = newGptDataB.slice(headerOffsetB, headerOffsetB + guidGptB.header.header_size);
+            const headerOffsetB = guidGptB.sectorSize;
+            const startSectorHdrB = guidGptB.header.currentLba;
+            const pHeaderB = newGptDataB.slice(headerOffsetB, headerOffsetB + guidGptB.header.headerSize);
             await this.cmdPatchMultiple(lunB, startSectorHdrB, 0, pHeaderB);
           }
         }
