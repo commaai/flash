@@ -2,7 +2,7 @@ import * as gpt from "./gpt"
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
-import { concatUint8Array, runWithTimeout, containsBytes, fromUint8ArrayToNumber } from "./utils"
+import { concatUint8Array, runWithTimeout, containsBytes, from4BytesToNumber } from "./utils"
 
 
 export class qdlDevice {
@@ -189,7 +189,7 @@ export class qdlDevice {
     const sizeEachPatch = 4;
     let offset = 0;
     for (let i = 0; i < writeSize; i += sizeEachPatch) {
-      const pdataSubset = fromUint8ArrayToNumber(patchData.slice(offset, offset + sizeEachPatch));
+      const pdataSubset = from4BytesToNumber(patchData.slice(offset, offset + sizeEachPatch));
       await this.firehose.cmdPatch(lun, startSector, byteOffset+offset, pdataSubset, sizeEachPatch);
       offset += sizeEachPatch;
     }

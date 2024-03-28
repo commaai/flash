@@ -78,7 +78,7 @@ export function readBlobAsBuffer(blob) {
 }
 
 
-export function fromUint8ArrayToNumber(array) {
+export function from4BytesToNumber(array) {
   let view = new DataView(array.buffer, 0);
   if (array.length > 4) {
     throw new Error("Only returns <= 32 bit number");
