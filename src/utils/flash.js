@@ -7,13 +7,13 @@ import * as Comlink from 'comlink'
 import { usePlausible } from 'next-plausible'
 
 import config from '@/config'
-import { download } from './blob'
-import { useImageWorker } from './image'
-import { createManifest } from './manifest'
-import { withProgress } from './progress'
+import { download } from '@/utils/blob'
+import { useImageWorker } from '@/utils/image'
+import { createManifest } from '@/utils/manifest'
+import { withProgress } from '@/utils/progress'
 
 /**
- * @typedef {import('../../utils/manifest.js/index.js').Image} Image
+ * @typedef {import('./manifest.js').Image} Image
  */
 
 export const Step = {
