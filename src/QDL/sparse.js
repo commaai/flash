@@ -30,7 +30,7 @@ class QCSparse {
     this.blobOffset += CHUNK_HEADER_SIZE + data_sz;
 
     if (chunk_type == ChunkType.Raw) {
-      if (data_sz != (blocks*this.blockSize)) {
+      if (data_sz != (blocks * this.blockSize)) {
         throw new Error("Sparse - Chunk input size does not match output size");
       } else {
         return data_sz;
@@ -132,7 +132,7 @@ export async function parseFileHeader(blobHeader) {
 
 async function populate(chunks, blockSize) {
   const nBlocks = calcChunksBlocks(chunks);
-  let ret = new Uint8Array(nBlocks*blockSize);
+  let ret = new Uint8Array(nBlocks * blockSize);
   let offset = 0;
 
   for (const chunk of chunks) {
@@ -144,16 +144,16 @@ async function populate(chunks, blockSize) {
     if (chunk_type == ChunkType.Raw) {
       let rawData = new Uint8Array(await readBlobAsBuffer(data));
       ret.set(rawData, offset);
-      offset += blocks*blockSize;
+      offset += blocks * blockSize;
     } else if (chunk_type == ChunkType.Fill) {
       const fill_bin = new Uint8Array(await readBlobAsBuffer(data));
-      const bufferSize = blocks*blockSize;
+      const bufferSize = blocks * blockSize;
       for (let i = 0; i < bufferSize; i+=data_sz) {
         ret.set(fill_bin, offset);
         offset += data_sz;
       }
     } else if (chunk_type == ChunkType.Skip) {
-      let byteToSend = blocks*blockSize;
+      let byteToSend = blocks * blockSize;
       let skipData = new Uint8Array(byteToSend).fill(0);
       ret.set(skipData, offset);
       offset += byteToSend;
