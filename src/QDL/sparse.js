@@ -23,28 +23,28 @@ class QCSparse {
 
 
   async getChunkSize() {
-    let chunkHeader = await parseChunkHeader(this.blob.slice(this.blobOffset, this.blobOffset + CHUNK_HEADER_SIZE));
-    const chunk_type = chunkHeader.type;
+    const chunkHeader = await parseChunkHeader(this.blob.slice(this.blobOffset, this.blobOffset + CHUNK_HEADER_SIZE));
+    const chunkType = chunkHeader.type;
     const blocks = chunkHeader.blocks;
-    const data_sz = chunkHeader.dataBytes;
-    this.blobOffset += CHUNK_HEADER_SIZE + data_sz;
+    const dataSize = chunkHeader.dataBytes;
+    this.blobOffset += CHUNK_HEADER_SIZE + dataSize;
 
-    if (chunk_type == ChunkType.Raw) {
-      if (data_sz != (blocks * this.blockSize)) {
+    if (chunkType == ChunkType.Raw) {
+      if (dataSize != (blocks * this.blockSize)) {
         throw new Error("Sparse - Chunk input size does not match output size");
       } else {
-        return data_sz;
+        return dataSize;
       }
-    } else if (chunk_type == ChunkType.Fill) {
-      if (data_sz != 4) {
+    } else if (chunkType == ChunkType.Fill) {
+      if (dataSize != 4) {
         throw new Error("Sparse - Fill chunk should have 4 bytes");
       } else {
         return blocks * this.blockSize;
       }
-    } else if (chunk_type == ChunkType.Skip) {
+    } else if (chunkType == ChunkType.Skip) {
       return blocks * this.blockSize;
-    } else if (chunk_type == ChunkType.Crc32) {
-      if (data_sz != 4) {
+    } else if (chunkType == ChunkType.Crc32) {
+      if (dataSize != 4) {
         throw new Error("Sparse - CRC32 chunk should have 4 bytes");
       } else {
         return 0;
@@ -108,11 +108,11 @@ export async function parseFileHeader(blobHeader) {
     return null;
   }
   if (fileHeadrSize != FILE_HEADER_SIZE) {
-    console.error(`The file header size was expected to be 28, but is ${this.fileHeadrSize}.`);
+    console.error(`The file header size was expected to be 28, but is ${fileHeadrSize}.`);
     return null;
   }
   if (chunkHeaderSize != CHUNK_HEADER_SIZE) {
-    console.error(`The chunk header size was expected to be 12, but is ${this.chunkHeaderSize}.`);
+    console.error(`The chunk header size was expected to be 12, but is ${chunkHeaderSize}.`);
     return null;
   }
 
@@ -136,28 +136,28 @@ async function populate(chunks, blockSize) {
   let offset = 0;
 
   for (const chunk of chunks) {
-    const chunk_type = chunk.type;
+    const chunkType = chunk.type;
     const blocks = chunk.blocks;
-    const data_sz = chunk.dataBytes;
+    const dataSize = chunk.dataBytes;
     const data = chunk.data;
 
-    if (chunk_type == ChunkType.Raw) {
+    if (chunkType == ChunkType.Raw) {
       let rawData = new Uint8Array(await readBlobAsBuffer(data));
       ret.set(rawData, offset);
       offset += blocks * blockSize;
-    } else if (chunk_type == ChunkType.Fill) {
-      const fill_bin = new Uint8Array(await readBlobAsBuffer(data));
+    } else if (chunkType == ChunkType.Fill) {
+      const fillBin = new Uint8Array(await readBlobAsBuffer(data));
       const bufferSize = blocks * blockSize;
-      for (let i = 0; i < bufferSize; i+=data_sz) {
-        ret.set(fill_bin, offset);
-        offset += data_sz;
+      for (let i = 0; i < bufferSize; i += dataSize) {
+        ret.set(fillBin, offset);
+        offset += dataSize;
       }
-    } else if (chunk_type == ChunkType.Skip) {
+    } else if (chunkType == ChunkType.Skip) {
       let byteToSend = blocks * blockSize;
       let skipData = new Uint8Array(byteToSend).fill(0);
       ret.set(skipData, offset);
       offset += byteToSend;
-    } else if (chunk_type == ChunkType.Crc32) {
+    } else if (chunkType == ChunkType.Crc32) {
       continue;
     } else {
       throw new Error("Sparse - Unknown chunk type");
