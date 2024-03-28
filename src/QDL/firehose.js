@@ -258,16 +258,16 @@ export class Firehose {
   }
 
 
-  async cmdErase(physicalPartitionNumber, startSector, numPartitionSectors, onProgress) {
+  async cmdErase(physical_partition_number, start_sector, num_partition_sectors, onProgress) {
     const data = `<?xml version=\"1.0\" ?><data>\n` +
           `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
-          ` num_partition_sectors=\"${numPartitionSectors}\"` +
-          ` physical_partition_number=\"${physicalPartitionNumber}\"` +
-          ` start_sector=\"${startSector}\" />\n</data>`;
+          ` num_partition_sectors=\"${num_partition_sectors}\"` +
+          ` physical_partition_number=\"${physical_partition_number}\"` +
+          ` start_sector=\"${start_sector}\" />\n</data>`;
 
     let pos = 0;
     let rsp = await this.xmlSend(data)
-    let bytesToWrite = this.cfg.SECTOR_SIZE_IN_BYTES * numPartitionSectors;
+    let bytesToWrite = this.cfg.SECTOR_SIZE_IN_BYTES * num_partition_sectors;
     let empty = new Uint8Array(this.cfg.MaxPayloadSizeToTargetInBytes).fill(0);
     const total = bytesToWrite;
 
