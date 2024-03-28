@@ -14,7 +14,7 @@ async function getImageWorker() {
     imageWorker.init()
   })
 
-  await import('./../workers/image.worker')
+  await import('../workers/image.worker')
 
   return imageWorker
 }
@@ -66,7 +66,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
 
             return response.blob()
           })
-      
+
           await imageWorker.unpackImage(image)
         }, 8 * 60 * 1000)
       })
