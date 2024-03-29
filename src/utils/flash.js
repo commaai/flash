@@ -293,7 +293,7 @@ export function useQdl() {
           if (found) {
             const lun = dp[1], partition = dp[2]
             let wData = new TextEncoder().encode("COMMA_RESET")
-            wData = concatUint8Array([wData, new Uint8Array(28).fill(0)]) // make bigger than sparseHeaderSize
+            wData = concatUint8Array([wData, new Uint8Array(28 - wData.length).fill(0)]) // make equal sparseHeaderSize
             const startSector = partition.sector
             await qdl.current.firehose.cmdProgram(lun, startSector, new Blob([wData.buffer]))
           }
