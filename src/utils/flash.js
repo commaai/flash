@@ -255,9 +255,6 @@ export function useQdl() {
           }
           const otherSlot = currentSlot === 'a' ? 'b' : 'a'
 
-          // this ensure backup gpt header not updated if crash during setactiveslot and users try to boot up
-          await qdl.current.erase("xbl" + `_${currentSlot}`)
-
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()

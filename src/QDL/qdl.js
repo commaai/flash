@@ -314,27 +314,6 @@ export class qdlDevice {
   }
 
 
-  async erase(partitionName, onProgress=(_progress)=>{}) {
-    if (partitionName.toLowerCase() === "gpt")
-      throw "Cannot erase gpt header";
-    let dp = await this.detectPartition(partitionName);
-    const found = dp[0];
-    if (found) {
-      let lun = dp[1];
-      const partition = dp[2];
-      console.log(`Erasing ${partitionName}...`);
-      if (await this.firehose.cmdErase(lun, partition.sector, partition.sectors, (progress) => onProgress(progress))) {
-        console.log(`Erase successfully partition ${partitionName}`);
-        return true;
-      } else {
-        throw `Failed to erase partition ${partitionName}`;
-      }
-    } else {
-      throw `Can't find partition ${partitionName}`;
-    }
-  }
-
-
   async reset() {
     await this.firehose.cmdReset();
     return true;

@@ -258,43 +258,6 @@ export class Firehose {
   }
 
 
-  async cmdErase(physical_partition_number, start_sector, num_partition_sectors, onProgress) {
-    const data = `<?xml version=\"1.0\" ?><data>\n` +
-          `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
-          ` num_partition_sectors=\"${num_partition_sectors}\"` +
-          ` physical_partition_number=\"${physical_partition_number}\"` +
-          ` start_sector=\"${start_sector}\" />\n</data>`;
-
-    let pos = 0;
-    let rsp = await this.xmlSend(data)
-    let bytesToWrite = this.cfg.SECTOR_SIZE_IN_BYTES * num_partition_sectors;
-    let empty = new Uint8Array(this.cfg.MaxPayloadSizeToTargetInBytes).fill(0);
-    const total = bytesToWrite;
-
-    if (rsp.resp) {
-      while (bytesToWrite > 0) {
-        let wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeToTargetInBytes);
-        await this.cdc.write(empty.slice(0, wlen));
-        bytesToWrite -= wlen;
-        pos += wlen;
-        await this.cdc.write(new Uint8Array(0));
-        onProgress(pos / total);
-      }
-
-      const res = await this.waitForData();
-      const response = this.xml.getReponse(res);
-      if (response.hasOwnProperty("value")) {
-        if (response["value"] !== "ACK") {
-            throw "Failed to erase: NAK";
-        }
-      } else {
-        throw "Failed to erase no return value";
-      }
-    }
-    return true;
-  }
-
-
   async cmdSetBootLunId(lun) {
     const data = `<?xml version=\"1.0\" ?><data>\n<setbootablestoragedrive value=\"${lun}\" /></data>`
     const val = await this.xmlSend(data);
