@@ -261,7 +261,6 @@ export async function* splitBlob(blob, splitSize = 1048576 /* maxPayloadSizeToTa
       }
     }
   }
-  if (splitChunks.length > 0 ) {
+  if (splitChunks.length > 0)
     yield await populate(splitChunks, header.blockSize);
-  }
 }
