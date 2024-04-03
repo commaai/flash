@@ -7,7 +7,6 @@ export const PART_ATT_PRIORITY_BIT = BigInt(48)
 export const PART_ATT_ACTIVE_BIT = BigInt(50)
 export const PART_ATT_ACTIVE_VAL = BigInt(0x1) << PART_ATT_ACTIVE_BIT
 
-
 const efiType = {
   0x00000000 : "EFI_UNUSED",
   0xEBD0A0A2 : "EFI_BASIC_DATA",
@@ -20,26 +19,20 @@ class structHelper {
     this.data = data;
   }
 
-
   qword(littleEndian=true) {
     const view = new DataView(this.data.slice(this.pos, this.pos+=8).buffer, 0);
     return Number(view.getBigUint64(0, littleEndian));
   }
-
 
   dword(littleEndian=true) {
     let view = new DataView(this.data.slice(this.pos, this.pos+=4).buffer, 0);
     return view.getUint32(0, littleEndian);
   }
 
-
   bytes(rlen=1) {
     const dat = this.data.slice(this.pos, this.pos+=rlen);
-    if (rlen == 1)
-      return dat[0];
     return dat;
   }
-
 
   toString(rlen=1) {
     const dat = this.data.slice(this.pos, this.pos+=rlen);
@@ -79,7 +72,6 @@ export class gptPartition {
     this.flags = sh.qword();
     this.name = sh.toString(72);
   }
-
 
   create() {
     let buffer = new ArrayBuffer(16 + 16 + 8 + 8 + 8 + 72);
@@ -128,28 +120,30 @@ export class gpt {
     return new gptHeader(gptData.slice(sectorSize, sectorSize + 0x5C));
   }
 
-
   parse(gptData, sectorSize=512) {
     this.header = new gptHeader(gptData.slice(sectorSize, sectorSize + 0x5C));
     this.sectorSize = sectorSize;
 
-    if (!containsBytes("EFI PART", this.header.signature))
+    if (!containsBytes("EFI PART", this.header.signature)) {
       return false;
+    }
+
     if (this.header.revision != 0x10000) {
       console.error("Unknown GPT revision.");
       return false;
     }
 
     // mbr (even for backup gpt header to ensure offset consistency) + gpt header + part_table
-    let start = 2 * sectorSize;
+    const start = 2 * sectorSize;
 
-    let entrySize = this.header.partEntrySize;
+    const entrySize = this.header.partEntrySize;
     this.partentries = {};
-    let numPartEntries = this.header.numPartEntries;
+    const numPartEntries = this.header.numPartEntries;
     for (let idx = 0; idx < numPartEntries; idx++) {
       const data = gptData.slice(start + (idx * entrySize), start + (idx * entrySize) + entrySize);
-      if (new DataView(data.slice(16,32).buffer, 0).getUint32(0, true) == 0)
+      if (new DataView(data.slice(16,32).buffer, 0).getUint32(0, true) == 0) {
         break;
+      }
 
       let partentry = new gptPartition(data);
       let pa = new partf();
@@ -181,13 +175,13 @@ export class gpt {
       let nameWithoutNull = partentry.name.slice(0, nullIndex);
       let decodedName = new TextDecoder('utf-16').decode(nameWithoutNull);
       pa.name = decodedName;
-      if (pa.type == "EFI_UNUSED")
+      if (pa.type == "EFI_UNUSED") {
         continue;
+      }
       this.partentries[pa.name] = pa;
     }
     return true;
   }
-
 
   fixGptCrc(data) {
     const headerOffset = this.sectorSize;
@@ -257,6 +251,5 @@ export function ensureGptHdrConsistency(gptData, backupGptData, guidGpt, backupG
     gptData.set(backupGptData.slice(partTableOffset), partTableOffset);
     gptData = guidGpt.fixGptCrc(gptData);
   }
-
   return gptData;
 }

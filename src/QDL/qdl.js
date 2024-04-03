@@ -15,14 +15,12 @@ export class qdlDevice {
     this._connectReject = null;
   }
 
-
   async waitForConnect() {
     return await new Promise((resolve, reject) => {
       this._connectResolve = resolve;
       this._connectReject  = reject;
     });
   }
-
 
   async connectToSahara() {
     while (!this.cdc.connected) {
@@ -39,7 +37,6 @@ export class qdlDevice {
     }
     return {"mode" : "error"};
   }
-
 
   async connect() {
     try {
@@ -68,7 +65,6 @@ export class qdlDevice {
     return true;
   }
 
-
   async getGpt(lun, startSector=1) {
     let resp;
     resp = await this.firehose.cmdReadBuffer(lun, 0, 1);
@@ -90,7 +86,6 @@ export class qdlDevice {
     }
   }
 
-
   async detectPartition(partitionName, sendFull=false) {
     const luns = this.firehose.luns;
     for (const lun of luns) {
@@ -98,13 +93,13 @@ export class qdlDevice {
       if (guidGpt === null) {
         break;
       } else {
-        if (guidGpt.partentries.hasOwnProperty(partitionName))
+        if (guidGpt.partentries.hasOwnProperty(partitionName)) {
           return sendFull ? [true, lun, data, guidGpt] : [true, lun, guidGpt.partentries[partitionName]];
+        }
       }
     }
     return [false];
   }
-
 
   async flashBlob(partitionName, blob, onProgress=(_progress)=>{}) {
     let startSector = 0;
@@ -114,8 +109,9 @@ export class qdlDevice {
       let lun = dp[1];
       const imgSize = blob.size;
       let imgSectors = Math.floor(imgSize / this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
-      if (imgSize % this.firehose.cfg.SECTOR_SIZE_IN_BYTES !== 0)
+      if (imgSize % this.firehose.cfg.SECTOR_SIZE_IN_BYTES !== 0) {
         imgSectors += 1;
+      }
       if (partitionName.toLowerCase() !== "gpt") {
         const partition = dp[2];
         if (imgSectors > partition.sectors) {
@@ -136,6 +132,21 @@ export class qdlDevice {
     return true;
   }
 
+  async erase(partitionName) {
+    const luns = this.firehose.luns;
+    for (const lun of luns) {
+      let [ data, guidGpt ] = await this.getGpt(lun);
+      if (guidGpt.partentries.hasOwnProperty(partitionName)) {
+        const partition = guidGpt.partentries[partitionName];
+        console.log(`Erasing ${partitionName}...`);
+        await this.firehose.cmdErase(lun, partition.sector, partition.sectors);
+        console.log(`Erased ${partitionName} starting at sector ${partition.sector} with sectors ${partition.sectors}`);
+      } else {
+        continue;
+      }
+    }
+    return true;
+  }
 
   async getDevicePartitionsInfo() {
     const slots = [];
@@ -143,29 +154,32 @@ export class qdlDevice {
     const luns = this.firehose.luns;
     for (const lun of luns) {
       let [ data, guidGpt ] = await this.getGpt(lun);
-      if (guidGpt === null)
+      if (guidGpt === null) {
         throw "Error while reading device partitions";
+      }
       for (let partition in guidGpt.partentries) {
         let slot = partition.slice(-2);
         if (slot === "_a" || slot === "_b") {
           partition = partition.substring(0, partition.length-2);
-          if (!slots.includes(slot))
+          if (!slots.includes(slot)) {
             slots.push(slot);
+          }
         }
-        if (!partitions.includes(partition))
+        if (!partitions.includes(partition)) {
           partitions.push(partition);
+        }
       }
     }
     return [slots.length, partitions];
   }
 
-
   async getActiveSlot() {
     const luns = this.firehose.luns;
     for (const lun of luns) {
       const [ data, guidGpt ] = await this.getGpt(lun);
-      if (guidGpt === null)
+      if (guidGpt === null) {
         throw "Cannot get active slot."
+      }
       for (const partitionName in guidGpt.partentries) {
         const slot = partitionName.slice(-2);
         // backup gpt header is more reliable, since it would always has the non-corrupted gpt header
@@ -183,7 +197,6 @@ export class qdlDevice {
     throw "Can't detect slot A or B";
   }
 
-
   async cmdPatchMultiple(lun, startSector, byteOffset, patchData) {
     const writeSize = patchData.length;
     const sizeEachPatch = 4;
@@ -195,7 +208,6 @@ export class qdlDevice {
     }
     return true;
   }
-
 
   patchSetActiveHelper(gptDataA, gptDataB, guidGpt, partA, partB, slot_a_status, slot_b_status, isBoot) {
     const partEntrySize = guidGpt.header.partEntrySize;
@@ -216,7 +228,6 @@ export class qdlDevice {
     return [pDataA, partA.entryOffset, pDataB, partB.entryOffset];
   }
 
-
   async setActiveSlot(slot) {
     slot = slot.toLowerCase();
     const luns = this.firehose.luns
@@ -233,8 +244,9 @@ export class qdlDevice {
       let checkGptHeader = false;
       let [ gptDataA, guidGptA ] = await this.getGpt(lunA);
       let [ backupGptDataA, backupGuidGptA ] = await this.getGpt(lunA, guidGptA.header.backupLba);
-      if (guidGptA === null)
-        throw "Firehose - Error while getting gpt header data";
+      if (guidGptA === null) {
+        throw "Error while getting gpt header data";
+      }
       for (const partitionNameA in guidGptA.partentries) {
         let slotSuffix = partitionNameA.toLowerCase().slice(-2);
         if (slotSuffix === "_a") {
@@ -250,8 +262,9 @@ export class qdlDevice {
           } else {
             const resp = await this.detectPartition(partitionNameB, true);
             sts = resp[0];
-            if (!sts)
-              throw `Firehose - Cannot find partition ${partitionNameB}`;
+            if (!sts) {
+              throw `Cannot find partition ${partitionNameB}`;
+            }
             [ sts, lunB, gptDataB, guidGptB ] = resp;
             [ backupGptDataB, backupGuidGptB ] = await this.getGpt(lunB, guidGptB.header.backupLba);
           }
@@ -268,16 +281,18 @@ export class qdlDevice {
           const partB = guidGptB.partentries[partitionNameB];
 
           let isBoot = false;
-          if (partitionNameA === "boot_a")
+          if (partitionNameA === "boot_a") {
             isBoot = true;
+          }
           const [pDataA, pOffsetA, pDataB, pOffsetB] = this.patchSetActiveHelper(
             gptDataA, gptDataB, guidGptA, partA, partB, slot_a_status, slot_b_status, isBoot
           );
 
           gptDataA.set(pDataA, pOffsetA);
           const newGptDataA = guidGptA.fixGptCrc(gptDataA);
-          if (lunA === lunB)
+          if (lunA === lunB) {
             gptDataB = newGptDataA;
+          }
           gptDataB.set(pDataB, pOffsetB);
           const newGptDataB = guidGptB.fixGptCrc(gptDataB);
 
@@ -286,7 +301,7 @@ export class qdlDevice {
             const byteOffsetPatchA = pOffsetA % this.firehose.cfg.SECTOR_SIZE_IN_BYTES;
             await this.cmdPatchMultiple(lunA, startSectorPatchA, byteOffsetPatchA, pDataA);
 
-            // gpt header updated by slot B if in the same lun
+            // gpt header updated by slot B partition if in the same lun
             if (lunA !== lunB) {
               const headerOffsetA = guidGptA.sectorSize;
               const startSectorHdrA = guidGptA.header.currentLba;
@@ -312,7 +327,6 @@ export class qdlDevice {
     console.log(`Successfully set slot ${slot} active`);
     return true;
   }
-
 
   async reset() {
     await this.firehose.cmdReset();

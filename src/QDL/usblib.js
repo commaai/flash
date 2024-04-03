@@ -14,7 +14,6 @@ export class usbClass {
     this.maxSize = 512;
   }
 
-
   get connected() {
     return (
       this.device !== null &&
@@ -22,7 +21,6 @@ export class usbClass {
       this.device.configurations[0].interfaces[0].claimed
     );
   }
-
 
   async _validateAndConnectDevice() {
     let ife = this.device?.configurations[0].interfaces[0].alternates[0];
@@ -70,7 +68,6 @@ export class usbClass {
     }
   }
 
-
   async connect() {
     this.device = await navigator.usb.requestDevice({
       filters: [
@@ -96,13 +93,12 @@ export class usbClass {
     await this._validateAndConnectDevice();
   }
 
-
   async read(resplen=null) {
     let respData = new Uint8Array();
     let covered = 0;
-
-    if (resplen === null)
+    if (resplen === null) {
       resplen = this.epIn.packetSize;
+    }
 
     while (covered < resplen) {
       try {
@@ -133,17 +129,18 @@ export class usbClass {
     }
 
     let offset = 0;
-    if (pktSize === null)
+    if (pktSize === null) {
       pktSize = BULK_TRANSFER_SIZE;
+    }
     while (offset < cmdPacket.length) {
       try {
         if (wait) {
           await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
         } else {
           // this is a hack, webusb doesn't have timed out catching
-          // this only happens in sahara.configure(). The loader receive the packet but doesn't respond back  (same as edl repo).
+          // this only happens in sahara.configure(). The loader receive the packet but doesn't respond back (same as edl repo).
           this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
-          await sleep(80); // wait for 80ms to make sure Loader receives packets
+          await sleep(80);
         }
         offset += pktSize;
       } catch (error) {

@@ -255,6 +255,10 @@ export function useQdl() {
           }
           const otherSlot = currentSlot === 'a' ? 'b' : 'a'
 
+          // Erase current xbl partition so if users try to power up device
+          // with corrupted primary gpt header, it would not update the backup
+          await qdl.current.erase("xbl"+`_${currentSlot}`)
+
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
@@ -266,7 +270,7 @@ export function useQdl() {
           console.debug('[QDL] Flashed all partitions')
 
           setMessage(`Changing slot to ${otherSlot}`)
-          await qdl.current.setActiveSlot(otherSlot);
+          await qdl.current.setActiveSlot(otherSlot)
         }
 
         flashDevice()
@@ -302,7 +306,7 @@ export function useQdl() {
           setProgress(0.9)
 
           setMessage('Rebooting')
-          await qdl.current.reset();
+          await qdl.current.reset()
           setProgress(1)
           setConnected(false)
         }

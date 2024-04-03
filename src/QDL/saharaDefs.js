@@ -1,5 +1,6 @@
 import { structHelper_io } from "./utils"
 
+
 export const cmd_t = {
   SAHARA_HELLO_REQ : 0x1,
   SAHARA_HELLO_RSP : 0x2,
@@ -39,7 +40,6 @@ export class CommandHandler {
     return { cmd : st.dword(), len : st.dword() }
   }
 
-
   pkt_hello_req(data) {
     if (data.length < 0xC * 0x4)
       throw new Error("DataError!");
@@ -60,10 +60,10 @@ export class CommandHandler {
     }
   }
 
-
   pkt_image_end(data) {
-    if (data.length < 0x4 * 0x4)
+    if (data.length < 0x4 * 0x4) {
       throw new Error("DataError!");
+    }
     let st = new structHelper_io(data);
     return {
       cmd : st.dword(),
@@ -73,10 +73,10 @@ export class CommandHandler {
     }
   }
 
-
   pkt_done(data) {
-    if (data.length < 0x3 * 4)
+    if (data.length < 0x3 * 4) {
       throw new Error("DataError");
+    }
     let st = new structHelper_io(data);
     return {
       cmd : st.dword(),
@@ -85,11 +85,11 @@ export class CommandHandler {
     }
   }
 
-
   pkt_read_data_64(data) {
-    if (data.length < 0x8 + 0x3 * 0x8)
+    if (data.length < 0x8 + 0x3 * 0x8) {
       throw new Error("DataError");
-    let st = new structHelper_io(data)
+    }
+    let st = new structHelper_io(data);
     return {
       cmd : st.dword(),
       len : st.dword(),
@@ -99,11 +99,11 @@ export class CommandHandler {
     }
   }
 
-
   pkt_execute_rsp_cmd(data) {
-    if (data.length <0x4 * 0x4)
+    if (data.length <0x4 * 0x4) {
       throw new Error("DataError");
-    let st = new structHelper_io(data)
+    }
+    let st = new structHelper_io(data);
     return {
         cmd : st.dword(),
         len : st.dword(),

@@ -28,7 +28,6 @@ class cfg {
   }
 }
 
-
 export class Firehose {
   constructor(cdc) {
     this.cdc = cdc;
@@ -36,7 +35,6 @@ export class Firehose {
     this.cfg = new cfg();
     this.luns = [];
   }
-
 
   getStatus(resp) {
     if (resp.hasOwnProperty("value")) {
@@ -46,21 +44,21 @@ export class Firehose {
     return true;
   }
 
-
   async xmlSend(data, wait=true) {
     let dataToSend = new TextEncoder().encode(data).slice(0, this.cfg.MaxXMLSizeInBytes);
     await this.cdc?.write(dataToSend, null, wait);
 
     let rData = new Uint8Array();
     let counter = 0;
-    let timeout = 0;
+    let timeout = 3;
     while (!(containsBytes("<response value", rData))) {
       let tmp = await this.cdc?.read();
       if (compareStringToBytes("", tmp)) {
         counter += 1;
         await sleep(50);
-        if (counter > timeout)
+        if (counter > timeout) {
           break;
+        }
       }
       rData = concatUint8Array([rData, tmp]);
     }
@@ -84,17 +82,16 @@ export class Firehose {
     return new response(true, rData);
   }
 
-
   getLuns() {
     let luns = [];
-    for (let i=0; i < this.cfg.maxlun; i++)
+    for (let i=0; i < this.cfg.maxlun; i++) {
       luns.push(i);
+    }
     return luns;
   }
 
-
   async configure() {
-    let connectCmd = `<?xml version=\"1.0\" encoding=\"UTF-8\" ?><data>` +
+    const connectCmd = `<?xml version=\"1.0\" encoding=\"UTF-8\" ?><data>` +
               `<configure MemoryName=\"${this.cfg.MemoryName}\" ` +
               `Verbose=\"0\" ` +
               `AlwaysValidate=\"0\" ` +
@@ -109,8 +106,6 @@ export class Firehose {
     this.luns = this.getLuns();
     return true;
   }
-
-
 
   async cmdReadBuffer(physicalPartitionNumber, startSector, numPartitionSectors) {
     const data = `<?xml version=\"1.0\" ?><data><read SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
@@ -138,8 +133,9 @@ export class Firehose {
         if (rsp["value"] !== "ACK") {
           return new response(false, resData, info);
         } else if (rsp.hasOwnProperty("rawmode")) {
-          if (rsp["rawmode"] === "false")
+          if (rsp["rawmode"] === "false") {
             return new response(true, resData);
+          }
         }
       } else {
         console.error("Failed read buffer");
@@ -150,7 +146,6 @@ export class Firehose {
     return response(resp, resData, rsp[2]);
   }
 
-
   async waitForData() {
     let tmp = new Uint8Array();
     let timeout = 0;
@@ -159,15 +154,15 @@ export class Firehose {
       let res = await this.cdc.read();
       if (compareStringToBytes("", res)) {
         timeout += 1;
-        if (timeout === 4)
+        if (timeout === 4) {
           break;
+        }
         await sleep(20);
       }
       tmp = concatUint8Array([tmp, res]);
     }
     return tmp;
   }
-
 
   async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress=()=>{}) {
     let total = blob.size;
@@ -180,8 +175,9 @@ export class Firehose {
     }
 
     let numPartitionSectors = Math.floor(total / this.cfg.SECTOR_SIZE_IN_BYTES);
-    if (total % this.cfg.SECTOR_SIZE_IN_BYTES !== 0)
+    if (total % this.cfg.SECTOR_SIZE_IN_BYTES !== 0) {
       numPartitionSectors += 1;
+    }
 
     const data = `<?xml version=\"1.0\" ?><data>\n` +
               `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
@@ -214,11 +210,13 @@ export class Firehose {
 
           // Need this for sprase image when the data.length < MaxPayloadSizeToTargetInBytes
           // Add ~2.4s to total flash time
-          if (sparseformat && bytesWritten < total)
+          if (sparseformat && bytesWritten < total) {
             await this.cdc.write(new Uint8Array(0), null, true);
+          }
 
-          if (i % 10 === 0)
+          if (i % 10 === 0) {
             onProgress(bytesWritten/total);
+          }
           i += 1;
         }
       }
@@ -238,6 +236,38 @@ export class Firehose {
     return true;
   }
 
+  async cmdErase(physicalPartitionNumber, startSector, numPartitionSectors) {
+    const data = `<?xml version=\"1.0\" ?><data>\n` +
+          `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
+          ` num_partition_sectors=\"${numPartitionSectors}\"` +
+          ` physical_partition_number=\"${physicalPartitionNumber}\"` +
+          ` start_sector=\"${startSector}\" />\n</data>`;
+    let pos = 0;
+    let rsp = await this.xmlSend(data)
+    let bytesToWrite = this.cfg.SECTOR_SIZE_IN_BYTES * numPartitionSectors;
+    let empty = new Uint8Array(this.cfg.MaxPayloadSizeToTargetInBytes).fill(0);
+
+    if (rsp.resp) {
+      while (bytesToWrite > 0) {
+        let wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeToTargetInBytes);
+        await this.cdc.write(empty.slice(0, wlen));
+        bytesToWrite -= wlen;
+        pos += wlen;
+        await this.cdc.write(new Uint8Array(0));
+      }
+
+      const res = await this.waitForData();
+      const response = this.xml.getReponse(res);
+      if (response.hasOwnProperty("value")) {
+        if (response["value"] !== "ACK") {
+          throw "Failed to erase: NAK";
+        }
+      } else {
+        throw "Failed to erase no return value";
+      }
+    }
+    return true;
+  }
 
   async cmdPatch(physical_partition_number, start_sector, byte_offset, value, size_in_bytes) {
     const data = `<?xml version=\"1.0\" ?><data>\n` +
@@ -257,7 +287,6 @@ export class Firehose {
     }
   }
 
-
   async cmdSetBootLunId(lun) {
     const data = `<?xml version=\"1.0\" ?><data>\n<setbootablestoragedrive value=\"${lun}\" /></data>`
     const val = await this.xmlSend(data);
@@ -268,7 +297,6 @@ export class Firehose {
       throw `Firehose - Failed to set boot lun ${lun}`;
     }
   }
-
 
   async cmdReset() {
     let data = "<?xml version=\"1.0\" ?><data><power value=\"reset\"/></data>";

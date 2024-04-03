@@ -14,7 +14,6 @@ export class Sahara {
     this.rootDir = null;
   }
 
-
   async connect() {
     const v = await this.cdc?.read(0xC * 0x4);
     if (v.length > 1) {
@@ -29,7 +28,6 @@ export class Sahara {
     throw new Error("Unable to connect to Sahara");
   }
 
-
   async cmdHello(mode, version=2, version_min=1, max_cmd_len=0) {
     const cmd = cmd_t.SAHARA_HELLO_RSP;
     const len = 0x30;
@@ -39,14 +37,12 @@ export class Sahara {
     return true;
   }
 
-
   async cmdModeSwitch(mode) {
     const elements = [cmd_t.SAHARA_SWITCH_MODE, 0xC, mode];
     let data = packGenerator(elements);
     await this.cdc?.write(data);
     return true;
   }
-
 
   async getResponse() {
     try {
@@ -80,9 +76,8 @@ export class Sahara {
     }
   }
 
-
   async cmdExec(mcmd) {
-    let dataToSend = packGenerator([cmd_t.SAHARA_EXECUTE_REQ, 0xC, mcmd]);
+    const dataToSend = packGenerator([cmd_t.SAHARA_EXECUTE_REQ, 0xC, mcmd]);
     await this.cdc.write(dataToSend);
     let res = await this.getResponse();
     if (res.hasOwnProperty("cmd")) {
@@ -101,19 +96,19 @@ export class Sahara {
     return res;
   }
 
-
   async cmdGetSerialNum() {
     let res = await this.cmdExec(exec_cmd_t.SAHARA_EXEC_CMD_SERIAL_NUM_READ);
-    if (res === null)
+    if (res === null) {
       throw "Sahara - Unable to get serial number of device";
+    }
     let data = new DataView(res.buffer, 0).getUint32(0, true);
     return "0x"+data.toString(16).padStart(8,'0');
   }
 
-
   async enterCommandMode() {
-    if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND))
+    if (!await this.cmdHello(sahara_mode_t.SAHARA_MODE_COMMAND)) {
       return false;
+    }
     let res = await this.getResponse();
     if (res.hasOwnProperty("cmd")) {
       if (res["cmd"] === cmd_t.SAHARA_END_TRANSFER) {
@@ -126,7 +121,6 @@ export class Sahara {
     }
     return false;
   }
-
 
   async downLoadLoader() {
     this.rootDir = await navigator.storage.getDirectory();
@@ -149,8 +143,9 @@ export class Sahara {
       const reader = response.body.getReader();
       while (true) {
         const { done, value } = await reader.read();
-        if (done)
+        if (done) {
           break;
+        }
         await writable.write(value);
         processed += value.length;
       }
@@ -165,7 +160,6 @@ export class Sahara {
     }
   }
 
-
   async getLoader() {
     let fileHandle;
     try {
@@ -175,7 +169,6 @@ export class Sahara {
     }
     return await fileHandle.getFile();
   }
-
 
   async uploadLoader() {
     if (!(await this.enterCommandMode())) {
@@ -190,8 +183,9 @@ export class Sahara {
     await this.downLoadLoader();
     const loaderBlob = await this.getLoader();
     let programmer = new Uint8Array(await readBlobAsBuffer(loaderBlob));
-    if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING)))
+    if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING))) {
       throw "Sahara - Error while uploading loader";
+    }
 
     let datalen = programmer.length;
     let loop    = 0;
@@ -204,14 +198,13 @@ export class Sahara {
         throw "Sahara - Timeout while uploading loader. Wrong loader?";
       }
       if (cmd == cmd_t.SAHARA_64BIT_MEMORY_READ_DATA) {
-        if (loop == 0)
-          console.log("64-bit mode detected");
         let pkt = resp["data"];
         this.id = pkt.image_id;
         if (this.id >= 0xC) {
           this.mode = "firehose";
-          if (loop == 0)
+          if (loop == 0) {
             console.log("Firehose mode detected, uploading...");
+          }
         } else {
           throw "Sahara - Unknown sahara id";
         }
@@ -240,7 +233,6 @@ export class Sahara {
     }
     return this.mode;
   }
-
 
   async cmdDone() {
     const toSendData = packGenerator([cmd_t.SAHARA_DONE_REQ, 0x8]);

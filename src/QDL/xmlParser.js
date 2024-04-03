@@ -5,8 +5,9 @@ export class xmlParser {
     let content = {}
     const replaceBytes = new TextDecoder().decode(new Uint8Array([0xf0, 0xe9, 0x88, 0x14]));
     for (let line of lines) {
-      if ("" == line)
+      if ("" == line) {
         continue;
+      }
       line = "<?xml" + line;
       if (line.includes(replaceBytes)) {
         line.replace(replaceBytes, "")
@@ -30,8 +31,9 @@ export class xmlParser {
     let data = [];
     const replaceBytes = new TextDecoder().decode(new Uint8Array([0xf0, 0xe9, 0x88, 0x14]));
     for (let line of lines) {
-      if ("" == line)
+      if ("" == line) {
         continue;
+      }
       line = "<?xml" + line;
       if (line.includes(replaceBytes)) {
         line.replace(replaceBytes, "")

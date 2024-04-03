@@ -7,13 +7,11 @@ export class structHelper_io {
     this.data = data;
   }
 
-
   dword(littleEndian=true) {
     let view = new DataView(this.data.slice(this.pos, this.pos+4).buffer, 0);
     this.pos += 4;
     return view.getUint32(0, littleEndian);
   }
-
 
   qword(littleEndian=true) {
     let view = new DataView(this.data.slice(this.pos, this.pos+8).buffer, 0);
@@ -37,8 +35,9 @@ export function packGenerator(elements, littleEndian=true) {
 export function concatUint8Array(arrays) {
   let length = 0;
   arrays.forEach(item => {
-    if (item !== null)
+    if (item !== null) {
       length += item.length;
+    }
   });
   let concatArray = new Uint8Array(length);
   let offset = 0;
