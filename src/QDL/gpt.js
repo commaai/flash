@@ -169,9 +169,7 @@ export class gpt {
       } else {
         pa.type = typeOfPartentry.toString(16);
       }
-      let nullIndex = Array.from(partentry.name).findIndex(
-                        (element, index) => index % 2 === 0 && element === 0
-                      );
+      let nullIndex = Array.from(partentry.name).findIndex((element, index) => index % 2 === 0 && element === 0);
       let nameWithoutNull = partentry.name.slice(0, nullIndex);
       let decodedName = new TextDecoder('utf-16').decode(nameWithoutNull);
       pa.name = decodedName;
@@ -246,8 +244,9 @@ export function ensureGptHdrConsistency(gptData, backupGptData, guidGpt, backupG
 
   const headerConsistency = primPartTableCrc === backupPartTableCrc;
   if (primCorrupted || !headerConsistency) {
-    if (backupCorrupted)
+    if (backupCorrupted) {
       throw "Both primary and backup gpt headers are corrupted, cannot recover";
+    }
     gptData.set(backupGptData.slice(partTableOffset), partTableOffset);
     gptData = guidGpt.fixGptCrc(gptData);
   }
