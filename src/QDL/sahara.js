@@ -25,7 +25,7 @@ export class Sahara {
         }
       }
     }
-    throw new Error("Unable to connect to Sahara");
+    throw "Sahara - Unable to connect to Sahara";
   }
 
   async cmdHello(mode, version=2, version_min=1, max_cmd_len=0) {
