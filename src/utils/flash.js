@@ -289,15 +289,9 @@ export function useQdl() {
         setProgress(0)
 
         async function resetUserdata() {
-          let dp = await qdl.current.detectPartition("userdata")
-          const found = dp[0]
-          if (found) {
-            const lun = dp[1], partition = dp[2]
-            let wData = new TextEncoder().encode("COMMA_RESET")
-            wData = concatUint8Array([wData, new Uint8Array(28 - wData.length).fill(0)]) // make equal sparseHeaderSize
-            const startSector = partition.sector
-            await qdl.current.firehose.cmdProgram(lun, startSector, new Blob([wData.buffer]))
-          }
+          let wData = new TextEncoder().encode("COMMA_RESET")
+          wData = new Blob([concatUint8Array([wData, new Uint8Array(28 - wData.length).fill(0)])]) // make equal sparseHeaderSize
+          await qdl.current.flashBlob("userdata", wData)
         }
 
         async function eraseDevice() {

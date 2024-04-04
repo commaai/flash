@@ -228,9 +228,9 @@ function checkHeaderCrc(gptData, guidGpt) {
   const testGptData = guidGpt.fixGptCrc(gptData).buffer;
   const testHeader = new Uint8Array(testGptData.slice(headerOffset, headerOffset + headerSize));
 
-  const headerCrc = guidGpt.header.crc32
+  const headerCrc = guidGpt.header.crc32;
   const testHeaderCrc = from4BytesToNumber(testHeader.slice(0x10, 0x10 + 4));
-  const partTableCrc = guidGpt.header.crc32PartEntries
+  const partTableCrc = guidGpt.header.crc32PartEntries;
   const testPartTableCrc = from4BytesToNumber(testHeader.slice(0x58, 0x58 + 4));
   return [headerCrc !== testHeaderCrc || partTableCrc !== testPartTableCrc, partTableCrc];
 }

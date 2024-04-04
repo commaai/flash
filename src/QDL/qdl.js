@@ -89,7 +89,7 @@ export class qdlDevice {
   async detectPartition(partitionName, sendFull=false) {
     const luns = this.firehose.luns;
     for (const lun of luns) {
-      const [ data, guidGpt ] = await this.getGpt(lun);
+      const [data, guidGpt] = await this.getGpt(lun);
       if (guidGpt === null) {
         break;
       } else {
@@ -135,7 +135,7 @@ export class qdlDevice {
   async erase(partitionName) {
     const luns = this.firehose.luns;
     for (const lun of luns) {
-      let [ data, guidGpt ] = await this.getGpt(lun);
+      let [data, guidGpt] = await this.getGpt(lun);
       if (guidGpt.partentries.hasOwnProperty(partitionName)) {
         const partition = guidGpt.partentries[partitionName];
         console.log(`Erasing ${partitionName}...`);
@@ -153,7 +153,7 @@ export class qdlDevice {
     const partitions = [];
     const luns = this.firehose.luns;
     for (const lun of luns) {
-      let [ data, guidGpt ] = await this.getGpt(lun);
+      let [data, guidGpt] = await this.getGpt(lun);
       if (guidGpt === null) {
         throw "Error while reading device partitions";
       }
@@ -176,14 +176,14 @@ export class qdlDevice {
   async getActiveSlot() {
     const luns = this.firehose.luns;
     for (const lun of luns) {
-      const [ data, guidGpt ] = await this.getGpt(lun);
+      const [data, guidGpt] = await this.getGpt(lun);
       if (guidGpt === null) {
         throw "Cannot get active slot."
       }
       for (const partitionName in guidGpt.partentries) {
         const slot = partitionName.slice(-2);
         // backup gpt header is more reliable, since it would always has the non-corrupted gpt header
-        const [ backupGptData, backupGuidGpt ] = await this.getGpt(lun, guidGpt.header.backupLba);
+        const [backupGptData, backupGuidGpt] = await this.getGpt(lun, guidGpt.header.backupLba);
         const partition = backupGuidGpt.partentries[partitionName];
         const active = (((BigInt(partition.flags) >> (BigInt(gpt.AB_FLAG_OFFSET) * BigInt(8))))
                       & BigInt(gpt.AB_PARTITION_ATTR_SLOT_ACTIVE)) === BigInt(gpt.AB_PARTITION_ATTR_SLOT_ACTIVE);
@@ -242,8 +242,8 @@ export class qdlDevice {
 
     for (const lunA of luns) {
       let checkGptHeader = false;
-      let [ gptDataA, guidGptA ] = await this.getGpt(lunA);
-      let [ backupGptDataA, backupGuidGptA ] = await this.getGpt(lunA, guidGptA.header.backupLba);
+      let [gptDataA, guidGptA] = await this.getGpt(lunA);
+      let [backupGptDataA, backupGuidGptA] = await this.getGpt(lunA, guidGptA.header.backupLba);
       if (guidGptA === null) {
         throw "Error while getting gpt header data";
       }
@@ -265,8 +265,8 @@ export class qdlDevice {
             if (!sts) {
               throw `Cannot find partition ${partitionNameB}`;
             }
-            [ sts, lunB, gptDataB, guidGptB ] = resp;
-            [ backupGptDataB, backupGuidGptB ] = await this.getGpt(lunB, guidGptB.header.backupLba);
+            [sts, lunB, gptDataB, guidGptB] = resp;
+            [backupGptDataB, backupGuidGptB] = await this.getGpt(lunB, guidGptB.header.backupLba);
           }
 
           if (!checkGptHeader) {
