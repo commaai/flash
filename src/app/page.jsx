@@ -103,7 +103,7 @@ export default function Home() {
           <h2>Flashing</h2>
           <p>
             After your device is in QDL mode, you can click the button to start flashing. A prompt may appear to
-            select a device; choose the device starts with &quot;QUSB_BULK&quot;.
+            select a device; choose the device starts with <code>QUSB_BULK</code>.
           </p>
           <p>
             The process can take 30+ minutes depending on your internet connection and system performance. Do not
