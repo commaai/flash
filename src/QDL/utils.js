@@ -79,6 +79,9 @@ export function readBlobAsBuffer(blob) {
 
 export function bytes2Number(array) {
   let view = new DataView(array.buffer, 0);
+  if (array.length !== 8 && array.length !== 4) {
+    throw "Only convert to 64 and 32 bit Number";
+  }
   return (array.length === 8) ? view.getBigUint64(0, true) : view.getUint32(0, true);
 }
 

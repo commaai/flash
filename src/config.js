@@ -5,7 +5,7 @@ const config = {
   },
   loader: {
     url: 'https://raw.githubusercontent.com/bkerler/Loaders/main/qualcomm/factory/sdm845_sdm850_sda845/6000000000010000_f8ab20526358c4fa_fhprg.bin',
-    //url: 'https://raw.githubusercontent.com/commaai/flash/master/6000000000010000_f8ab20526358c4fa_fhprg.bin',
+    //url: 'https://raw.githubusercontent.com/commaai/flash/master/Loaders/6000000000010000_f8ab20526358c4fa_fhprg.bin',
   },
 }
 
