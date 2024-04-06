@@ -2,7 +2,7 @@ import * as gpt from "./gpt"
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
-import { concatUint8Array, runWithTimeout, containsBytes, from4BytesToNumber } from "./utils"
+import { concatUint8Array, runWithTimeout, containsBytes, bytes2Number } from "./utils"
 
 
 export class qdlDevice {
@@ -199,10 +199,10 @@ export class qdlDevice {
 
   async cmdPatchMultiple(lun, startSector, byteOffset, patchData) {
     const writeSize = patchData.length;
-    const sizeEachPatch = 4;
+    const sizeEachPatch = (patchData.length % 8 === 0) ? 8 : 4;
     let offset = 0;
     for (let i = 0; i < writeSize; i += sizeEachPatch) {
-      const pdataSubset = from4BytesToNumber(patchData.slice(offset, offset + sizeEachPatch));
+      const pdataSubset = bytes2Number(patchData.slice(offset, offset + sizeEachPatch));
       await this.firehose.cmdPatch(lun, startSector, byteOffset+offset, pdataSubset, sizeEachPatch);
       offset += sizeEachPatch;
     }
@@ -269,7 +269,7 @@ export class qdlDevice {
             [backupGptDataB, backupGuidGptB] = await this.getGpt(lunB, guidGptB.header.backupLba);
           }
 
-          if (!checkGptHeader && partitionNameA.slice(0, 3) !== "xbl") { // xbl luns don't get affected by failure of changing slot, saves time
+          if (!checkGptHeader && partitionNameA.slice(0, 3) !== "xbl") { // xbl partitions aren't affected by failure of changing slot, saves time
             gptDataA = gpt.ensureGptHdrConsistency(gptDataA, backupGptDataA, guidGptA, backupGuidGptA);
             if (lunA !== lunB) {
               gptDataB = gpt.ensureGptHdrConsistency(gptDataB, backupGptDataB, guidGptB, backupGuidGptB);

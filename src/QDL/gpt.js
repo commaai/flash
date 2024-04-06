@@ -1,4 +1,4 @@
-const { containsBytes, from4BytesToNumber } = require("./utils");
+const { containsBytes, bytes2Number } = require("./utils");
 var CRC32 = require("crc-32");
 
 export const AB_FLAG_OFFSET = 6;
@@ -229,9 +229,9 @@ function checkHeaderCrc(gptData, guidGpt) {
   const testHeader = new Uint8Array(testGptData.slice(headerOffset, headerOffset + headerSize));
 
   const headerCrc = guidGpt.header.crc32;
-  const testHeaderCrc = from4BytesToNumber(testHeader.slice(0x10, 0x10 + 4));
+  const testHeaderCrc = bytes2Number(testHeader.slice(0x10, 0x10 + 4));
   const partTableCrc = guidGpt.header.crc32PartEntries;
-  const testPartTableCrc = from4BytesToNumber(testHeader.slice(0x58, 0x58 + 4));
+  const testPartTableCrc = bytes2Number(testHeader.slice(0x58, 0x58 + 4));
   return [headerCrc !== testHeaderCrc || partTableCrc !== testPartTableCrc, partTableCrc];
 }
 
