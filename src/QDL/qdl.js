@@ -269,7 +269,7 @@ export class qdlDevice {
             [backupGptDataB, backupGuidGptB] = await this.getGpt(lunB, guidGptB.header.backupLba);
           }
 
-          if (!checkGptHeader) {
+          if (!checkGptHeader && partitionNameA.slice(0, 3) !== "xbl") { // xbl luns don't get affected by failure of changing slot, saves time
             gptDataA = gpt.ensureGptHdrConsistency(gptDataA, backupGptDataA, guidGptA, backupGuidGptA);
             if (lunA !== lunB) {
               gptDataB = gpt.ensureGptHdrConsistency(gptDataB, backupGptDataB, guidGptB, backupGuidGptB);
