@@ -269,24 +269,6 @@ export class Firehose {
     return true;
   }
 
-  async cmdPatch(physical_partition_number, start_sector, byte_offset, value, size_in_bytes) {
-    const data = `<?xml version=\"1.0\" ?><data>\n` +
-        `<patch SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
-        ` byte_offset=\"${byte_offset}\"` +
-        ` filename=\"DISK\"` +
-        ` physical_partition_number=\"${physical_partition_number}\"` +
-        ` size_in_bytes=\"${size_in_bytes}\" ` +
-        ` start_sector=\"${start_sector}\" ` +
-        ` value=\"${value}\" />\n</data>`;
-
-    let rsp = await this.xmlSend(data);
-    if (rsp.resp) {
-      return true;
-    } else {
-      throw `Firehose - ${rsp.error}`;
-    }
-  }
-
   async cmdSetBootLunId(lun) {
     const data = `<?xml version=\"1.0\" ?><data>\n<setbootablestoragedrive value=\"${lun}\" /></data>`
     const val = await this.xmlSend(data);

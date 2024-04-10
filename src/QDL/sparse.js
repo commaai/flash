@@ -190,7 +190,7 @@ export async function* splitBlob(blob, splitSize = 1048576 /* maxPayloadSizeToTa
   const safeToSend = splitSize;
 
   let header = await parseFileHeader(blob.slice(0, FILE_HEADER_SIZE));
-  if (header === null || blob.size <= MAX_STORE_SIZE) {
+  if (header === null) {
     yield blob;
     return;
   }

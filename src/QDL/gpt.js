@@ -232,7 +232,8 @@ function checkHeaderCrc(gptData, guidGpt) {
   const testHeaderCrc = bytes2Number(testHeader.slice(0x10, 0x10 + 4));
   const partTableCrc = guidGpt.header.crc32PartEntries;
   const testPartTableCrc = bytes2Number(testHeader.slice(0x58, 0x58 + 4));
-  return [headerCrc !== testHeaderCrc || partTableCrc !== testPartTableCrc, partTableCrc];
+
+  return [(headerCrc !== testHeaderCrc) || (partTableCrc !== testPartTableCrc), partTableCrc];
 }
 
 

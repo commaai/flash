@@ -197,19 +197,7 @@ export class qdlDevice {
     throw "Can't detect slot A or B";
   }
 
-  async cmdPatchMultiple(lun, startSector, byteOffset, patchData) {
-    const writeSize = patchData.length;
-    const sizeEachPatch = (patchData.length % 8 === 0) ? 8 : 4;
-    let offset = 0;
-    for (let i = 0; i < writeSize; i += sizeEachPatch) {
-      const pdataSubset = bytes2Number(patchData.slice(offset, offset + sizeEachPatch));
-      await this.firehose.cmdPatch(lun, startSector, byteOffset+offset, pdataSubset, sizeEachPatch);
-      offset += sizeEachPatch;
-    }
-    return true;
-  }
-
-  patchSetActiveHelper(gptDataA, gptDataB, guidGpt, partA, partB, slot_a_status, slot_b_status, isBoot) {
+  patchNewGptData(gptDataA, gptDataB, guidGpt, partA, partB, slot_a_status, slot_b_status, isBoot) {
     const partEntrySize = guidGpt.header.partEntrySize;
 
     const sdataA = gptDataA.slice(partA.entryOffset, partA.entryOffset+partEntrySize);
@@ -242,19 +230,27 @@ export class qdlDevice {
 
     for (const lunA of luns) {
       let checkGptHeader = false;
+      let sameLun = false;
+      let hasPartitionA = false;
       let [gptDataA, guidGptA] = await this.getGpt(lunA);
       let [backupGptDataA, backupGuidGptA] = await this.getGpt(lunA, guidGptA.header.backupLba);
+      let lunB, gptDataB, guidGptB, backupGptDataB, backupGuidGptB;
+
       if (guidGptA === null) {
         throw "Error while getting gpt header data";
       }
       for (const partitionNameA in guidGptA.partentries) {
         let slotSuffix = partitionNameA.toLowerCase().slice(-2);
-        if (slotSuffix === "_a") {
-          const partitionNameB = partitionNameA.slice(0, partitionNameA.length-1) + "b";
-          let sts, lunB, gptDataB, guidGptB;
-          let backupGptDataB, backupGuidGptB;
+        if (slotSuffix !== "_a") {
+          continue;
+        }
+        const partitionNameB = partitionNameA.slice(0, partitionNameA.length-1) + "b";
+        let sts;
+        if (!checkGptHeader) {
+          hasPartitionA = true;
           if (guidGptA.partentries.hasOwnProperty(partitionNameB)) {
             lunB = lunA;
+            sameLun = true;
             gptDataB = gptDataA;
             guidGptB = guidGptA;
             backupGptDataB = backupGptDataA;
@@ -268,58 +264,45 @@ export class qdlDevice {
             [sts, lunB, gptDataB, guidGptB] = resp;
             [backupGptDataB, backupGuidGptB] = await this.getGpt(lunB, guidGptB.header.backupLba);
           }
-
-          if (!checkGptHeader && partitionNameA.slice(0, 3) !== "xbl") { // xbl partitions aren't affected by failure of changing slot, saves time
-            gptDataA = gpt.ensureGptHdrConsistency(gptDataA, backupGptDataA, guidGptA, backupGuidGptA);
-            if (lunA !== lunB) {
-              gptDataB = gpt.ensureGptHdrConsistency(gptDataB, backupGptDataB, guidGptB, backupGuidGptB);
-            }
-            checkGptHeader = true;
-          }
-
-          const partA = guidGptA.partentries[partitionNameA];
-          const partB = guidGptB.partentries[partitionNameB];
-
-          let isBoot = false;
-          if (partitionNameA === "boot_a") {
-            isBoot = true;
-          }
-          const [pDataA, pOffsetA, pDataB, pOffsetB] = this.patchSetActiveHelper(
-            gptDataA, gptDataB, guidGptA, partA, partB, slot_a_status, slot_b_status, isBoot
-          );
-
-          gptDataA.set(pDataA, pOffsetA);
-          const newGptDataA = guidGptA.fixGptCrc(gptDataA);
-          if (lunA === lunB) {
-            gptDataB = newGptDataA;
-          }
-          gptDataB.set(pDataB, pOffsetB);
-          const newGptDataB = guidGptB.fixGptCrc(gptDataB);
-
-          if (gptDataA !== null) {
-            const startSectorPatchA = Math.floor(pOffsetA / this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
-            const byteOffsetPatchA = pOffsetA % this.firehose.cfg.SECTOR_SIZE_IN_BYTES;
-            await this.cmdPatchMultiple(lunA, startSectorPatchA, byteOffsetPatchA, pDataA);
-
-            // gpt header updated by slot B partition if in the same lun
-            if (lunA !== lunB) {
-              const headerOffsetA = guidGptA.sectorSize;
-              const startSectorHdrA = guidGptA.header.currentLba;
-              const pHeaderA = newGptDataA.slice(headerOffsetA, headerOffsetA + guidGptA.header.headerSize);
-              await this.cmdPatchMultiple(lunA, startSectorHdrA, 0, pHeaderA);
-            }
-          }
-          if (gptDataB !== null) {
-            const startSectorPatchB = Math.floor(pOffsetB / this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
-            const byteOffsetPatchB = pOffsetB % this.firehose.cfg.SECTOR_SIZE_IN_BYTES;
-            await this.cmdPatchMultiple(lunB, startSectorPatchB, byteOffsetPatchB, pDataB);
-
-            const headerOffsetB = guidGptB.sectorSize;
-            const startSectorHdrB = guidGptB.header.currentLba;
-            const pHeaderB = newGptDataB.slice(headerOffsetB, headerOffsetB + guidGptB.header.headerSize);
-            await this.cmdPatchMultiple(lunB, startSectorHdrB, 0, pHeaderB);
-          }
         }
+
+        if (!checkGptHeader && partitionNameA.slice(0, 3) !== "xbl") { // xbl partitions aren't affected by failure of changing slot, saves time
+          gptDataA = gpt.ensureGptHdrConsistency(gptDataA, backupGptDataA, guidGptA, backupGuidGptA);
+          if (!sameLun) {
+            gptDataB = gpt.ensureGptHdrConsistency(gptDataB, backupGptDataB, guidGptB, backupGuidGptB);
+          }
+          checkGptHeader = true;
+        }
+
+        const partA = guidGptA.partentries[partitionNameA];
+        const partB = guidGptB.partentries[partitionNameB];
+
+        let isBoot = false;
+        if (partitionNameA === "boot_a") {
+          isBoot = true;
+        }
+        const [pDataA, pOffsetA, pDataB, pOffsetB] = this.patchNewGptData(
+          gptDataA, gptDataB, guidGptA, partA, partB, slot_a_status, slot_b_status, isBoot
+        );
+
+        gptDataA.set(pDataA, pOffsetA)
+        guidGptA.fixGptCrc(gptDataA);
+        if (lunA === lunB) {
+          gptDataB = gptDataA;
+        }
+        gptDataB.set(pDataB, pOffsetB)
+        guidGptB.fixGptCrc(gptDataB);
+      }
+
+      if (!hasPartitionA) {
+        continue;
+      }
+      const writeOffset = this.firehose.cfg.SECTOR_SIZE_IN_BYTES;
+      const gptBlobA = new Blob([gptDataA.slice(writeOffset)]);
+      await this.firehose.cmdProgram(lunA, 1, gptBlobA);
+      if (!sameLun) {
+        const gptBlobB = new Blob([gptDataB.slice(writeOffset)]);
+        await this.firehose.cmdProgram(lunB, 1, gptBlobB);
       }
     }
     const activeBootLunId = (slot === "a") ? 1 : 2;
