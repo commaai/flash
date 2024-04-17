@@ -55,7 +55,7 @@ export class Sahara {
       }
       let pkt = this.ch.pkt_cmd_hdr(data);
       if (pkt.cmd === cmd_t.SAHARA_HELLO_REQ) {
-        return { "cmd" : pkt.cmd, "data" : this.ch.pkt_hello_req(data) };
+        return {"cmd" : pkt.cmd, "data" : this.ch.pkt_hello_req(data)};
       } else if (pkt.cmd === cmd_t.SAHARA_DONE_RSP) {
         return {"cmd": pkt.cmd, "data":this.ch.pkt_done(data)}
       } else if (pkt.cmd === cmd_t.SAHARA_END_TRANSFER) {
@@ -122,7 +122,7 @@ export class Sahara {
     return false;
   }
 
-  async downLoadLoader() {
+  async downloadLoader() {
     this.rootDir = await navigator.storage.getDirectory();
     let writable;
     try {

@@ -78,7 +78,7 @@ export class usbClass {
         },
       ],
     });
-    console.log("USing USB device:", this.device);
+    console.log("Using USB device:", this.device);
 
     navigator.usb.addEventListener("connect", async (event) =>{
       console.log("USB device connect:", event.device);

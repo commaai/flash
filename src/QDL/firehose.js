@@ -83,11 +83,7 @@ export class Firehose {
   }
 
   getLuns() {
-    let luns = [];
-    for (let i=0; i < this.cfg.maxlun; i++) {
-      luns.push(i);
-    }
-    return luns;
+    return Array.from({length: this.cfg.maxlun}, (x, i) => i)
   }
 
   async configure() {
@@ -208,7 +204,7 @@ export class Firehose {
           bytesWritten += wlen;
           bytesToWriteSplit -= wlen;
 
-          // Need this for sprase image when the data.length < MaxPayloadSizeToTargetInBytes
+          // Need this for sparse image when the data.length < MaxPayloadSizeToTargetInBytes
           // Add ~2.4s to total flash time
           if (sparseformat && bytesWritten < total) {
             await this.cdc.write(new Uint8Array(0), null, true);

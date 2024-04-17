@@ -1,6 +1,5 @@
 'use client'
 import React, { useCallback, useState } from 'react'
-import { CopyToClipboard } from 'react-copy-to-clipboard'
 import Image from 'next/image'
 
 import { Step, Error, useQdl } from '@/utils/flash'
@@ -279,14 +278,15 @@ export default function Flash() {
                   ))}
                 </pre>
                 <div className="absolute top-2 right-2">
-                  <CopyToClipboard text={detachScript.join('\n')}>
-                    <button
-                      onClick={handleCopy}
-                      className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
-                    >
-                      Copy
-                    </button>
-                  </CopyToClipboard>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(detachScript.join('\n'));
+                      handleCopy();
+                    }}
+                    className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
+                  >
+                    Copy
+                  </button>
                 </div>
               </div>
             </div>
