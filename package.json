@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test": "vitest"
   },
-  "packageManager": "pnpm@8.10.3",
+  "packageManager": "bun",
   "engines": {
     "node": ">=18.0.0"
   },
