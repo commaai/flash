@@ -130,7 +130,7 @@ const imageWorker = {
     let complete
     try {
       const reader = (new XzReadableStream(archiveFile.stream())).getReader()
-
+      
       await readChunks(reader, imageSize, {
         onChunk: async (chunk) => {
           await writable.write(chunk)
