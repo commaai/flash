@@ -7,6 +7,7 @@ import fastbootPorts from '@/assets/fastboot-ports.svg'
 import zadigCreateNewDevice from '@/assets/zadig_create_new_device.png'
 import zadigForm from '@/assets/zadig_form.png'
 
+
 const Flash = dynamic(() => import('./Flash'), {
   loading: () => <p className="text-black dark:text-white">Loading...</p>,
   ssr: false,
@@ -63,7 +64,7 @@ export default function Home() {
               <li>
                 Fill in three fields. The first field is just a description and
                 you can fill in anything.  The next two fields are very important.
-                Fill them in with <code>18D1</code> and <code>D00D</code> respectively.
+                Fill them in with <code>05C6</code> and <code>9008</code> respectively.
                 Press &quot;Install Driver&quot; and give it a few minutes to install.
                 <Image
                   src={zadigForm}
@@ -81,14 +82,13 @@ export default function Home() {
         <hr />
 
         <section>
-          <h2>Fastboot</h2>
-          <p>Follow these steps to put your device into fastboot mode:</p>
+          <h2>QDL Mode</h2>
+          <p>Follow these steps to put your device into QDL mode:</p>
           <ol>
             <li>Power off the device and wait for the LEDs to switch off.</li>
+            <li>Connect the device to your computer using the USB-C port <strong>(port 2)</strong>.</li>
             <li>Connect power to the OBD-C port <strong>(port 1)</strong>.</li>
-            <li>Then, <a href="https://youtube.com/clip/Ugkx1pbkpkvFU9gGsUwvkrl7yxx-SfHOZejM?si=nsJ0WJHJwS-rnHXL">quickly</a> connect
-              the device to your computer using the USB-C port <strong>(port 2)</strong>.</li>
-            <li>After a few seconds, the device should indicate it&apos;s in fastboot mode and show its serial number.</li>
+            <li>The device then should be visible as an option when choosing the device to flash</li>
           </ol>
           <Image
             src={fastbootPorts}
@@ -96,21 +96,17 @@ export default function Home() {
             width={450}
             height={300}
           />
-          <p>
-            If your device shows the comma spinner with a loading bar, then it&apos;s not in fastboot mode.
-            Unplug all cables, wait for the device to switch off, and try again.
-          </p>
         </section>
         <hr />
 
         <section>
           <h2>Flashing</h2>
           <p>
-            After your device is in fastboot mode, you can click the button to start flashing. A prompt may appear to
-            select a device; choose the device labeled &quot;Android&quot;.
+            After your device is in QDL mode, you can click the button to start flashing. A prompt may appear to
+            select a device; choose the device starts with <code>QUSB_BULK</code>.
           </p>
           <p>
-            The process can take 15+ minutes depending on your internet connection and system performance. Do not
+            The process can take 30+ minutes depending on your internet connection and system performance. Do not
             unplug the device until all steps are complete.
           </p>
         </section>
@@ -118,7 +114,11 @@ export default function Home() {
 
         <section>
           <h2>Troubleshooting</h2>
-          <h3>Cannot enter fastboot or device says &quot;Press any key to continue&quot;</h3>
+          <h3>Too slow</h3>
+          <p>
+            It is recommended that you use a USB 3.0 cable when flashing since it will speed up the flashing time by a lot.
+          </p>
+          <h3>Cannot enter QDL</h3>
           <p>
             Try using a different USB cable or USB port. Sometimes USB 2.0 ports work better than USB 3.0 (blue) ports.
             If you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
@@ -126,9 +126,8 @@ export default function Home() {
           </p>
           <h3>My device&apos;s screen is blank</h3>
           <p>
-            The device can still be in fastboot mode and reflashed normally if the screen isn&apos;t displaying
-            anything. A blank screen is usually caused by installing older software that doesn&apos;t support newer
-            displays. If a reflash doesn&apos;t fix the blank screen, then the device&apos;s display may be damaged.
+            The device screen will be blank in QDL mode, but you can verify that it is in QDL if the device shows up
+            when you press the Flash icon.
           </p>
           <h3>After flashing, device says unable to mount data partition</h3>
           <p>
