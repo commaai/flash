@@ -180,7 +180,7 @@ export class Sahara {
 
     await this.connect();
     console.log("Uploading Programmer...");
-    await this.downLoadLoader();
+    await this.downloadLoader();
     const loaderBlob = await this.getLoader();
     let programmer = new Uint8Array(await readBlobAsBuffer(loaderBlob));
     if (!(await this.cmdHello(sahara_mode_t.SAHARA_MODE_IMAGE_TX_PENDING))) {
