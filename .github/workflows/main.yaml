@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 9
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-pnpm
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
 
-      - run: pnpm install
-      - run: pnpm lint
-      - run: pnpm test
+      - run: bun install
+      - run: bun lint
+      - run: bun vitest
