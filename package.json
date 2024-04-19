@@ -6,10 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "vitest"
+    "lint": "next lint"
   },
-  "packageManager": "pnpm@8.10.3",
+  "packageManager": "bun",
   "engines": {
     "node": ">=18.0.0"
   },
