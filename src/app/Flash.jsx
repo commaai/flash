@@ -272,7 +272,7 @@ export default function Flash() {
                       navigator.clipboard.writeText(detachScript.join('\n'));
                       handleCopy();
                     }}
-                    className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
+                    className={`${copied ? 'bg-green-500' : 'bg-blue-500'} text-white px-1 py-1 rounded-md ml-2 text-sm`}
                   >
                     Copy
                   </button>
