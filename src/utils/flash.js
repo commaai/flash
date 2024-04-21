@@ -18,11 +18,9 @@ export const Step = {
   INITIALIZING: 0,
   READY: 1,
   CONNECTING: 2,
-  DOWNLOADING: 3,
-  UNPACKING: 4,
-  FLASHING: 6,
-  ERASING: 7,
-  DONE: 8,
+  FLASHING: 3,
+  ERASING: 4,
+  DONE: 5,
 }
 
 export const Error = {
@@ -31,11 +29,10 @@ export const Error = {
   UNRECOGNIZED_DEVICE: 1,
   LOST_CONNECTION: 2,
   DOWNLOAD_FAILED: 3,
-  UNPACK_FAILED: 4,
-  CHECKSUM_MISMATCH: 5,
-  FLASH_FAILED: 6,
-  ERASE_FAILED: 7,
-  REQUIREMENTS_NOT_MET: 8,
+  CHECKSUM_MISMATCH: 4,
+  FLASH_FAILED: 5,
+  ERASE_FAILED: 6,
+  REQUIREMENTS_NOT_MET: 7,
 }
 
 function isRecognizedDevice(slotCount, partitions) {

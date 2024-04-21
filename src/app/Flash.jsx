@@ -7,7 +7,6 @@ import { Step, Error, useQdl } from '@/utils/flash'
 import bolt from '@/assets/bolt.svg'
 import cable from '@/assets/cable.svg'
 import cloud from '@/assets/cloud.svg'
-import cloudDownload from '@/assets/cloud_download.svg'
 import cloudError from '@/assets/cloud_error.svg'
 import deviceExclamation from '@/assets/device_exclamation_c3.svg'
 import deviceQuestion from '@/assets/device_question_c3.svg'
@@ -35,16 +34,6 @@ const steps = {
     description: 'Follow the instructions to connect your device to your computer',
     bgColor: 'bg-yellow-500',
     icon: cable,
-  },
-  [Step.DOWNLOADING]: {
-    status: 'Downloading...',
-    bgColor: 'bg-blue-500',
-    icon: cloudDownload,
-  },
-  [Step.UNPACKING]: {
-    status: 'Unpacking...',
-    bgColor: 'bg-blue-500',
-    icon: cloudDownload,
   },
   [Step.FLASHING]: {
     status: 'Flashing device...',
