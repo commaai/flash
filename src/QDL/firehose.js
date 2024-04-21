@@ -185,7 +185,6 @@ export class Firehose {
       readFunc = Processor.splitBlobToChunks;
     }
 
-    const start = performance.now()
     for await (let chunk of readFunc(image)) {
       const wlen = chunk.length;
       if (chunk.length % this.cfg.SECTOR_SIZE_IN_BYTES !== 0) {
@@ -210,8 +209,6 @@ export class Firehose {
       }
       i += 1;
     }
-    const end = performance.now()
-    console.log(`Flash time for image ${image.name}: ${(end-start)/(1000*60)}s`)
 
     const wd = await this.waitForData();
     const response = this.xml.getReponse(wd);
