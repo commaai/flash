@@ -2,7 +2,7 @@ import * as gpt from "./gpt"
 import { usbClass } from "./usblib"
 import { Sahara } from  "./sahara"
 import { Firehose } from "./firehose"
-import { concatUint8Array, runWithTimeout, containsBytes, bytes2Number } from "./utils"
+import { concatUint8Array, runWithTimeout, containsBytes } from "./utils"
 
 
 export class qdlDevice {
@@ -101,13 +101,13 @@ export class qdlDevice {
     return [false];
   }
 
-  async flashBlob(partitionName, blob, onProgress=(_progress)=>{}) {
+  async flashBlob(partitionName, image, onProgress=(_progress)=>{}) {
     let startSector = 0;
     let dp = await this.detectPartition(partitionName);
     const found = dp[0];
     if (found) {
       let lun = dp[1];
-      const imgSize = blob.size;
+      const imgSize = image.size;
       let imgSectors = Math.floor(imgSize / this.firehose.cfg.SECTOR_SIZE_IN_BYTES);
       if (imgSize % this.firehose.cfg.SECTOR_SIZE_IN_BYTES !== 0) {
         imgSectors += 1;
@@ -115,12 +115,11 @@ export class qdlDevice {
       if (partitionName.toLowerCase() !== "gpt") {
         const partition = dp[2];
         if (imgSectors > partition.sectors) {
-          console.error("partition has fewer sectors compared to the flashing image");
-          return false;
+          throw "partition has fewer sectors compared to the flashing image";
         }
         startSector = partition.sector;
         console.log(`Flashing ${partitionName}...`);
-        if (await this.firehose.cmdProgram(lun, startSector, blob, (progress) => onProgress(progress))) {
+        if (await this.firehose.cmdProgram(lun, startSector, image, (progress) => onProgress(progress))) {
           console.log(`partition ${partitionName}: startSector ${partition.sector}, sectors ${partition.sectors}`);
         } else {
           throw `Errow while writing ${partitionName}`;

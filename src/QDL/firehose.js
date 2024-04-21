@@ -1,6 +1,6 @@
 import { xmlParser } from "./xmlParser"
-import { concatUint8Array, containsBytes, compareStringToBytes, sleep, readBlobAsBuffer } from "./utils"
-import * as Sparse from "./sparse";
+import { concatUint8Array, containsBytes, compareStringToBytes, sleep } from "./utils"
+import * as Processor from "./imageProcessor";
 
 
 class response {
@@ -160,16 +160,8 @@ export class Firehose {
     return tmp;
   }
 
-  async cmdProgram(physicalPartitionNumber, startSector, blob, onProgress=()=>{}) {
-    let total = blob.size;
-    let sparseformat = false;
-
-    let sparseHeader = await Sparse.parseFileHeader(blob.slice(0, Sparse.FILE_HEADER_SIZE));
-    if (sparseHeader !== null) {
-      sparseformat = true;
-      total = await Sparse.getSparseRealSize(blob, sparseHeader);
-    }
-
+  async cmdProgram(physicalPartitionNumber, startSector, image, onProgress=()=>{}) {
+    const total = image.size;
     let numPartitionSectors = Math.floor(total / this.cfg.SECTOR_SIZE_IN_BYTES);
     if (total % this.cfg.SECTOR_SIZE_IN_BYTES !== 0) {
       numPartitionSectors += 1;
@@ -183,49 +175,52 @@ export class Firehose {
     let i = 0;
     let bytesWritten = 0;
     let rsp = await this.xmlSend(data);
+    if (!rsp.resp) {
+      throw "Firehose - Error in cmdProgram";
+    }
 
-    if (rsp.resp) {
-      for await (let split of Sparse.splitBlob(blob)) {
-        let offset = 0;
-        let bytesToWriteSplit = split.size;
+    let sparseformat = image.sparse;
+    let readFunc = sparseformat ? Processor.unsparsify : Processor.noop;
+    if (image instanceof Blob) {
+      readFunc = Processor.splitBlobToChunks;
+    }
 
-        while (bytesToWriteSplit > 0) {
-          const wlen = Math.min(bytesToWriteSplit, this.cfg.MaxPayloadSizeToTargetInBytes);
-          let wdata = new Uint8Array(await readBlobAsBuffer(split.slice(offset, offset + wlen)));
-          if (wlen % this.cfg.SECTOR_SIZE_IN_BYTES !== 0) {
-            let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
-                          this.cfg.SECTOR_SIZE_IN_BYTES;
-            const fillArray = new Uint8Array(fillLen-wlen).fill(0x00);
-            wdata = concatUint8Array([wdata, fillArray]);
-          }
-          await this.cdc.write(wdata);
-          await this.cdc.write(new Uint8Array(0), null, true);
-          offset += wlen;
-          bytesWritten += wlen;
-          bytesToWriteSplit -= wlen;
-
-          // Need this for sparse image when the data.length < MaxPayloadSizeToTargetInBytes
-          // Add ~2.4s to total flash time
-          if (sparseformat && bytesWritten < total) {
-            await this.cdc.write(new Uint8Array(0), null, true);
-          }
-
-          if (i % 10 === 0) {
-            onProgress(bytesWritten/total);
-          }
-          i += 1;
-        }
+    const start = performance.now()
+    for await (let chunk of readFunc(image)) {
+      const wlen = chunk.length;
+      if (chunk.length % this.cfg.SECTOR_SIZE_IN_BYTES !== 0) {
+        let fillLen = (Math.floor(wlen/this.cfg.SECTOR_SIZE_IN_BYTES) * this.cfg.SECTOR_SIZE_IN_BYTES) +
+                      this.cfg.SECTOR_SIZE_IN_BYTES;
+        const fillArray = new Uint8Array(fillLen-wlen).fill(0x00);
+        chunk = concatUint8Array([chunk, fillArray]);
       }
 
-      const wd  = await this.waitForData();
-      const response = this.xml.getReponse(wd);
-      if (response.hasOwnProperty("value")) {
-        if (response["value"] !== "ACK") {
-          return false;
-        }
-      } else {
+      await this.cdc.write(chunk);
+      await this.cdc.write(new Uint8Array(0), null, true);
+      bytesWritten += wlen;
+
+      // Need this for sparse image when the chunk.length < MaxPayloadSizeToTargetInBytes
+      // Add ~2.4s to total flash time
+      if (sparseformat && bytesWritten < total) {
+        await this.cdc.write(new Uint8Array(0), null, true);
+      }
+
+      if (i % 10 === 0) {
+        onProgress(bytesWritten / total);
+      }
+      i += 1;
+    }
+    const end = performance.now()
+    console.log(`Flash time for image ${image.name}: ${(end-start)/(1000*60)}s`)
+
+    const wd = await this.waitForData();
+    const response = this.xml.getReponse(wd);
+    if (response.hasOwnProperty("value")) {
+      if (response["value"] !== "ACK") {
         return false;
       }
+    } else {
+      return false;
     }
 
     onProgress(1.0);
