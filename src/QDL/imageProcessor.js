@@ -117,7 +117,6 @@ export async function* unsparsify(image, maxYieldSize=MAX_YIELD_SIZE) {
   if (header === null) {
     throw "Invalid sparse image";
   }
-  const rawHash = new jsSHA('SHA-256', 'UINT8ARRAY');
 
   for (let i = 0; i < header.totalChunks; i++) {
     const chunkHeader = parseChunkHeader(await downloader.read(CHUNK_HEADER_SIZE));
@@ -145,8 +144,7 @@ export async function* unsparsify(image, maxYieldSize=MAX_YIELD_SIZE) {
       let byteToSend = chunkHeader.blocks * blockSize;
       while (byteToSend > 0) {
         const wlen = Math.min(maxYieldSize, byteToSend);
-        const wData = new Uint8Array(wlen).fill(0);
-        yield wData;
+        yield new Uint8Array(wlen).fill(0);
         byteToSend -= wlen
       }
     } else {
@@ -160,8 +158,7 @@ export async function* unsparsify(image, maxYieldSize=MAX_YIELD_SIZE) {
 export async function* noop(image, maxYieldSize=MAX_YIELD_SIZE) {
   const downloader = new streamingDecompressor(image.archiveUrl);
   while (!downloader.eof) {
-    const wData = await downloader.read(maxYieldSize);
-    yield wData;
+    yield await downloader.read(maxYieldSize);
   }
   checkPartitionHash(downloader.shaObj.getHash('HEX'), image.checksum);
 }
