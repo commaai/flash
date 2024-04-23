@@ -190,16 +190,16 @@ export function useQdl() {
           }
           const otherSlot = currentSlot === 'a' ? 'b' : 'a'
 
-          // Erase current xbl partition so if users try to power up device
-          // with corrupted primary gpt header, it would not update the backup
-          await qdl.current.erase("xbl"+`_${currentSlot}`)
-
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             setMessage(`Flashing ${image.name}`)
             const partitionName = image.name + `_${otherSlot}`
             await qdl.current.flashBlob(partitionName, image, onProgress)
           }
           console.debug('[QDL] Flashed all partitions')
+
+          // Erase current xbl partition so if users try to power up device
+          // with corrupted primary gpt header, it would not update the backup
+          await qdl.current.erase("xbl"+`_${currentSlot}`)
 
           setMessage(`Changing slot to ${otherSlot}`)
           await qdl.current.setActiveSlot(otherSlot)
