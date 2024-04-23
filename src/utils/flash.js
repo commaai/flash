@@ -214,7 +214,7 @@ export function useQdl() {
             console.error('[QDL] Flashing error', err)
             if (err.startsWith("Checksum mismatch")) {
               setError(Error.CHECKSUM_MISMATCH)
-            } else if (error.startsWith("Error download archive")) {
+            } else if (err.startsWith("Error download archive")) {
               setError(Error.DOWNLOAD_FAILED)
             } else {
               setError(Error.FLASH_FAILED)

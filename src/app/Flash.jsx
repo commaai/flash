@@ -73,7 +73,7 @@ const errors = {
   [Error.LOST_CONNECTION]: {
     status: 'Lost connection',
     description: 'The connection to your device was lost. Check that your cables are connected properly and try again. ' +
-                 'Unplug your device and wait for around 20s.',
+                 'Unplug your device and wait for the blinking light to stop.',
     icon: cable,
   },
   [Error.DOWNLOAD_FAILED]: {

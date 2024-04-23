@@ -87,7 +87,7 @@ export class usbClass {
         await this._validateAndConnectDevice();
       } catch (error) {
         console.log("Error while connecting to the device");
-        throw error;
+        throw `USB - ${error}`;
       }
     });
     await this._validateAndConnectDevice();
@@ -107,7 +107,7 @@ export class usbClass {
         resplen = respData.length;
         covered += respData.length;
       } catch (error) {
-        throw error;
+        throw `USB - ${error}`;
       }
     }
     return respData;
@@ -122,7 +122,7 @@ export class usbClass {
         try {
           await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
         } catch(error) {
-          throw error;
+          throw `USB - ${error}`;
         }
       }
       return true;
@@ -144,7 +144,7 @@ export class usbClass {
         }
         offset += pktSize;
       } catch (error) {
-        throw error;
+        throw `USB - ${error}`;
       }
     }
     return true;
