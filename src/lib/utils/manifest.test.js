@@ -2,7 +2,7 @@ import { expect, test, vi } from "vitest";
 
 import * as Comlink from "comlink";
 
-import config from "../config";
+import config from "./config";
 import { getManifest } from "./manifest";
 
 async function getImageWorker() {
@@ -14,7 +14,7 @@ async function getImageWorker() {
     imageWorker.init();
   });
 
-  await import("./../workers/image.worker");
+  await import("./workers/image.worker");
 
   return imageWorker;
 }
