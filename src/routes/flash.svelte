@@ -145,11 +145,11 @@
             : steps[step.value],
     );
     let title = $derived(
-        message.value
-            ? progress.value >= 0
+        message.value != ''
+            ? message.value (progress.value >= 0
                 ? message.value + "..."
-                : message.value + "..." + ` (${(progress.value * 100).toFixed(0)}%)`
-            : status.value,
+                : message.value + "..." + ` (${(progress.value * 100).toFixed(0)}%)`)
+            : status,
     );
 </script>
 
@@ -157,10 +157,10 @@
     id="flash"
     class="relative flex flex-col gap-8 justify-center items-center h-full"
 >
-    {#if onContinue.value}
-        <div
+
+        <button
             class="p-8 rounded-full {bgColor}"
-            style="cursor: 'pointer'"
+            style="cursor: {onContinue.value ? 'pointer' : 'default'}"
             onclick={onContinue.value}
         >
             <img
@@ -172,22 +172,7 @@
                     ? 'animate-pulse'
                     : ''}"
             />
-        </div>
-    {:else}
-        <div
-            class="p-8 rounded-full {bgColor}"
-            style="cursor: 'default'"
-            onclick={onContinue.value}
-        >
-            <img
-                src={icon}
-                alt="cable"
-                width={128}
-                height={128}
-                class={iconStyle}
-            />
-        </div>
-    {/if}
+        </button>
     <div
         class="w-full max-w-3xl px-8 transition-opacity duration-300"
         style="opacity: {progress.value === -1 ? 0 : 1}"

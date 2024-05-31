@@ -1,5 +1,5 @@
 <script>
-    export let serial;
+    let { serial } = $props();
 </script>
 
 <div
