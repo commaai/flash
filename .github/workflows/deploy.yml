@@ -28,7 +28,7 @@ jobs:
           static_site_generator: next
       - name: Install dependencies
         run: bun install
-      - name: Build with Next.js
+      - name: Build with Vite
         run: bun run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
