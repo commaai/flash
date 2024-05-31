@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { render, screen } from '@testing-library/svelte'
+import { render, screen } from '@testing-library/svelte/svelte5'
 
 import Page from './+page.svelte';
 
