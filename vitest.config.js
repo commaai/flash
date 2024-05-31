@@ -13,6 +13,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test/setup.js',
+    setupFiles: ['@vitest/web-worker', './src/test/setup.js']
   },
 })
