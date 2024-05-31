@@ -131,7 +131,6 @@
         },
     };
     useFastboot();
-    console.log(step.value)
     let {
         status,
         description,
@@ -206,6 +205,6 @@
         </button>
     {/if}
     {#if connected.value}
-        <DeviceState serial=serial.value />
+        <DeviceState serial={serial.value} />
     {/if}
 </div>
