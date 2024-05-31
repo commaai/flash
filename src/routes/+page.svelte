@@ -108,10 +108,9 @@
                     fastboot mode and show its serial number.
                 </li>
             </ol>
-            <!-- svelte-ignore a11y-img-redundant-alt -->
             <img
                 src={fastbootPorts}
-                alt="image showing comma three and two ports. the upper port is labeled 1. the lower port is labeled 2."
+                alt="An illustration of comma three and two ports. the upper port is labeled 1. the lower port is labeled 2."
                 width="450"
                 height="300"
             />

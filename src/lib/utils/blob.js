@@ -5,12 +5,12 @@ export async function download(url) {
   console.debug("[blob] Downloading", url, contentLength);
 
   const chunks = [];
-  let processed = 0;
+  //let processed = 0;
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     chunks.push(value);
-    processed += value.length;
+    //processed += value.length;
   }
 
   const blob = new Blob(chunks);

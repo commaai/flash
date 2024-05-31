@@ -5,6 +5,7 @@
  * @param {progressCallback} onProgress
  * @returns {(progressCallback)[]}
  */
+// eslint-disable-next-line no-unused-vars
 export function createSteps(steps, onProgress) {
   const stepWeights = typeof steps === "number" ? Array(steps).fill(1) : steps;
 
