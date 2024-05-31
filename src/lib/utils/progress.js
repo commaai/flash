@@ -2,29 +2,28 @@
  * Create a set of callbacks that can be used to track progress of a multistep process.
  *
  * @param {(number[]|number)} steps
- * @param {progressCallback} onProgress
- * @returns {(progressCallback)[]}
+ * @param {number} onProgress
+ * @returns {(number)[]}
  */
-// eslint-disable-next-line no-unused-vars
 export function createSteps(steps, onProgress) {
-  const stepWeights = typeof steps === "number" ? Array(steps).fill(1) : steps;
+  const stepWeights = typeof steps === 'number' ? Array(steps).fill(1) : steps
 
-  const progressParts = Array(stepWeights.length).fill(0);
-  const totalSize = stepWeights.reduce((total, weight) => total + weight, 0);
+  const progressParts = Array(stepWeights.length).fill(0)
+  const totalSize = stepWeights.reduce((total, weight) => total + weight, 0)
 
   function updateProgress() {
     const weightedAverage = stepWeights.reduce((acc, weight, idx) => {
-      return acc + progressParts[idx] * weight;
-    }, 0);
+      return acc + progressParts[idx] * weight
+    }, 0)
     onProgress = weightedAverage / totalSize;
   }
 
   return stepWeights.map((weight, idx) => (progress) => {
     if (progressParts[idx] !== progress) {
-      progressParts[idx] = progress;
-      updateProgress();
+      progressParts[idx] = progress
+      updateProgress()
     }
-  });
+  })
 }
 
 /**
@@ -36,10 +35,8 @@ export function createSteps(steps, onProgress) {
  */
 export function withProgress(steps, onProgress) {
   const callbacks = createSteps(
-    steps.map((step) =>
-      typeof step === "number" ? step : step.size || step.length || 1,
-    ),
+    steps.map(step => typeof step === 'number' ? step : step.size || step.length || 1),
     onProgress,
-  );
-  return steps.map((step, idx) => [step, callbacks[idx]]);
+  )
+  return steps.map((step, idx) => [step, callbacks[idx]])
 }
