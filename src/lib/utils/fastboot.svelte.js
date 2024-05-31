@@ -50,7 +50,7 @@ function isRecognizedDevice(deviceInfo) {
     slotCount !== "2"
   ) {
     console.error(
-      "[_fastboot] Unrecognised device (kernel, maxDownloadSize or slotCount)",
+      "[fastboot] Unrecognised device (kernel, maxDownloadSize or slotCount)",
       deviceInfo,
     );
     return false;
@@ -125,14 +125,14 @@ function isRecognizedDevice(deviceInfo) {
   if (
     !partitions.every((partition) => expectedPartitions.includes(partition))
   ) {
-    console.error("[_fastboot] Unrecognised device (partitions)", partitions);
+    console.error("[fastboot] Unrecognised device (partitions)", partitions);
     return false;
   }
 
   // sanity check, also useful for logging
   if (!deviceInfo["serialno"]) {
     console.error(
-      "[_fastboot] Unrecognised device (missing serialno)",
+      "[fastboot] Unrecognised device (missing serialno)",
       deviceInfo,
     );
     return false;
@@ -162,28 +162,28 @@ export function useFastboot() {
 
     if (_error) return;
     if (!imageWorker) {
-      console.debug("[_fastboot] Waiting for image worker");
+      console.debug("[fastboot] Waiting for image worker");
       return;
     }
     switch (_step) {
       case Step.INITIALIZING: {
         // Check that the browser supports WebUSB
         if (typeof navigator.usb === "undefined") {
-          console.error("[_fastboot] WebUSB not supported");
+          console.error("[fastboot] WebUSB not supported");
           _error = Error.REQUIREMENTS_NOT_MET;
           break;
         }
 
         // Check that the browser supports Web Workers
         if (typeof Worker === "undefined") {
-          console.error("[_fastboot] Web Workers not supported");
+          console.error("[fastboot] Web Workers not supported");
           _error = Error.REQUIREMENTS_NOT_MET;
           break;
         }
 
         // Check that the browser supports Storage API
         if (typeof Storage === "undefined") {
-          console.error("[_fastboot] Storage API not supported");
+          console.error("[fastboot] Storage API not supported");
           _error = Error.REQUIREMENTS_NOT_MET;
           break;
         }
@@ -201,11 +201,11 @@ export function useFastboot() {
               throw "Manifest is empty";
             }
 
-            console.debug("[_fastboot] Loaded _manifest", _manifest);
+            console.debug("[fastboot] Loaded manifest", _manifest);
             _step = Step.READY;
           })
           .catch((err) => {
-            console.error("[_fastboot] Initialization _error", err);
+            console.error("[fastboot] Initialization error", err);
             _error = Error.UNKNOWN;
           });
         break;
@@ -224,7 +224,7 @@ export function useFastboot() {
         _fastboot
           .waitForConnect()
           .then(() => {
-            console.info("[_fastboot] Connected", {
+            console.info("[fastboot] Connected", {
               _fastboot: _fastboot.current,
             });
             return _fastboot
@@ -238,7 +238,7 @@ export function useFastboot() {
                 }, {});
 
                 const recognized = isRecognizedDevice(deviceInfo);
-                console.debug("[_fastboot] Device info", {
+                console.debug("[fastboot] Device info", {
                   recognized,
                   deviceInfo,
                 });
@@ -255,20 +255,20 @@ export function useFastboot() {
               })
               .catch((err) => {
                 console.error(
-                  "[_fastboot] Error getting device information",
+                  "[fastboot] Error getting device information",
                   err,
                 );
                 _error = Error.UNKNOWN;
               });
           })
           .catch((err) => {
-            console.error("[_fastboot] Connection lost", err);
+            console.error("[fastboot] Connection lost", err);
             _error = Error.LOST_CONNECTION;
             _connected = false;
           });
 
         _fastboot.connect().catch((err) => {
-          console.error("[_fastboot] Connection _error", err);
+          console.error("[fastboot] Connection error", err);
           _step = Step.READY;
         });
         break;
@@ -289,11 +289,11 @@ export function useFastboot() {
 
         downloadImages()
           .then(() => {
-            console.debug("[_fastboot] Downloaded all images");
+            console.debug("[fastboot] Downloaded all images");
             _step = Step.UNPACKING;
           })
           .catch((err) => {
-            console.error("[_fastboot] Download _error", err);
+            console.error("[fastboot] Download error", err);
             _error = Error.DOWNLOAD_FAILED;
           });
         break;
@@ -314,11 +314,11 @@ export function useFastboot() {
 
         unpackImages()
           .then(() => {
-            console.debug("[_fastboot] Unpacked all images");
+            console.debug("[fastboot] Unpacked all images");
             _step = Step.FLASHING;
           })
           .catch((err) => {
-            console.error("[_fastboot] Unpack _error", err);
+            console.error("[fastboot] Unpack error", err);
             if (err.startsWith("Checksum mismatch")) {
               _error = Error.CHECKSUM_MISMATCH;
             } else {
@@ -351,7 +351,7 @@ export function useFastboot() {
             _message = `Flashing ${image.name}`;
             await _fastboot.flashBlob(image.name, blob, onProgress, "other");
           }
-          console.debug("[_fastboot] Flashed all partitions");
+          console.debug("[fastboot] Flashed all partitions");
 
           const otherSlot = currentSlot === "a" ? "b" : "a";
           _message = `Changing slot to ${otherSlot}`;
@@ -360,11 +360,11 @@ export function useFastboot() {
 
         flashDevice()
           .then(() => {
-            console.debug("[_fastboot] Flash complete");
+            console.debug("[fastboot] Flash complete");
             _step = Step.ERASING;
           })
           .catch((err) => {
-            console.error("[_fastboot] Flashing _error", err);
+            console.error("[fastboot] Flashing error", err);
             _error = Error.FLASH_FAILED;
           });
         break;
@@ -386,25 +386,25 @@ export function useFastboot() {
 
         eraseDevice()
           .then(() => {
-            console.debug("[_fastboot] Erase complete");
+            console.debug("[fastboot] Erase complete");
             _step = Step.DONE;
             trackEvent('completed');
           })
           .catch((err) => {
-            console.error("[_fastboot] Erase _error", err);
+            console.error("[fastboot] Erase error", err);
             _error = Error.ERASE_FAILED;
           });
         break;
       }
     }
     if (_error !== Error.NONE) {
-      console.debug("[_fastboot] _error", _error);
+      console.debug("[fastboot] error", _error);
       trackEvent('error', { props: { _error }});
       _progress = -1;
       _onContinue = null;
 
       _onRetry = () => {
-        console.debug("[_fastboot] on retry");
+        console.debug("[fastboot] on retry");
         window.location.reload();
       };
     }
