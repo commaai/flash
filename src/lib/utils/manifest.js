@@ -8,58 +8,58 @@ export class Image {
    * Partition name
    * @type {string}
    */
-  name
+  name;
 
   /**
    * SHA-256 checksum of the image, encoded as a hex string
    * @type {string}
    */
-  checksum
+  checksum;
   /**
    * Size of the unpacked image in bytes
    * @type {number}
    */
-  size
+  size;
   /**
    * Whether the image is sparse
    * @type {boolean}
    */
-  sparse
+  sparse;
 
   /**
    * Name of the image file
    * @type {string}
    */
-  fileName
+  fileName;
 
   /**
    * Name of the image archive file
    * @type {string}
    */
-  archiveFileName
+  archiveFileName;
   /**
    * URL of the image archive
    * @type {string}
    */
-  archiveUrl
+  archiveUrl;
 
   constructor(json) {
-    this.name = json.name
-    this.sparse = json.sparse
+    this.name = json.name;
+    this.sparse = json.sparse;
 
-    if (this.name === 'system') {
-      this.checksum = json.alt.hash
-      this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
-      this.archiveUrl = json.alt.url
-      this.size = json.alt.size
+    if (this.name === "system") {
+      this.checksum = json.alt.hash;
+      this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`;
+      this.archiveUrl = json.alt.url;
+      this.size = json.alt.size;
     } else {
-      this.checksum = json.hash
-      this.fileName = `${this.name}-${json.hash_raw}.img`
-      this.archiveUrl = json.url
-      this.size = json.size
-    } 
+      this.checksum = json.hash;
+      this.fileName = `${this.name}-${json.hash_raw}.img`;
+      this.archiveUrl = json.url;
+      this.size = json.size;
+    }
 
-    this.archiveFileName = this.archiveUrl.split('/').pop()
+    this.archiveFileName = this.archiveUrl.split("/").pop();
   }
 }
 
@@ -68,20 +68,35 @@ export class Image {
  * @returns {Image[]}
  */
 export function createManifest(text) {
-  const expectedPartitions = ['aop', 'devcfg', 'xbl', 'xbl_config', 'abl', 'boot', 'system']
-  const partitions = JSON.parse(text).map((image) => new Image(image))
+  const expectedPartitions = [
+    "aop",
+    "devcfg",
+    "xbl",
+    "xbl_config",
+    "abl",
+    "boot",
+    "system",
+  ];
+  const partitions = JSON.parse(text).map((image) => new Image(image));
 
   // Sort into consistent order
-  partitions.sort((a, b) => expectedPartitions.indexOf(a.name) - expectedPartitions.indexOf(b.name))
+  partitions.sort(
+    (a, b) =>
+      expectedPartitions.indexOf(a.name) - expectedPartitions.indexOf(b.name),
+  );
 
   // Check that all partitions are present
   // TODO: should we prevent flashing if there are extra partitions?
-  const missingPartitions = expectedPartitions.filter((name) => !partitions.some((image) => image.name === name))
+  const missingPartitions = expectedPartitions.filter(
+    (name) => !partitions.some((image) => image.name === name),
+  );
   if (missingPartitions.length > 0) {
-    throw new Error(`Manifest is missing partitions: ${missingPartitions.join(', ')}`)
+    throw new Error(
+      `Manifest is missing partitions: ${missingPartitions.join(", ")}`,
+    );
   }
 
-  return partitions
+  return partitions;
 }
 
 /**
@@ -91,5 +106,5 @@ export function createManifest(text) {
 export function getManifest(url) {
   return fetch(url)
     .then((response) => response.text())
-    .then(createManifest)
+    .then(createManifest);
 }

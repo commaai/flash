@@ -11,14 +11,11 @@
 /.pnp
 .pnp.js
 /.pnpm-store
-
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
+# svelte-kit
+.svelte-kit
 # production
 /build
 

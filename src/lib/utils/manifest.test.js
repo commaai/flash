@@ -1,22 +1,22 @@
-import { expect, test, vi } from 'vitest'
+import { expect, test, vi } from "vitest";
 
-import * as Comlink from 'comlink'
+import * as Comlink from "comlink";
 
-import config from '../config'
-import { getManifest } from './manifest'
+import config from "../config";
+import { getManifest } from "./manifest";
 
 async function getImageWorker() {
-  let imageWorker
+  let imageWorker;
 
-  vi.mock('comlink')
-  vi.mocked(Comlink.expose).mockImplementation(worker => {
-    imageWorker = worker
-    imageWorker.init()
-  })
+  vi.mock("comlink");
+  vi.mocked(Comlink.expose).mockImplementation((worker) => {
+    imageWorker = worker;
+    imageWorker.init();
+  });
 
-  await import('./../workers/image.worker')
+  await import("./../workers/image.worker");
 
-  return imageWorker
+  return imageWorker;
 }
 
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
@@ -27,49 +27,62 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         write: vi.fn(),
         close: vi.fn(),
       })),
-    }
+    };
 
     global.navigator = {
       storage: {
         getDirectory: () => ({
           getFileHandle: () => imageWorkerFileHandler,
-        })
-      }
-    }
+        }),
+      },
+    };
 
-    const imageWorker = await getImageWorker()
+    const imageWorker = await getImageWorker();
 
-    const images = await getManifest(manifestUrl)
+    const images = await getManifest(manifestUrl);
 
     // Check all images are present
-    expect(images.length).toBe(7)
+    expect(images.length).toBe(7);
 
     for (const image of images) {
       describe(`${image.name} image`, async () => {
-        test('xz archive', () => {
-          expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
-          expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
-        })
+        test("xz archive", () => {
+          expect(image.archiveFileName, "archive to be in xz format").toContain(
+            ".xz",
+          );
+          expect(image.archiveUrl, "archive url to be in xz format").toContain(
+            ".xz",
+          );
+        });
 
-        if (image.name === 'system') {
-          test('alt image', () => {
-            expect(image.sparse, 'system image to be sparse').toBe(true)
-            expect(image.fileName, 'system image to be skip chunks').toContain('-skip-chunks-')
-            expect(image.archiveUrl, 'system image to point to skip chunks').toContain('-skip-chunks-')
-          })
+        if (image.name === "system") {
+          test("alt image", () => {
+            expect(image.sparse, "system image to be sparse").toBe(true);
+            expect(image.fileName, "system image to be skip chunks").toContain(
+              "-skip-chunks-",
+            );
+            expect(
+              image.archiveUrl,
+              "system image to point to skip chunks",
+            ).toContain("-skip-chunks-");
+          });
         }
 
-        test('image and checksum', async () => {
-          imageWorkerFileHandler.getFile.mockImplementation(async () => {
-            const response = await fetch(image.archiveUrl)
-            expect(response.ok, 'to be uploaded').toBe(true)
+        test(
+          "image and checksum",
+          async () => {
+            imageWorkerFileHandler.getFile.mockImplementation(async () => {
+              const response = await fetch(image.archiveUrl);
+              expect(response.ok, "to be uploaded").toBe(true);
 
-            return response.blob()
-          })
-      
-          await imageWorker.unpackImage(image)
-        }, 8 * 60 * 1000)
-      })
+              return response.blob();
+            });
+
+            await imageWorker.unpackImage(image);
+          },
+          8 * 60 * 1000,
+        );
+      });
     }
-  })
+  });
 }

@@ -1,6 +1,6 @@
 {
-  "name": "flash",
-  "version": "0.0.1",
+  "name": "@commaai/flash",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "vite dev",
@@ -9,8 +9,13 @@
     "test": "vitest",
     "lint": "eslint ."
   },
+  "packageManager": "bun",
+  "engines": {
+	  "node": ">=18.0.0"
+  },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^3.0.0",
+    "@sveltejs/adapter-static": "^3.0.1",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
     "@tailwindcss/typography": "^0.5.13",
@@ -24,7 +29,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@sveltejs/adapter-static": "^3.0.1",
     "android-fastboot": "github:commaai/fastboot.js#c3ec6fe3c96a48dab46e23d0c8c861af15b2144a",
     "autoprefixer": "^10.4.19",
     "comlink": "^4.4.1",
