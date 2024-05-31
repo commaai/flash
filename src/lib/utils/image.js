@@ -1,6 +1,6 @@
 import * as Comlink from "comlink";
-import MyWorker from "$lib/utils/workers/image.worker.js?url";
+import ImageWorker from "$lib/utils/workers/image.worker.js?worker";
 export function useImageWorker() {
-  const worker = new Worker(MyWorker, { type: "module" });
+  const worker = new ImageWorker();
   return Comlink.wrap(worker);
 }
