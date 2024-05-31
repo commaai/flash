@@ -3,7 +3,7 @@ import * as Comlink from "comlink";
 import jsSHA from "jssha";
 import { XzReadableStream } from "xz-decompress";
 // eslint-disable-next-line no-unused-vars
-import { Image } from "$lib/utils/manifest";
+import { Image } from "../utils/manifest";
 
 /**
  * Chunk callback
