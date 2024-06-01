@@ -36,8 +36,8 @@ export function createSteps(steps, progress) {
  */
 export function withProgress(steps, progress) {
   const callbacks = createSteps(
-    steps.map(step => typeof step === 'number' ? step : step.size || step.length || 1),
+    steps.value.map(step => typeof step === 'number' ? step : step.size || step.length || 1),
     progress,
   )
-  return steps.map((step, idx) => [step, callbacks[idx]])
+  return steps.value.map((step, idx) => [step, callbacks[idx]])
 }

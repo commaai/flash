@@ -279,8 +279,8 @@ export function useFastboot() {
 
         async function downloadImages() {
           for await (const [image, onProgress] of withProgress(
-            manifest.value,
-            progress.value,
+            manifest,
+            progress,
           )) {
             message.value = `Downloading ${image.name}`;
             await imageWorker.downloadImage(image, Comlink.proxy(onProgress));
@@ -304,8 +304,8 @@ export function useFastboot() {
 
         async function unpackImages() {
           for await (const [image, onProgress] of withProgress(
-            manifest.value,
-            progress.value,
+            manifest,
+            progress,
           )) {
             message.value = `Unpacking ${image.name}`;
             await imageWorker.unpackImage(image, Comlink.proxy(onProgress));
@@ -338,8 +338,8 @@ export function useFastboot() {
           }
 
           for await (const [image, onProgress] of withProgress(
-            manifest.value,
-            progress.value,
+            manifest,
+            progress,
           )) {
             const fileHandle = await imageWorker.getImage(image);
             const blob = await fileHandle.getFile();
