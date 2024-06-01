@@ -13,13 +13,6 @@ import { Image } from '$lib/utils/manifest'
  * @returns {Promise<void>}
  */
 
-/**
- * Progress callback
- *
- * @callback progressCallback
- * @param {number} progress
- * @returns {void}
- */
 
 /**
  * Read chunks from a readable stream reader while reporting progress
@@ -27,17 +20,17 @@ import { Image } from '$lib/utils/manifest'
  * @param {ReadableStreamDefaultReader} reader
  * @param {number} total
  * @param {chunkCallback} onChunk
- * @param {progressCallback} [onProgress]
+ * @param {Object} [progress]
  * @returns {Promise<void>}
  */
-async function readChunks(reader, total, { onChunk, onProgress = undefined }) {
+async function readChunks(reader, total, { onChunk, progress = undefined }) {
   let processed = 0
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
     await onChunk(value)
     processed += value.length
-    onProgress?.(processed / total)
+    progress.value = (processed / total)
   }
 }
 
@@ -59,10 +52,10 @@ const imageWorker = {
    * Download an image to persistent storage.
    *
    * @param {Image} image
-   * @param {progressCallback} [onProgress]
+   * @param {Object} [progress]
    * @returns {Promise<void>}
    */
-  async downloadImage(image, onProgress = undefined) {
+  async downloadImage(image, progress = undefined) {
     const { archiveFileName, archiveUrl } = image
 
     let writable
@@ -84,9 +77,9 @@ const imageWorker = {
       const reader = response.body.getReader()
       await readChunks(reader, contentLength, {
         onChunk: async (chunk) => await writable.write(chunk),
-        onProgress,
+        progress,
       })
-      onProgress?.(1)
+      progress.value = 1;
     } catch (e) {
       throw `Could not read response body: ${e}`
     }
@@ -104,10 +97,10 @@ const imageWorker = {
    * Throws an error if the checksum does not match.
    *
    * @param {Image} image
-   * @param {progressCallback} [onProgress]
+   * @param {Object} [progress]
    * @returns {Promise<void>}
    */
-  async unpackImage(image, onProgress = undefined) {
+  async unpackImage(image, progress = undefined) {
     const { archiveFileName, checksum: expectedChecksum, fileName, size: imageSize } = image
 
     let archiveFile
@@ -136,11 +129,11 @@ const imageWorker = {
           await writable.write(chunk)
           shaObj.update(chunk)
         },
-        onProgress,
+        progress,
       })
 
       complete = true
-      onProgress?.(1)
+      progress.value = 1;
     } catch (e) {
       throw `Error unpacking archive: ${e}`
     }

@@ -31,8 +31,8 @@ export function createSteps(steps, progress) {
  * Iterate over a list of steps while reporting progress.
  * @template T
  * @param {(number[]|T[])} steps
- * @param {progressCallback} onProgress
- * @returns {([T, progressCallback])[]}
+ * @param {Object} onProgress
+ * @returns {([T, Object])[]}
  */
 export function withProgress(steps, onProgress) {
   const callbacks = createSteps(
