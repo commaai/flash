@@ -19,7 +19,7 @@
 @tailwind components;
 @tailwind utilities;
 .main {
-  font-family: "Inter", sans-serif;
+  font-family: "Inter", Arial;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
