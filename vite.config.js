@@ -1,5 +1,3 @@
-/// <reference types="vite" />
-
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -11,9 +9,6 @@ export default defineConfig({
     alias: [
       { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
     ],
-  },
-  worker: {
-    format: 'es',
   },
   test: {
     globals: true,
