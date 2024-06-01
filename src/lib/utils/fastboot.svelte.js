@@ -7,10 +7,10 @@ import { useImageWorker } from "$lib/utils/image";
 import { createManifest } from "$lib/utils/manifest";
 import { withProgress } from "$lib/utils/progress";
 /**
- * @typedef {import('./_manifest.js').Image} Image
+ * @typedef {import('./manifest.js').Image} Image
  */
 
-// Verbose logging for _fastboot
+// Verbose logging for fastboot
 setDebugLevel(2);
 
 export const Step = {
@@ -140,94 +140,94 @@ function isRecognizedDevice(deviceInfo) {
 
   return true;
 }
-let _step = $state(Step.INITIALIZING);
-let _message = $state("");
-let _progress = $state(0);
-let _error = $state(Error.NONE);
+let step = $state({ value: Step.INITIALIZING });
+let message = $state({ value: "" });
+let progress = $state({ value: 0 });
+let error = $state({ value: Error.NONE });
 
-let _connected = $state(false);
-let _serial = $state(null);
+let connected = $state({ value: false });
+let serial = $state({ value: null });
 
-let _onContinue = $state(null);
-let _onRetry = $state(null);
-let _fastboot = $state(new FastbootDevice());
+let onContinue = $state({ value: null });
+let onRetry = $state({ value: null });
+let fastboot = $state({ value: new FastbootDevice() });
 
-let _manifest = $state(null);
+let manifest = $state({ value: null });
 export function useFastboot() {
   $effect(() => {
     const { trackEvent } = Plausible({ domain: 'flash.comma.ai' });
     const imageWorker = useImageWorker();
-    _progress = -1;
-    _message = "";
+    progress.value = -1;
+    message.value = "";
 
-    if (_error) return;
+    if (error.value) return;
     if (!imageWorker) {
       console.debug("[fastboot] Waiting for image worker");
       return;
     }
-    switch (_step) {
+    switch (step.value) {
       case Step.INITIALIZING: {
         // Check that the browser supports WebUSB
         if (typeof navigator.usb === "undefined") {
           console.error("[fastboot] WebUSB not supported");
-          _error = Error.REQUIREMENTS_NOT_MET;
+          error.value = Error.REQUIREMENTS_NOT_MET;
           break;
         }
 
         // Check that the browser supports Web Workers
         if (typeof Worker === "undefined") {
           console.error("[fastboot] Web Workers not supported");
-          _error = Error.REQUIREMENTS_NOT_MET;
+          error.value = Error.REQUIREMENTS_NOT_MET;
           break;
         }
 
         // Check that the browser supports Storage API
         if (typeof Storage === "undefined") {
           console.error("[fastboot] Storage API not supported");
-          _error = Error.REQUIREMENTS_NOT_MET;
+          error.value = Error.REQUIREMENTS_NOT_MET;
           break;
         }
 
-        // TODO: change _manifest once alt image is in release
+        // TODO: change manifest.value once alt image is in release
         imageWorker
           ?.init()
           .then(() => download(config.manifests["master"]))
           .then((blob) => blob.text())
           .then((text) => {
-            _manifest = createManifest(text);
+            manifest.value = createManifest(text);
 
             // sanity check
-            if (_manifest.length === 0) {
+            if (manifest.value.length === 0) {
               throw "Manifest is empty";
             }
 
-            console.debug("[fastboot] Loaded manifest", _manifest);
-            _step = Step.READY;
+            console.debug("[fastboot] Loaded manifest", manifest.value);
+            step.value = Step.READY;
           })
           .catch((err) => {
             console.error("[fastboot] Initialization error", err);
-            _error = Error.UNKNOWN;
+            error.value = Error.UNKNOWN;
           });
         break;
       }
 
       case Step.READY: {
         // wait for user interaction (we can't use WebUSB without user event)
-        _onContinue = () => {
-          _onContinue = null;
-          _step = Step.CONNECTING;
+        onContinue.value = () => {
+          onContinue.value = null;
+          step.value = Step.CONNECTING;
         };
         break;
       }
 
       case Step.CONNECTING: {
-        _fastboot
+        fastboot.value
           .waitForConnect()
           .then(() => {
             console.info("[fastboot] Connected", {
-              _fastboot: _fastboot.current,
+              fastboot: fastboot.value,
             });
-            return _fastboot
+            return fastboot.value
               .getVariable("all")
               .then((all) => {
                 const deviceInfo = all.split("\n").reduce((obj, line) => {
@@ -244,45 +244,45 @@ export function useFastboot() {
                 });
 
                 if (!recognized) {
-                  _error = Error.UNRECOGNIZED_DEVICE;
+                  error.value = Error.UNRECOGNIZED_DEVICE;
                   return;
                 }
 
-                _serial = deviceInfo["serialno"] || "unknown";
-                _connected = true;
+                serial.value = deviceInfo["serialno"] || "unknown";
+                connected.value = true;
                 trackEvent('device-connected');
-                _step = Step.DOWNLOADING;
+                step.value = Step.DOWNLOADING;
               })
               .catch((err) => {
                 console.error(
                   "[fastboot] Error getting device information",
                   err,
                 );
-                _error = Error.UNKNOWN;
+                error.value = Error.UNKNOWN;
               });
           })
           .catch((err) => {
             console.error("[fastboot] Connection lost", err);
-            _error = Error.LOST_CONNECTION;
-            _connected = false;
+            error.value = Error.LOST_CONNECTION;
+            connected.value = false;
           });
 
-        _fastboot.connect().catch((err) => {
+        fastboot.value.connect().catch((err) => {
           console.error("[fastboot] Connection error", err);
-          _step = Step.READY;
+          step.value = Step.READY;
         });
         break;
       }
 
       case Step.DOWNLOADING: {
-        _progress = 0;
+        progress.value = 0;
 
         async function downloadImages() {
           for await (const [image, onProgress] of withProgress(
-            _manifest,
-            _progress,
+            manifest.value,
+            progress.value,
           )) {
-            _message = `Downloading ${image.name}`;
+            message.value = `Downloading ${image.name}`;
             await imageWorker.downloadImage(image, Comlink.proxy(onProgress));
           }
         }
@@ -290,24 +290,24 @@ export function useFastboot() {
         downloadImages()
           .then(() => {
             console.debug("[fastboot] Downloaded all images");
-            _step = Step.UNPACKING;
+            step.value = Step.UNPACKING;
           })
           .catch((err) => {
             console.error("[fastboot] Download error", err);
-            _error = Error.DOWNLOAD_FAILED;
+            error.value = Error.DOWNLOAD_FAILED;
           });
         break;
       }
 
       case Step.UNPACKING: {
-        _progress = 0;
+        progress.value = 0;
 
         async function unpackImages() {
           for await (const [image, onProgress] of withProgress(
-            _manifest,
-            _progress,
+            manifest.value,
+            progress.value,
           )) {
-            _message = `Unpacking ${image.name}`;
+            message.value = `Unpacking ${image.name}`;
             await imageWorker.unpackImage(image, Comlink.proxy(onProgress));
           }
         }
@@ -315,95 +315,95 @@ export function useFastboot() {
         unpackImages()
           .then(() => {
             console.debug("[fastboot] Unpacked all images");
-            _step = Step.FLASHING;
+            step.value = Step.FLASHING;
           })
           .catch((err) => {
             console.error("[fastboot] Unpack error", err);
             if (err.startsWith("Checksum mismatch")) {
-              _error = Error.CHECKSUM_MISMATCH;
+              error.value = Error.CHECKSUM_MISMATCH;
             } else {
-              _error = Error.UNPACK_FAILED;
+              error.value = Error.UNPACK_FAILED;
             }
           });
         break;
       }
 
       case Step.FLASHING: {
-        _progress = 0;
+        progress.value = 0;
 
         async function flashDevice() {
-          const currentSlot = await _fastboot.getVariable("current-slot");
+          const currentSlot = await fastboot.value.getVariable("current-slot");
           if (!["a", "b"].includes(currentSlot)) {
             throw `Unknown current slot ${currentSlot}`;
           }
 
           for await (const [image, onProgress] of withProgress(
-            _manifest,
-            _progress,
+            manifest.value,
+            progress.value,
           )) {
             const fileHandle = await imageWorker.getImage(image);
             const blob = await fileHandle.getFile();
 
             if (image.sparse) {
-              _message = `Erasing ${image.name}`;
-              await _fastboot.runCommand(`erase:${image.name}`);
+              message.value = `Erasing ${image.name}`;
+              await fastboot.value.runCommand(`erase:${image.name}`);
             }
-            _message = `Flashing ${image.name}`;
-            await _fastboot.flashBlob(image.name, blob, onProgress, "other");
+            message.value = `Flashing ${image.name}`;
+            await fastboot.value.flashBlob(image.name, blob, onProgress, "other");
           }
           console.debug("[fastboot] Flashed all partitions");
 
           const otherSlot = currentSlot === "a" ? "b" : "a";
-          _message = `Changing slot to ${otherSlot}`;
-          await _fastboot.runCommand(`set_active:${otherSlot}`);
+          message.value = `Changing slot to ${otherSlot}`;
+          await fastboot.value.runCommand(`set_active:${otherSlot}`);
         }
 
         flashDevice()
           .then(() => {
             console.debug("[fastboot] Flash complete");
-            _step = Step.ERASING;
+            step.value = Step.ERASING;
           })
           .catch((err) => {
             console.error("[fastboot] Flashing error", err);
-            _error = Error.FLASH_FAILED;
+            error.value = Error.FLASH_FAILED;
           });
         break;
       }
 
       case Step.ERASING: {
-        _progress = 0;
+        progress.value = 0;
 
         async function eraseDevice() {
-          _message = "Erasing userdata";
-          await _fastboot.runCommand("erase:userdata");
-          _progress = 0.9;
+          message.value = "Erasing userdata";
+          await fastboot.value.runCommand("erase:userdata");
+          progress.value = 0.9;
 
-          _message = "Rebooting";
-          await _fastboot.runCommand("continue");
-          _progress = 1;
-          _connected = false;
+          message.value = "Rebooting";
+          await fastboot.value.runCommand("continue");
+          progress.value = 1;
+          connected.value = false;
         }
 
         eraseDevice()
           .then(() => {
             console.debug("[fastboot] Erase complete");
-            _step = Step.DONE;
+            step.value = Step.DONE;
             trackEvent('completed');
           })
           .catch((err) => {
             console.error("[fastboot] Erase error", err);
-            _error = Error.ERASE_FAILED;
+            error.value = Error.ERASE_FAILED;
           });
         break;
       }
     }
-    if (_error !== Error.NONE) {
-      console.debug("[fastboot] error", _error);
-      trackEvent('error', { props: { _error }});
-      _progress = -1;
-      _onContinue = null;
+    if (error.value !== Error.NONE) {
+      console.debug("[fastboot] error", error.value);
+      trackEvent('error', { props: { error: error.value } });
+      progress.value = -1;
+      onContinue.value = null;
 
-      _onRetry = () => {
+      onRetry.value = () => {
         console.debug("[fastboot] on retry");
         window.location.reload();
       };
@@ -411,70 +411,6 @@ export function useFastboot() {
   });
 }
 
-const step = {
-  get value() {
-    return _step;
-  },
-  set value(v) {
-    _step = v;
-  },
-};
-const message = {
-  get value() {
-    return _message;
-  },
-  set value(v) {
-    _message = v;
-  },
-};
-const progress = {
-  get value() {
-    return _progress;
-  },
-  set value(v) {
-    _progress = v;
-  },
-};
-const error = {
-  get value() {
-    return _error;
-  },
-  set value(v) {
-    _error = v;
-  },
-};
-const onContinue = {
-  get value() {
-    return _onContinue;
-  },
-  set value(v) {
-    _onContinue = v;
-  },
-};
-const onRetry = {
-  get value() {
-    return _onRetry;
-  },
-  set value(v) {
-    _onRetry = v;
-  },
-};
-const connected = {
-  get value() {
-    return _connected;
-  },
-  set value(v) {
-    _connected = v;
-  },
-};
-const serial = {
-  get value() {
-    return _serial;
-  },
-  set value(v) {
-    _serial = v;
-  },
-};
 export {
   step,
   message,
