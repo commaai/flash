@@ -153,9 +153,10 @@ let onRetry = $state({ value: null });
 let fastboot = $state({ value: new FastbootDevice() });
 
 let manifest = $state({ value: null });
+let trackEvent = $state(null);
 export function useFastboot() {
   $effect(() => {
-    const { trackEvent } = Plausible({ domain: 'flash.comma.ai' });
+    trackEvent = Plausible({ domain: 'flash.comma.ai' }).trackEvent;
     const imageWorker = useImageWorker();
     progress.value = -1;
     message.value = "";
@@ -247,7 +248,6 @@ export function useFastboot() {
                   error.value = Error.UNRECOGNIZED_DEVICE;
                   return;
                 }
-
                 serial.value = deviceInfo["serialno"] || "unknown";
                 connected.value = true;
                 trackEvent('device-connected');
@@ -397,12 +397,13 @@ export function useFastboot() {
         break;
       }
     }
+  });
+  $effect(() => {
     if (error.value !== Error.NONE) {
       console.debug("[fastboot] error", error.value);
       trackEvent('error', { props: { error: error.value } });
       progress.value = -1;
       onContinue.value = null;
-
       onRetry.value = () => {
         console.debug("[fastboot] on retry");
         window.location.reload();
@@ -410,7 +411,6 @@ export function useFastboot() {
     }
   });
 }
-
 export {
   step,
   message,
