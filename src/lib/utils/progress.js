@@ -20,8 +20,8 @@ export function createSteps(steps, progress) {
   }
 
   return stepWeights.map((weight, idx) => (progress) => {
-    if (progressParts[idx] !== progress.value) {
-      progressParts[idx] = progress.value
+    if (progressParts[idx] !== progress) {
+      progressParts[idx] = progress
       updateProgress()
     }
   })
