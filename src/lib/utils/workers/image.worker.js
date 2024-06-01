@@ -2,6 +2,7 @@ import * as Comlink from 'comlink'
 
 import jsSHA from 'jssha'
 import { XzReadableStream } from 'xz-decompress';
+// eslint-disable-next-line no-unused-vars
 import { Image } from '$lib/utils/manifest'
 
 /**
@@ -29,7 +30,7 @@ async function readChunks(reader, total, { onChunk, progress = undefined }) {
     if (done) break
     await onChunk(value)
     processed += value.length
-    progress?.value = (processed / total)
+    if (progress) progress.value = (processed / total)
   }
 }
 
@@ -78,7 +79,7 @@ const imageWorker = {
         onChunk: async (chunk) => await writable.write(chunk),
         progress,
       })
-      progress?.value = 1;
+      if(progress) progress.value = 1;
     } catch (e) {
       throw `Could not read response body: ${e}`
     }
@@ -132,7 +133,7 @@ const imageWorker = {
       })
 
       complete = true
-      progress?.value = 1;
+      if (progress) progress.value = 1;
     } catch (e) {
       throw `Error unpacking archive: ${e}`
     }
