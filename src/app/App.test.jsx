@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { expect, test } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
-import Page from './page';
+import Page from './app'
 
 test('renders without crashing', () => {
   render(<Suspense fallback="loading"><Page /></Suspense>)

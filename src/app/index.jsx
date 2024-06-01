@@ -1,13 +1,13 @@
 import { Suspense, lazy } from 'react'
 
-import comma from '@/assets/comma.svg'
-import fastbootPorts from '@/assets/fastboot-ports.svg'
-import zadigCreateNewDevice from '@/assets/zadig_create_new_device.png'
-import zadigForm from '@/assets/zadig_form.png'
+import comma from '../assets/comma.svg'
+import fastbootPorts from '../assets/fastboot-ports.svg'
+import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
+import zadigForm from '../assets/zadig_form.png'
 
 const Flash = lazy(() => import('./Flash'))
 
-export default function Home() {
+export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
   console.info(`flash.comma.ai version: ${version}`);
   return (
@@ -42,33 +42,33 @@ export default function Home() {
           <p>
             You need additional driver software for Windows before you connect
             your device.
-            <ol>
-              <li>
-                Download and install <a href="https://zadig.akeo.ie/">Zadig</a>.
-              </li>
-              <li>
-                Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
-                <img
-                  src={zadigCreateNewDevice}
-                  alt="Zadig Create New Device"
-                  width={575}
-                  height={254}
-                />
-              </li>
-              <li>
-                Fill in three fields. The first field is just a description and
-                you can fill in anything.  The next two fields are very important.
-                Fill them in with <code>18D1</code> and <code>D00D</code> respectively.
-                Press &quot;Install Driver&quot; and give it a few minutes to install.
-                <img
-                  src={zadigForm}
-                  alt="Zadig Form"
-                  width={575}
-                  height={254}
-                />
-              </li>
-            </ol>
           </p>
+          <ol>
+            <li>
+              Download and install <a href="https://zadig.akeo.ie/">Zadig</a>.
+            </li>
+            <li>
+              Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
+              <img
+                src={zadigCreateNewDevice}
+                alt="Zadig Create New Device"
+                width={575}
+                height={254}
+              />
+            </li>
+            <li>
+              Fill in three fields. The first field is just a description and
+              you can fill in anything.  The next two fields are very important.
+              Fill them in with <code>18D1</code> and <code>D00D</code> respectively.
+              Press &quot;Install Driver&quot; and give it a few minutes to install.
+              <img
+                src={zadigForm}
+                alt="Zadig Form"
+                width={575}
+                height={254}
+              />
+            </li>
+          </ol>
           <p>
             No additional software is required for macOS or Linux.
           </p>
@@ -130,13 +130,11 @@ export default function Home() {
             This is expected after the filesystem is erased. Press confirm to finish resetting your device.
           </p>
           <h3>General Tips</h3>
-          <p>
-            <ul>
-              <li>Try another computer or OS</li>
-              <li>Try different USB ports on your computer</li>
-              <li>Try different USB-C cables, including the OBD-C cable that came with the device</li>
-            </ul>
-          </p>
+          <ul>
+            <li>Try another computer or OS</li>
+            <li>Try different USB ports on your computer</li>
+            <li>Try different USB-C cables, including the OBD-C cable that came with the device</li>
+          </ul>
           <h3>Other questions</h3>
           <p>
             If you need help, join our <a href="https://discord.comma.ai" target="_blank">Discord server</a> and go to
@@ -150,10 +148,7 @@ export default function Home() {
         </div>
       </main>
 
-      <div
-        id="flash-container"
-        className="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800"
-      >
+      <div className="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
         <Suspense fallback={<p className="text-black dark:text-white">Loading...</p>}>
           <Flash />
         </Suspense>

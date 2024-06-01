@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink'
 
 import jsSHA from 'jssha'
-import { XzReadableStream } from 'xz-decompress';
+import { XzReadableStream } from 'xz-decompress'
 
 /**
  * @typedef {import('@/utils/manifest').Image} Image

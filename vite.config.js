@@ -1,16 +1,19 @@
-import path from 'node:path'
+/// <reference types="vite" />
 
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import svgr from 'vite-plugin-svgr'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), svgr()],
+  plugins: [react()],
   resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dir, './src'),
-    },
+    alias: [
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+    ],
+  },
+  worker: {
+    format: 'es',
   },
   test: {
     globals: true,
