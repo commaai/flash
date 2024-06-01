@@ -13,9 +13,9 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "android-fastboot": "github:commaai/fastboot.js#c3ec6fe3c96a48dab46e23d0c8c861af15b2144a",
     "autoprefixer": "10.4.14",
     "comlink": "^4.4.1",
+    "crc-32": "^1.2.2",
     "eslint": "8.40.0",
     "eslint-config-next": "13.4.1",
     "jssha": "^3.3.1",
