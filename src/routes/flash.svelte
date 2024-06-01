@@ -145,7 +145,7 @@
             : steps[step.value],
     );
     let title = $derived(
-        message.value ? (progress.value >= 0
+        (message.value && !error.value) ? (progress.value >= 0
                 ? message.value + "..."
                 : message.value + "..." + ` (${(progress.value * 100).toFixed(0)}%)`)
             : status,
