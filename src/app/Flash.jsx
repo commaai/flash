@@ -1,5 +1,4 @@
 import { useCallback } from 'react'
-import PropTypes from 'prop-types'
 
 import { Step, Error, useFastboot } from '@/utils/fastboot'
 
@@ -125,11 +124,6 @@ function LinearProgress({ value, barColor }) {
   )
 }
 
-LinearProgress.propTypes = {
-  value: PropTypes.number,
-  barColor: PropTypes.string,
-}
-
 
 function USBIndicator() {
   return <div className="flex flex-row gap-2">
@@ -149,10 +143,6 @@ function USBIndicator() {
   </div>
 }
 
-USBIndicator.propTypes = {
-  serial: PropTypes.string,
-}
-
 
 function SerialIndicator({ serial }) {
   return <div className="flex flex-row gap-2">
@@ -161,10 +151,6 @@ function SerialIndicator({ serial }) {
       <span className="ml-2 font-mono">{serial || 'unknown'}</span>
     </span>
   </div>
-}
-
-SerialIndicator.propTypes = {
-  serial: PropTypes.string,
 }
 
 
@@ -179,10 +165,6 @@ function DeviceState({ serial }) {
       <SerialIndicator serial={serial} />
     </div>
   )
-}
-
-DeviceState.propTypes = {
-  serial: PropTypes.string,
 }
 
 
