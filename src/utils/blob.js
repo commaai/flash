@@ -1,5 +1,3 @@
-'use client'
-
 export async function download(url) {
   const response = await fetch(url, { mode: 'cors' })
   const reader = response.body.getReader()
@@ -7,12 +5,10 @@ export async function download(url) {
   console.debug('[blob] Downloading', url, contentLength)
 
   const chunks = []
-  let processed = 0
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
     chunks.push(value)
-    processed += value.length
   }
 
   const blob = new Blob(chunks)

@@ -1,9 +1,7 @@
-'use client'
 import { useEffect, useRef, useState } from 'react'
 
 import { FastbootDevice, setDebugLevel } from 'android-fastboot'
 import * as Comlink from 'comlink'
-import { usePlausible } from 'next-plausible'
 
 import config from '@/config'
 import { download } from '@/utils/blob'
@@ -106,8 +104,6 @@ export function useFastboot() {
   /** @type {React.RefObject<Image[]>} */
   const manifest = useRef(null)
 
-  const plausible = usePlausible()
-
   function setStep(step) {
     _setStep(step)
   }
@@ -208,7 +204,6 @@ export function useFastboot() {
 
                 setSerial(deviceInfo['serialno'] || 'unknown')
                 setConnected(true)
-                plausible('device-connected')
                 setStep(Step.DOWNLOADING)
               })
               .catch((err) => {
@@ -335,7 +330,6 @@ export function useFastboot() {
           .then(() => {
             console.debug('[fastboot] Erase complete')
             setStep(Step.DONE)
-            plausible('completed')
           })
           .catch((err) => {
             console.error('[fastboot] Erase error', err)
@@ -344,12 +338,11 @@ export function useFastboot() {
         break
       }
     }
-  }, [imageWorker, step])
+  }, [error, imageWorker, step])
 
   useEffect(() => {
     if (error !== Error.NONE) {
       console.debug('[fastboot] error', error)
-      plausible('error', { props: { error }})
       setProgress(-1)
       setOnContinue(null)
 

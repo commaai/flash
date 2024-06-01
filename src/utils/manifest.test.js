@@ -1,4 +1,4 @@
-import { expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import * as Comlink from 'comlink'
 
@@ -29,7 +29,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
       })),
     }
 
-    global.navigator = {
+    globalThis.navigator = {
       storage: {
         getDirectory: () => ({
           getFileHandle: () => imageWorkerFileHandler,
@@ -66,7 +66,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
 
             return response.blob()
           })
-      
+
           await imageWorker.unpackImage(image)
         }, 8 * 60 * 1000)
       })
