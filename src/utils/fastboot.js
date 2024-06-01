@@ -10,7 +10,7 @@ import { createManifest } from '@/utils/manifest'
 import { withProgress } from '@/utils/progress'
 
 /**
- * @typedef {import('./manifest').Image} Image
+ * @typedef {import('./manifest.js').Image} Image
  */
 
 // Verbose logging for fastboot
