@@ -21,10 +21,7 @@ export default [
 	{
 		files: ["**/*.svelte.js", "*.svelte.js"],
 		languageOptions: {
-			parser: svelteParser,
-			parserOptions: {
-				/* ... */
-			},
+			parser: svelteParser
 		},
 	},
 ];
