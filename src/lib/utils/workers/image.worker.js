@@ -30,7 +30,7 @@ async function readChunks(reader, total, { onChunk, progress = undefined }) {
     if (done) break
     await onChunk(value)
     processed += value.length
-    if (progress) progress.value = (processed / total)
+    progress?.(processed / total);
   }
 }
 
@@ -79,7 +79,7 @@ const imageWorker = {
         onChunk: async (chunk) => await writable.write(chunk),
         progress,
       })
-      if(progress) progress.value = 1;
+      progress?.(1);
     } catch (e) {
       throw `Could not read response body: ${e}`
     }
@@ -133,7 +133,7 @@ const imageWorker = {
       })
 
       complete = true
-      if (progress) progress.value = 1;
+      progress?.(1);
     } catch (e) {
       throw `Error unpacking archive: ${e}`
     }

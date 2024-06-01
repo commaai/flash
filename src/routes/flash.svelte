@@ -147,8 +147,8 @@
     );
     let title = $derived(
         (message.value && error.value !== Error.NONE) ? (progress.value >= 0
-                ? message.value + "..."
-                : message.value + "..." + ` (${(progress.value * 100).toFixed(0)}%)`)
+                ? message.value + "..." + ` (${(progress.value * 100).toFixed(0)}%)`
+                : message.value + "...")
             : status,
     );
 </script>
