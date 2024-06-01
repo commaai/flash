@@ -13,7 +13,7 @@ const Flash = dynamic(() => import('./Flash'), {
 })
 
 export default function Home() {
-  const version = process.env.NEXT_PUBLIC_GIT_SHA || 'dev'
+  const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
   console.info(`flash.comma.ai version: ${version}`);
   return (
     <div className="flex flex-col lg:flex-row flex-wrap">
