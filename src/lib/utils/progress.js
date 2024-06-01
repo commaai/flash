@@ -1,7 +1,7 @@
 /**
  * Create a set of callbacks that can be used to track progress of a multistep process.
  *
- * @param {(number[]|number)} steps
+ * @param {Object} steps
  * @param {Object} progress
  * @returns {(number)[]}
  */
@@ -30,7 +30,7 @@ export function createSteps(steps, progress) {
 /**
  * Iterate over a list of steps while reporting progress.
  * @template T
- * @param {(number[]|T[])} steps
+ * @param {Object} steps
  * @param {Object} progress
  * @returns {([T, Object])[]}
  */
