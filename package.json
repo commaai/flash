@@ -19,7 +19,6 @@
     "android-fastboot": "github:commaai/fastboot.js#c3ec6fe3c96a48dab46e23d0c8c861af15b2144a",
     "comlink": "^4.4.1",
     "jssha": "^3.3.1",
-    "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "xz-decompress": "^0.2.1"
