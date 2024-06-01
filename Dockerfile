@@ -26,15 +26,15 @@ WORKDIR /app
 
 
 RUN addgroup --system --gid 1001 bunjs
-RUN adduser --system --uid 1001 sveltekit
+RUN adduser --system --uid 1001 vitejs
 
 #COPY --from=builder /app/public ./public
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=sveltekit:bunjs /app/out ./
+COPY --from=builder --chown=vitejs:bunjs /app/out ./
 
-USER sveltekit
+USER vitejs
 
 EXPOSE 3000
 
