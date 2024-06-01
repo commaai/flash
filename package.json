@@ -30,6 +30,8 @@
   },
   "type": "module",
   "dependencies": {
+    "@fontsource-variable/inter": "^5.0.18",
+    "@fontsource-variable/jetbrains-mono": "^5.0.21",
     "android-fastboot": "github:commaai/fastboot.js#c3ec6fe3c96a48dab46e23d0c8c861af15b2144a",
     "autoprefixer": "^10.4.19",
     "comlink": "^4.4.1",
