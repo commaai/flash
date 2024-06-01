@@ -31,10 +31,10 @@ export function createSteps(steps, progress) {
  * Iterate over a list of steps while reporting progress.
  * @template T
  * @param {(number[]|T[])} steps
- * @param {Object} onProgress
+ * @param {Object} progress
  * @returns {([T, Object])[]}
  */
-export function withProgress(steps, onProgress) {
+export function withProgress(steps, progress) {
   const callbacks = createSteps(
     steps.map(step => typeof step === 'number' ? step : step.size || step.length || 1),
     progress,
