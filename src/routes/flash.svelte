@@ -22,6 +22,7 @@
         connected,
         serial,
         Step,
+        Error,
         useFastboot
     } from "$lib/utils/fastboot.svelte";
     const steps = {
@@ -138,14 +139,14 @@
         icon,
         iconStyle = "invert",
     } = $derived(
-        error.value
+        error.value !== Error.NONE
             ? errors[error.value]
                 ? errors[error.value]
                 : errors[Error.UNKNOWN]
             : steps[step.value],
     );
     let title = $derived(
-        (message.value && !error.value) ? (progress.value >= 0
+        (message.value && error.value !== Error.NONE) ? (progress.value >= 0
                 ? message.value + "..."
                 : message.value + "..." + ` (${(progress.value * 100).toFixed(0)}%)`)
             : status,
@@ -180,7 +181,7 @@
     </div>
     <span class={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
     <span class={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
-    {#if error.value}
+    {#if error.value !== Error.NONE}
         <button
             class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
             onclick={onRetry.value}
