@@ -338,7 +338,7 @@ export function useFastboot() {
         break
       }
     }
-  }, [imageWorker, step])
+  }, [error, imageWorker, step])
 
   useEffect(() => {
     if (error !== Error.NONE) {
