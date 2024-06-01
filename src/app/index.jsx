@@ -1,16 +1,11 @@
-'use client'
-import dynamic from 'next/dynamic'
-import Image from 'next/image'
+import { Suspense, lazy } from 'react'
 
 import comma from '@/assets/comma.svg'
 import fastbootPorts from '@/assets/fastboot-ports.svg'
 import zadigCreateNewDevice from '@/assets/zadig_create_new_device.png'
 import zadigForm from '@/assets/zadig_form.png'
 
-const Flash = dynamic(() => import('./Flash'), {
-  loading: () => <p className="text-black dark:text-white">Loading...</p>,
-  ssr: false,
-})
+const Flash = lazy(() => import('./Flash'))
 
 export default function Home() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
@@ -19,7 +14,7 @@ export default function Home() {
     <div className="flex flex-col lg:flex-row flex-wrap">
       <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
         <section>
-          <Image src={comma} alt="comma" width={128} height={128} className="dark:invert" />
+          <img src={comma} alt="comma" width={128} height={128} className="dark:invert" />
           <h1>flash.comma.ai</h1>
 
           <p>This tool allows you to flash AGNOS onto your comma device.</p>
@@ -53,7 +48,7 @@ export default function Home() {
               </li>
               <li>
                 Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
-                <Image
+                <img
                   src={zadigCreateNewDevice}
                   alt="Zadig Create New Device"
                   width={575}
@@ -65,7 +60,7 @@ export default function Home() {
                 you can fill in anything.  The next two fields are very important.
                 Fill them in with <code>18D1</code> and <code>D00D</code> respectively.
                 Press &quot;Install Driver&quot; and give it a few minutes to install.
-                <Image
+                <img
                   src={zadigForm}
                   alt="Zadig Form"
                   width={575}
@@ -90,7 +85,7 @@ export default function Home() {
               the device to your computer using the USB-C port <strong>(port 2)</strong>.</li>
             <li>After a few seconds, the device should indicate it&apos;s in fastboot mode and show its serial number.</li>
           </ol>
-          <Image
+          <img
             src={fastbootPorts}
             alt="image showing comma three and two ports. the upper port is labeled 1. the lower port is labeled 2."
             width={450}
@@ -159,7 +154,9 @@ export default function Home() {
         id="flash-container"
         className="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800"
       >
-        <Flash />
+        <Suspense fallback={<p className="text-black dark:text-white">Loading...</p>}>
+          <Flash />
+        </Suspense>
       </div>
 
       <div className="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
