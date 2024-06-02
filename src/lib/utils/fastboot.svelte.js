@@ -342,7 +342,7 @@ export function useFastboot() {
           }
 
           for await (const [image, onProgress] of withProgress(
-            manifest,
+            manifest.value,
             progress,
           )) {
             const fileHandle = await imageWorker.getImage(image);
