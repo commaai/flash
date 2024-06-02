@@ -151,8 +151,14 @@
                 : message.value + "...")
             : status
     );
+    function beforeUnloadListener(event) {
+        if (Step.DOWNLOADING <= step.value && step.value <= Step.ERASING) {
+        event.preventDefault()
+        return event.returnValue = "Flash in progress. Are you sure you want to leave?"
+        }
+    }
 </script>
-
+<svelte:window onbeforeunload={beforeUnloadListener} />
 <div
     id="flash"
     class="relative flex flex-col gap-8 justify-center items-center h-full"
