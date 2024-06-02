@@ -7,7 +7,7 @@
     import Flash from "./flash.svelte";
 </script>
 
-<div class="flex flex-col lg:flex-row flex-wrap main">
+<div class="flex flex-col lg:flex-row flex-wrap">
     <main
         class="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900"
     >
