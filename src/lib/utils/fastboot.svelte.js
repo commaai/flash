@@ -151,21 +151,22 @@ let serial = $state({ value: null });
 let onContinue = $state({ value: null });
 let onRetry = $state({ value: null });
 let fastboot = $state({ value: new FastbootDevice() });
-
 let manifest = $state({ value: null });
 let trackEvent = $state(null);
+let imageWorker = $state(null);
+let busy = $state({ value: false });
 export function useFastboot() {
   $effect(() => {
     trackEvent = Plausible({ domain: 'flash.comma.ai' }).trackEvent;
-    const imageWorker = useImageWorker();
     progress.value = -1;
     message.value = "";
 
     if (error.value) return;
     if (!imageWorker) {
-      console.debug("[fastboot] Waiting for image worker");
+      imageWorker = useImageWorker();
       return;
     }
+    if (busy.value) return;
     switch (step.value) {
       case Step.INITIALIZING: {
         // Check that the browser supports WebUSB
@@ -276,24 +277,25 @@ export function useFastboot() {
 
       case Step.DOWNLOADING: {
         progress.value = 0;
-
         async function downloadImages() {
           for await (const [image, onProgress] of withProgress(
-            manifest,
+            manifest.value,
             progress,
           )) {
             message.value = `Downloading ${image.name}`;
             await imageWorker.downloadImage(image, Comlink.proxy(onProgress));
           }
         }
-
+        busy.value = true;
         downloadImages()
           .then(() => {
             console.debug("[fastboot] Downloaded all images");
             step.value = Step.UNPACKING;
+            busy.value = false;
           })
           .catch((err) => {
             console.error("[fastboot] Download error", err);
+            busy.value = false;
             error.value = Error.DOWNLOAD_FAILED;
           });
         break;
@@ -304,21 +306,23 @@ export function useFastboot() {
 
         async function unpackImages() {
           for await (const [image, onProgress] of withProgress(
-            manifest,
+            manifest.value,
             progress,
           )) {
             message.value = `Unpacking ${image.name}`;
             await imageWorker.unpackImage(image, Comlink.proxy(onProgress));
           }
         }
-
+        busy.value = true;
         unpackImages()
           .then(() => {
             console.debug("[fastboot] Unpacked all images");
             step.value = Step.FLASHING;
+            busy.value = false;
           })
           .catch((err) => {
             console.error("[fastboot] Unpack error", err);
+            busy.value = false;
             if (err.startsWith("Checksum mismatch")) {
               error.value = Error.CHECKSUM_MISMATCH;
             } else {
@@ -357,14 +361,16 @@ export function useFastboot() {
           message.value = `Changing slot to ${otherSlot}`;
           await fastboot.value.runCommand(`set_active:${otherSlot}`);
         }
-
+        busy.value = true;
         flashDevice()
           .then(() => {
             console.debug("[fastboot] Flash complete");
             step.value = Step.ERASING;
+            busy.value = false;
           })
           .catch((err) => {
             console.error("[fastboot] Flashing error", err);
+            busy.value = false;
             error.value = Error.FLASH_FAILED;
           });
         break;
@@ -383,15 +389,17 @@ export function useFastboot() {
           progress.value = 1;
           connected.value = false;
         }
-
+        busy.value = true;
         eraseDevice()
           .then(() => {
             console.debug("[fastboot] Erase complete");
             step.value = Step.DONE;
             trackEvent('completed');
+            busy.value = false;
           })
           .catch((err) => {
             console.error("[fastboot] Erase error", err);
+            busy.value = false;
             error.value = Error.ERASE_FAILED;
           });
         break;

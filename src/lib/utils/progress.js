@@ -2,7 +2,7 @@
  * Create a set of callbacks that can be used to track progress of a multistep process.
  *
  * @param {(number[]|number)} steps
- * @param {object} onProgress
+ * @param {Object} onProgress
  * @returns {(progressCallback)[]}
  */
 export function createSteps(steps, onProgress) {

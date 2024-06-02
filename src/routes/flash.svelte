@@ -146,10 +146,10 @@
             : steps[step.value],
     );
     let title = $derived(
-        (message.value && error.value !== Error.NONE) ? (progress.value >= 0
+        (message.value && error.value === Error.NONE) ? (progress.value >= 0
                 ? message.value + "..." + ` (${(progress.value * 100).toFixed(0)}%)`
                 : message.value + "...")
-            : status,
+            : status
     );
 </script>
 
@@ -177,7 +177,7 @@
         class="w-full max-w-3xl px-8 transition-opacity duration-300"
         style="opacity: {progress.value === -1 ? 0 : 1}"
     >
-        <LinearProgress value={progress.value * 100} barColor={bgColor} />
+        <LinearProgress value={(progress.value * 100)} barColor={bgColor} />
     </div>
     <span class={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
     <span class={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
