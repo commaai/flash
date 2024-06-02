@@ -168,7 +168,7 @@
                 alt="cable"
                 width={128}
                 height={128}
-                class="{iconStyle} {!error.value && step.value !== Step.DONE
+                class="{iconStyle} {error.value !== Error.NONE && step.value !== Step.DONE
                     ? 'animate-pulse'
                     : ''}"
             />

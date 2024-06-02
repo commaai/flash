@@ -386,6 +386,7 @@ export function useFastboot() {
 
           message.value = "Rebooting";
           await fastboot.value.runCommand("continue");
+          message.value = "";
           progress.value = 1;
           connected.value = false;
         }
