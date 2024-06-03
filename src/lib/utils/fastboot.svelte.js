@@ -1,6 +1,5 @@
 import { FastbootDevice, setDebugLevel } from "android-fastboot";
 import * as Comlink from "comlink";
-import Plausible from 'plausible-tracker';
 import config from "$lib/utils/config";
 import { download } from "$lib/utils/blob";
 import { useImageWorker } from "$lib/utils/image";
@@ -152,12 +151,10 @@ let onContinue = $state({ value: null });
 let onRetry = $state({ value: null });
 let fastboot = $state({ value: new FastbootDevice() });
 let manifest = $state({ value: null });
-let trackEvent = $state(null);
 let imageWorker = $state(null);
 let busy = $state(false);
 export function useFastboot() {
   $effect(() => {
-    trackEvent = Plausible({ domain: 'flash.comma.ai' }).trackEvent;
     progress.value = -1;
     message.value = "";
 
@@ -251,7 +248,6 @@ export function useFastboot() {
                 }
                 serial.value = deviceInfo["serialno"] || "unknown";
                 connected.value = true;
-                trackEvent('device-connected');
                 step.value = Step.DOWNLOADING;
               })
               .catch((err) => {
@@ -395,7 +391,6 @@ export function useFastboot() {
           .then(() => {
             console.debug("[fastboot] Erase complete");
             step.value = Step.DONE;
-            trackEvent('completed');
             busy = false;
           })
           .catch((err) => {
@@ -410,7 +405,6 @@ export function useFastboot() {
   $effect(() => {
     if (error.value !== Error.NONE) {
       console.debug("[fastboot] error", error.value);
-      trackEvent('error', { props: { error: error.value } });
       progress.value = -1;
       onContinue.value = null;
       onRetry.value = () => {

@@ -36,7 +36,6 @@
     "autoprefixer": "^10.4.19",
     "comlink": "^4.4.1",
     "jssha": "^3.3.1",
-    "plausible-tracker": "^0.3.9",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "xz-decompress": "^0.2.1"
