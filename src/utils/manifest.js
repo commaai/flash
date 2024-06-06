@@ -51,15 +51,13 @@ export class Image {
       this.checksum = json.alt.hash
       this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
       this.archiveUrl = json.alt.url
-      this.size = json.alt.size
     } else {
       this.checksum = json.hash
       this.fileName = `${this.name}-${json.hash_raw}.img`
       this.archiveUrl = json.url
-      this.size = json.size
-    } 
+    }
 
-    this.archiveFileName = this.archiveUrl.split('/').pop()
+    this.size = json.size
   }
 }
 

@@ -7,7 +7,6 @@ import { Step, Error, useQdl } from '@/utils/flash'
 import bolt from '@/assets/bolt.svg'
 import cable from '@/assets/cable.svg'
 import cloud from '@/assets/cloud.svg'
-import cloudDownload from '@/assets/cloud_download.svg'
 import cloudError from '@/assets/cloud_error.svg'
 import deviceExclamation from '@/assets/device_exclamation_c3.svg'
 import deviceQuestion from '@/assets/device_question_c3.svg'
@@ -35,16 +34,6 @@ const steps = {
     description: 'Follow the instructions to connect your device to your computer',
     bgColor: 'bg-yellow-500',
     icon: cable,
-  },
-  [Step.DOWNLOADING]: {
-    status: 'Downloading...',
-    bgColor: 'bg-blue-500',
-    icon: cloudDownload,
-  },
-  [Step.UNPACKING]: {
-    status: 'Unpacking...',
-    bgColor: 'bg-blue-500',
-    icon: cloudDownload,
   },
   [Step.FLASHING]: {
     status: 'Flashing device...',
@@ -84,7 +73,7 @@ const errors = {
   [Error.LOST_CONNECTION]: {
     status: 'Lost connection',
     description: 'The connection to your device was lost. Check that your cables are connected properly and try again. ' +
-                 'Unplug your device and wait for around 20s.',
+                 'Unplug your device and wait for the blinking light to stop.',
     icon: cable,
   },
   [Error.DOWNLOAD_FAILED]: {
@@ -283,7 +272,7 @@ export default function Flash() {
                       navigator.clipboard.writeText(detachScript.join('\n'));
                       handleCopy();
                     }}
-                    className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
+                    className={`${copied ? 'bg-green-500' : 'bg-blue-500'} text-white px-1 py-1 rounded-md ml-2 text-sm`}
                   >
                     Copy
                   </button>

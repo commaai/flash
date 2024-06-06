@@ -3,12 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 
 import { concatUint8Array } from '@/QDL/utils'
 import { qdlDevice } from '@/QDL/qdl'
-import * as Comlink from 'comlink'
 import { usePlausible } from 'next-plausible'
 
 import config from '@/config'
 import { download } from '@/utils/blob'
-import { useImageWorker } from '@/utils/image'
 import { createManifest } from '@/utils/manifest'
 import { withProgress } from '@/utils/progress'
 
@@ -20,11 +18,9 @@ export const Step = {
   INITIALIZING: 0,
   READY: 1,
   CONNECTING: 2,
-  DOWNLOADING: 3,
-  UNPACKING: 4,
-  FLASHING: 6,
-  ERASING: 7,
-  DONE: 8,
+  FLASHING: 3,
+  ERASING: 4,
+  DONE: 5,
 }
 
 export const Error = {
@@ -33,11 +29,10 @@ export const Error = {
   UNRECOGNIZED_DEVICE: 1,
   LOST_CONNECTION: 2,
   DOWNLOAD_FAILED: 3,
-  UNPACK_FAILED: 4,
-  CHECKSUM_MISMATCH: 5,
-  FLASH_FAILED: 6,
-  ERASE_FAILED: 7,
-  REQUIREMENTS_NOT_MET: 8,
+  CHECKSUM_MISMATCH: 4,
+  FLASH_FAILED: 5,
+  ERASE_FAILED: 6,
+  REQUIREMENTS_NOT_MET: 7,
 }
 
 function isRecognizedDevice(slotCount, partitions) {
@@ -76,7 +71,6 @@ export function useQdl() {
   const [onContinue, setOnContinue] = useState(null)
   const [onRetry, setOnRetry] = useState(null)
 
-  const imageWorker = useImageWorker()
   const qdl = useRef(new qdlDevice())
 
   /** @type {React.RefObject<Image[]>} */
@@ -101,10 +95,6 @@ export function useQdl() {
     setMessage()
 
     if (error) return
-    if (!imageWorker.current) {
-      console.debug('[QDL] Waiting for image worker')
-      return
-    }
 
     switch (step) {
       case Step.INITIALIZING: {
@@ -130,24 +120,17 @@ export function useQdl() {
         }
 
         // TODO: change manifest once alt image is in release
-        imageWorker.current?.init()
-          .then(() => download(config.manifests['master']))
-          .then(blob => blob.text())
-          .then(text => {
-            manifest.current = createManifest(text)
+        async function initialize() {
+          const blobText = await (await download(config.manifests['master'])).text()
+          manifest.current = createManifest(blobText)
+          if (manifest.current.length === 0) {
+            throw 'Manifest is empty'
+          }
+          console.debug('[QDL] Loaded manifest', manifest.current)
+          setStep(Step.READY)
+        }
 
-            // sanity check
-            if (manifest.current.length === 0) {
-              throw 'Manifest is empty'
-            }
-
-            console.debug('[QDL] Loaded manifest', manifest.current)
-            setStep(Step.READY)
-          })
-          .catch((err) => {
-            console.error('[QDL] Initialization error', err)
-            setError(Error.UNKNOWN)
-          })
+        initialize()
         break
       }
 
@@ -177,7 +160,7 @@ export function useQdl() {
                 setSerial(qdl.current.sahara.serial || 'unknown')
                 setConnected(true)
                 plausible('device-connected')
-                setStep(Step.DOWNLOADING)
+                setStep(Step.FLASHING)
               })
               .catch((err) => {
                 console.error('[QDL] Error getting device information', err)
@@ -197,54 +180,6 @@ export function useQdl() {
         break
       }
 
-      case Step.DOWNLOADING: {
-        setProgress(0)
-
-        async function downloadImages() {
-          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
-            setMessage(`Downloading ${image.name}`)
-            await imageWorker.current.downloadImage(image, Comlink.proxy(onProgress))
-          }
-        }
-
-        downloadImages()
-          .then(() => {
-            console.debug('[QDL] Downloaded all images')
-            setStep(Step.UNPACKING)
-          })
-          .catch((err) => {
-            console.error('[QDL] Download error', err)
-            setError(Error.DOWNLOAD_FAILED)
-          })
-        break
-      }
-
-      case Step.UNPACKING: {
-        setProgress(0)
-
-        async function unpackImages() {
-          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
-            setMessage(`Unpacking ${image.name}`)
-            await imageWorker.current.unpackImage(image, Comlink.proxy(onProgress))
-          }
-        }
-
-        unpackImages()
-          .then(() => {
-            console.debug('[QDL] Unpacked all images')
-            setStep(Step.FLASHING)
-          })
-          .catch((err) => {
-            console.error('[QDL] Unpack error', err)
-            if (err.startsWith('Checksum mismatch')) {
-              setError(Error.CHECKSUM_MISMATCH)
-            } else {
-              setError(Error.UNPACK_FAILED)
-            }
-          })
-        break
-      }
-
       case Step.FLASHING: {
         setProgress(0)
 
@@ -255,19 +190,16 @@ export function useQdl() {
           }
           const otherSlot = currentSlot === 'a' ? 'b' : 'a'
 
+          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
+            setMessage(`Flashing ${image.name}`)
+            const partitionName = image.name + `_${otherSlot}`
+            await qdl.current.flashBlob(partitionName, image, onProgress)
+          }
+          console.debug('[QDL] Flashed all partitions')
+
           // Erase current xbl partition so if users try to power up device
           // with corrupted primary gpt header, it would not update the backup
           await qdl.current.erase("xbl"+`_${currentSlot}`)
-
-          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
-            const fileHandle = await imageWorker.current.getImage(image)
-            const blob = await fileHandle.getFile()
-
-            setMessage(`Flashing ${image.name}`)
-            const partitionName = image.name + `_${otherSlot}`
-            await qdl.current.flashBlob(partitionName, blob, onProgress)
-          }
-          console.debug('[QDL] Flashed all partitions')
 
           setMessage(`Changing slot to ${otherSlot}`)
           await qdl.current.setActiveSlot(otherSlot)
@@ -280,7 +212,13 @@ export function useQdl() {
           })
           .catch((err) => {
             console.error('[QDL] Flashing error', err)
-            setError(Error.FLASH_FAILED)
+            if (err.startsWith("Checksum mismatch")) {
+              setError(Error.CHECKSUM_MISMATCH)
+            } else if (err.startsWith("Error download archive")) {
+              setError(Error.DOWNLOAD_FAILED)
+            } else {
+              setError(Error.FLASH_FAILED)
+            }
           })
         break
       }
@@ -318,7 +256,7 @@ export function useQdl() {
         break
       }
     }
-  }, [imageWorker, step])
+  }, [step])
 
   useEffect(() => {
     if (error !== Error.NONE) {
