@@ -1,6 +1,6 @@
 import { xmlParser } from "./xmlParser"
 import { concatUint8Array, containsBytes, compareStringToBytes, sleep } from "./utils"
-import * as Processor from "./imageProcessor";
+import * as Processor from "@/utils/imageProcessor";
 
 
 class response {
