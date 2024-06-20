@@ -1,66 +1,54 @@
-import { useCallback } from 'react'
+import { useCallback } from 'preact/hooks'
 
 import { Step, Error, useFastboot } from '@/utils/fastboot'
-
-import bolt from '@/assets/bolt.svg'
-import cable from '@/assets/cable.svg'
-import cloud from '@/assets/cloud.svg'
-import cloudDownload from '@/assets/cloud_download.svg'
-import cloudError from '@/assets/cloud_error.svg'
-import deviceExclamation from '@/assets/device_exclamation_c3.svg'
-import deviceQuestion from '@/assets/device_question_c3.svg'
-import done from '@/assets/done.svg'
-import exclamation from '@/assets/exclamation.svg'
-import frameAlert from '@/assets/frame_alert.svg'
-import systemUpdate from '@/assets/system_update_c3.svg'
 
 
 const steps = {
   [Step.INITIALIZING]: {
     status: 'Initializing...',
     bgColor: 'bg-gray-400 dark:bg-gray-700',
-    icon: cloud,
+    icon: '/cloud.svg',
   },
   [Step.READY]: {
     status: 'Ready',
     description: 'Tap the button above to begin',
     bgColor: 'bg-[#51ff00]',
-    icon: bolt,
+    icon: '/bolt.svg',
     iconStyle: '',
   },
   [Step.CONNECTING]: {
     status: 'Waiting for connection',
     description: 'Follow the instructions to connect your device to your computer',
     bgColor: 'bg-yellow-500',
-    icon: cable,
+    icon: '/cable.svg',
   },
   [Step.DOWNLOADING]: {
     status: 'Downloading...',
     bgColor: 'bg-blue-500',
-    icon: cloudDownload,
+    icon: '/cloud_download.svg',
   },
   [Step.UNPACKING]: {
     status: 'Unpacking...',
     bgColor: 'bg-blue-500',
-    icon: cloudDownload,
+    icon: '/cloud_download.svg',
   },
   [Step.FLASHING]: {
     status: 'Flashing device...',
     description: 'Do not unplug your device until the process is complete.',
     bgColor: 'bg-lime-400',
-    icon: systemUpdate,
+    icon: '/system_update_c3.svg',
   },
   [Step.ERASING]: {
     status: 'Erasing device...',
     bgColor: 'bg-lime-400',
-    icon: systemUpdate,
+    icon: '/system_update_c3.svg',
   },
   [Step.DONE]: {
     status: 'Done',
     description: 'Your device has been updated successfully. You can now unplug the USB cable from your computer. To ' +
       'complete the system reset, follow the instructions on your device.',
     bgColor: 'bg-green-500',
-    icon: done,
+    icon: '/done.svg',
   },
 }
 
@@ -69,40 +57,40 @@ const errors = {
     status: 'Unknown error',
     description: 'An unknown error has occurred. Restart your browser and try again.',
     bgColor: 'bg-red-500',
-    icon: exclamation,
+    icon: '/exclamation.svg',
   },
   [Error.UNRECOGNIZED_DEVICE]: {
     status: 'Unrecognized device',
     description: 'The device connected to your computer is not supported.',
     bgColor: 'bg-yellow-500',
-    icon: deviceQuestion,
+    icon: '/device_question_c3.svg',
   },
   [Error.LOST_CONNECTION]: {
     status: 'Lost connection',
     description: 'The connection to your device was lost. Check that your cables are connected properly and try again.',
-    icon: cable,
+    icon: '/cable.svg',
   },
   [Error.DOWNLOAD_FAILED]: {
     status: 'Download failed',
     description: 'The system image could not be downloaded. Check your internet connection and try again.',
-    icon: cloudError,
+    icon: '/cloud_error.svg',
   },
   [Error.CHECKSUM_MISMATCH]: {
     status: 'Download mismatch',
     description: 'The system image downloaded does not match the expected checksum. Try again.',
-    icon: frameAlert,
+    icon: '/frame_alert.svg',
   },
   [Error.FLASH_FAILED]: {
     status: 'Flash failed',
     description: 'The system image could not be flashed to your device. Try using a different cable, USB port, or ' +
       'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
+    icon: '/device_exclamation_c3.svg',
   },
   [Error.ERASE_FAILED]: {
     status: 'Erase failed',
     description: 'The device could not be erased. Try using a different cable, USB port, or computer. If the problem ' +
       'persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
+    icon: '/device_exclamation_c3.svg',
   },
   [Error.REQUIREMENTS_NOT_MET]: {
     status: 'Requirements not met',
@@ -114,23 +102,21 @@ const errors = {
 
 function LinearProgress({ value, barColor }) {
   if (value === -1 || value > 100) value = 100
-  return (
-    <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-      <div
-        className={`absolute top-0 bottom-0 left-0 w-full transition-all ${barColor}`}
-        style={{ transform: `translateX(${value - 100}%)` }}
-      />
-    </div>
-  )
+  return <div class="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+    <div
+      class={`absolute top-0 bottom-0 left-0 w-full transition-all ${barColor}`}
+      style={{ transform: `translateX(${value - 100}%)` }}
+    />
+  </div>
 }
 
 
 function USBIndicator() {
-  return <div className="flex flex-row gap-2">
+  return <div class="flex flex-row gap-2">
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 96 960 960"
-      className="text-green-500 dark:text-[#51ff00]"
+      view-box="0 96 960 960"
+      class="text-green-500 dark:text-[#51ff00]"
       height="24"
       width="24"
     >
@@ -145,26 +131,24 @@ function USBIndicator() {
 
 
 function SerialIndicator({ serial }) {
-  return <div className="flex flex-row gap-2">
+  return <div class="flex flex-row gap-2">
     <span>
       Serial:
-      <span className="ml-2 font-mono">{serial || 'unknown'}</span>
+      <span class="ml-2 font-mono">{serial || 'unknown'}</span>
     </span>
   </div>
 }
 
 
 function DeviceState({ serial }) {
-  return (
-    <div
-      className="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
-      style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
-    >
-      <USBIndicator />
-      <span className="text-gray-400">|</span>
-      <SerialIndicator serial={serial} />
-    </div>
-  )
+  return <div
+    class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
+    style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
+  >
+    <USBIndicator />
+    <span class="text-gray-400">|</span>
+    <SerialIndicator serial={serial} />
+  </div>
 }
 
 
@@ -205,7 +189,7 @@ export default function Flash() {
 
   let title
   if (message && !error) {
-    title = message + '...'
+    title = `${message}...`
     if (progress >= 0) {
       title += ` (${(progress * 100).toFixed(0)}%)`
     }
@@ -220,35 +204,33 @@ export default function Flash() {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
   }
 
-  return (
-    <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
-      <div
-        className={`p-8 rounded-full ${bgColor}`}
-        style={{ cursor: onContinue ? 'pointer' : 'default' }}
-        onClick={handleContinue}
-      >
-        <img
-          src={icon}
-          alt="cable"
-          width={128}
-          height={128}
-          className={`${iconStyle} ${!error && step !== Step.DONE ? 'animate-pulse' : ''}`}
-        />
-      </div>
-      <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
-        <LinearProgress value={progress * 100} barColor={bgColor} />
-      </div>
-      <span className={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
-      <span className={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
-      {error && (
-        <button
-          className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
-          onClick={handleRetry}
-        >
-          Retry
-        </button>
-      ) || false}
-      {connected && <DeviceState connected={connected} serial={serial} />}
+  return <div class="relative flex flex-col gap-8 justify-center items-center h-full">
+    <div
+      class={`p-8 rounded-full ${bgColor}`}
+      style={{ cursor: onContinue ? 'pointer' : 'default' }}
+      onClick={handleContinue}
+    >
+      <img
+        src={icon}
+        alt="cable"
+        width="128"
+        height="128"
+        class={`${iconStyle} ${!error && step !== Step.DONE ? 'animate-pulse' : ''}`}
+      />
     </div>
-  )
+    <div class="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
+      <LinearProgress value={progress * 100} barColor={bgColor} />
+    </div>
+    <span class="text-3xl dark:text-white font-mono font-light">{title}</span>
+    <span class="text-xl dark:text-white px-8 max-w-xl">{description}</span>
+    {error && (
+      <button
+        class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
+        onClick={handleRetry}
+      >
+        Retry
+      </button>
+    ) || false}
+    {connected && <DeviceState connected={connected} serial={serial} />}
+  </div>
 }

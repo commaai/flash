@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'preact/hooks'
 
 import { FastbootDevice, setDebugLevel } from 'android-fastboot'
 import * as Comlink from 'comlink'
@@ -87,10 +87,10 @@ function isRecognizedDevice(deviceInfo) {
 }
 
 export function useFastboot() {
-  const [step, _setStep] = useState(Step.INITIALIZING)
+  const [step, setStep] = useState(Step.INITIALIZING)
   const [message, _setMessage] = useState('')
   const [progress, setProgress] = useState(0)
-  const [error, _setError] = useState(Error.NONE)
+  const [error, setError] = useState(Error.NONE)
 
   const [connected, setConnected] = useState(false)
   const [serial, setSerial] = useState(null)
@@ -101,20 +101,12 @@ export function useFastboot() {
   const imageWorker = useImageWorker()
   const fastboot = useRef(new FastbootDevice())
 
-  /** @type {React.RefObject<Image[]>} */
+  /** @type {import('preact/hooks').MutableRef<Image[]>} */
   const manifest = useRef(null)
-
-  function setStep(step) {
-    _setStep(step)
-  }
 
   function setMessage(message = '') {
     if (message) console.info('[fastboot]', message)
     _setMessage(message)
-  }
-
-  function setError(error) {
-    _setError(error)
   }
 
   useEffect(() => {
