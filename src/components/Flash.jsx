@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback } from 'preact/hooks'
 
 import { Step, Error, useFastboot } from '@/utils/fastboot'
 
@@ -228,7 +228,7 @@ export default function Flash() {
         onClick={handleContinue}
       >
         <img
-          src={icon}
+          src={icon.src}
           alt="cable"
           width={128}
           height={128}
