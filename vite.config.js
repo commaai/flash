@@ -1,26 +1,19 @@
-import { fileURLToPath, URL } from 'node:url';
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from 'tailwindcss'
-import autoprefixer from 'autoprefixer'
+import vike from 'vike/plugin'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    vike({
+      prerender: true,
+    }),
   ],
-  build: {
-    ssr: true,
-    rollupOptions: {
-      input: {
-        server: '/src/entry-server.jsx',
-      },
-    },
-  },
-  css: {
-    postcss: {
-      plugins: [tailwindcss, autoprefixer],
-    },
+  publicDir: 'public',
+  preview: {
+    port: 5173
   },
   resolve: {
     alias: [

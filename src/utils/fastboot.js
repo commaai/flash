@@ -103,7 +103,7 @@ export function useFastboot() {
   /** @type {React.RefObject<Image[]>} */
   const manifest = useRef(null)
 
-  const initializePromise = useRef(null);
+  const initializePromise = useRef(null)
 
   function setMessage(message = '') {
     if (message) console.info('[fastboot]', message)
