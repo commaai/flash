@@ -5,7 +5,7 @@ import fastbootPorts from '../assets/fastboot-ports.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
-const Flash = lazy(() => import('./Flash'))
+const Flash = lazy(() => import('./Flash'));
 
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
@@ -149,7 +149,7 @@ export default function App() {
       </main>
 
       <div className="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
-        <Suspense fallback={<p className="text-black dark:text-white">Loading...</p>}>
+        <Suspense>
           <Flash />
         </Suspense>
       </div>
