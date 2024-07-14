@@ -88,7 +88,7 @@ function isRecognizedDevice(deviceInfo) {
 export function useFastboot() {
   const [step, setStep] = useState(Step.READY)
   const [message, _setMessage] = useState('')
-  const [progress, setProgress] = useState(0)
+  const [progress, setProgress] = useState(-1)
   const [error, setError] = useState(Error.NONE)
   const [isInitialized, setIsInitialized] = useState(false)
 
