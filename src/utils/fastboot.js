@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { FastbootDevice, setDebugLevel } from 'android-fastboot'
 import * as Comlink from 'comlink'
@@ -17,14 +17,13 @@ import { withProgress } from '@/utils/progress'
 setDebugLevel(2)
 
 export const Step = {
-  INITIALIZING: 0,
-  READY: 1,
-  CONNECTING: 2,
-  DOWNLOADING: 3,
-  UNPACKING: 4,
-  FLASHING: 6,
-  ERASING: 7,
-  DONE: 8,
+  READY: 0,
+  CONNECTING: 1,
+  DOWNLOADING: 2,
+  UNPACKING: 3,
+  FLASHING: 4,
+  ERASING: 5,
+  DONE: 6,
 }
 
 export const Error = {
@@ -87,15 +86,15 @@ function isRecognizedDevice(deviceInfo) {
 }
 
 export function useFastboot() {
-  const [step, _setStep] = useState(Step.INITIALIZING)
+  const [step, setStep] = useState(Step.READY)
   const [message, _setMessage] = useState('')
   const [progress, setProgress] = useState(0)
-  const [error, _setError] = useState(Error.NONE)
+  const [error, setError] = useState(Error.NONE)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const [connected, setConnected] = useState(false)
   const [serial, setSerial] = useState(null)
 
-  const [onContinue, setOnContinue] = useState(null)
   const [onRetry, setOnRetry] = useState(null)
 
   const imageWorker = useImageWorker()
@@ -104,83 +103,87 @@ export function useFastboot() {
   /** @type {React.RefObject<Image[]>} */
   const manifest = useRef(null)
 
-  function setStep(step) {
-    _setStep(step)
-  }
+  const initializePromise = useRef(null);
 
   function setMessage(message = '') {
     if (message) console.info('[fastboot]', message)
     _setMessage(message)
   }
 
-  function setError(error) {
-    _setError(error)
-  }
+  const initialize = useCallback(async () => {
+    if (isInitialized) return true
+
+    if (initializePromise.current) return initializePromise.current
+
+    initializePromise.current = (async () => {
+      // Check browser support
+      if (typeof navigator.usb === 'undefined') {
+        console.error('[fastboot] WebUSB not supported')
+        setError(Error.REQUIREMENTS_NOT_MET)
+        return false
+      }
+
+      if (typeof Worker === 'undefined') {
+        console.error('[fastboot] Web Workers not supported')
+        setError(Error.REQUIREMENTS_NOT_MET)
+        return false
+      }
+
+      if (typeof Storage === 'undefined') {
+        console.error('[fastboot] Storage API not supported')
+        setError(Error.REQUIREMENTS_NOT_MET)
+        return false
+      }
+
+      if (!imageWorker.current) {
+        console.debug('[fastboot] Waiting for image worker')
+        return false
+      }
+
+      try {
+        await imageWorker.current?.init()
+        const blob = await download(config.manifests['master'])
+        const text = await blob.text()
+        manifest.current = createManifest(text)
+
+        if (manifest.current.length === 0) {
+          throw new Error('Manifest is empty')
+        }
+
+        console.debug('[fastboot] Loaded manifest', manifest.current)
+        setIsInitialized(true)
+        return true
+      } catch (err) {
+        console.error('[fastboot] Initialization error', err)
+        setError(Error.UNKNOWN)
+        return false
+      } finally {
+        initializePromise.current = null
+      }
+    })()
+
+    return initializePromise.current
+  }, [imageWorker, isInitialized])
+
+  useEffect(() => {
+    initialize()
+  }, [initialize])
+
+  // wait for user interaction (we can't use WebUSB without user event)
+  const handleContinue = useCallback(async () => {
+    const shouldContinue = await initialize()
+    if (!shouldContinue) return
+
+    setStep(Step.CONNECTING)
+  }, [initialize])
 
   useEffect(() => {
     setProgress(-1)
     setMessage()
 
     if (error) return
-    if (!imageWorker.current) {
-      console.debug('[fastboot] Waiting for image worker')
-      return
-    }
 
     switch (step) {
-      case Step.INITIALIZING: {
-        // Check that the browser supports WebUSB
-        if (typeof navigator.usb === 'undefined') {
-          console.error('[fastboot] WebUSB not supported')
-          setError(Error.REQUIREMENTS_NOT_MET)
-          break
-        }
-
-        // Check that the browser supports Web Workers
-        if (typeof Worker === 'undefined') {
-          console.error('[fastboot] Web Workers not supported')
-          setError(Error.REQUIREMENTS_NOT_MET)
-          break
-        }
-
-        // Check that the browser supports Storage API
-        if (typeof Storage === 'undefined') {
-          console.error('[fastboot] Storage API not supported')
-          setError(Error.REQUIREMENTS_NOT_MET)
-          break
-        }
-
-        // TODO: change manifest once alt image is in release
-        imageWorker.current?.init()
-          .then(() => download(config.manifests['master']))
-          .then(blob => blob.text())
-          .then(text => {
-            manifest.current = createManifest(text)
-
-            // sanity check
-            if (manifest.current.length === 0) {
-              throw 'Manifest is empty'
-            }
-
-            console.debug('[fastboot] Loaded manifest', manifest.current)
-            setStep(Step.READY)
-          })
-          .catch((err) => {
-            console.error('[fastboot] Initialization error', err)
-            setError(Error.UNKNOWN)
-          })
-        break
-      }
-
-      case Step.READY: {
-        // wait for user interaction (we can't use WebUSB without user event)
-        setOnContinue(() => () => {
-          setOnContinue(null)
-          setStep(Step.CONNECTING)
-        })
-        break
-      }
-
       case Step.CONNECTING: {
         fastboot.current.waitForConnect()
           .then(() => {
@@ -362,7 +365,7 @@ export function useFastboot() {
     connected,
     serial,
 
-    onContinue,
+    onContinue: handleContinue,
     onRetry,
   }
 }

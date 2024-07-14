@@ -5,7 +5,7 @@ import fastbootPorts from '../assets/fastboot-ports.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
-const Flash = lazy(() => import('./Flash'));
+const Flash = lazy(() => import('./Flash.client'));
 
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'

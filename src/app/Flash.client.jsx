@@ -1,4 +1,6 @@
-import { useCallback } from 'react'
+'use client';
+
+import { useCallback, useEffect } from 'react'
 
 import { Step, Error, useFastboot } from '@/utils/fastboot'
 
@@ -16,11 +18,6 @@ import systemUpdate from '@/assets/system_update_c3.svg'
 
 
 const steps = {
-  [Step.INITIALIZING]: {
-    status: 'Initializing...',
-    bgColor: 'bg-gray-400 dark:bg-gray-700',
-    icon: cloud,
-  },
   [Step.READY]: {
     status: 'Ready',
     description: 'Tap the button above to begin',
@@ -189,10 +186,6 @@ export default function Flash() {
     serial,
   } = useFastboot()
 
-  const handleContinue = useCallback(() => {
-    onContinue?.()
-  }, [onContinue])
-
   const handleRetry = useCallback(() => {
     onRetry?.()
   }, [onRetry])
@@ -214,18 +207,24 @@ export default function Flash() {
   }
 
   // warn the user if they try to leave the page while flashing
-  if (Step.DOWNLOADING <= step && step <= Step.ERASING) {
-    window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  } else {
-    window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  }
+  useEffect(() => {
+    if (Step.DOWNLOADING <= step && step <= Step.ERASING) {
+      window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    } else {
+      window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    }
+
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    }
+  }, [step])
 
   return (
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
         className={`p-8 rounded-full ${bgColor}`}
-        style={{ cursor: onContinue ? 'pointer' : 'default' }}
-        onClick={handleContinue}
+        style={{ cursor: 'pointer' }}
+        onClick={onContinue}
       >
         <img
           src={icon}
@@ -238,8 +237,12 @@ export default function Flash() {
       <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
         <LinearProgress value={progress * 100} barColor={bgColor} />
       </div>
-      <span className={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
-      <span className={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
+      <span className={`text-3xl dark:text-white font-mono font-light`}>
+        {title}
+      </span>
+      <span className={`text-xl dark:text-white px-8 max-w-xl`}>
+        {description}
+      </span>
       {error && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
