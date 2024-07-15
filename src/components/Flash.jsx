@@ -6,7 +6,6 @@ import { Step, Error, useFastboot } from '@/utils/fastboot'
 
 import bolt from '@/assets/bolt.svg'
 import cable from '@/assets/cable.svg'
-import cloud from '@/assets/cloud.svg'
 import cloudDownload from '@/assets/cloud_download.svg'
 import cloudError from '@/assets/cloud_error.svg'
 import deviceExclamation from '@/assets/device_exclamation_c3.svg'

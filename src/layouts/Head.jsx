@@ -1,4 +1,3 @@
-import React from 'react'
 import iconUrl from '../../public/icon.svg'
 
 export default function HeadDefault() {

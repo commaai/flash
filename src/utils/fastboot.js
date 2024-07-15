@@ -172,7 +172,7 @@ export function useFastboot() {
   // wait for user interaction (we can't use WebUSB without user event)
   const handleContinue = useCallback(async () => {
     const shouldContinue = await initialize()
-    if (!shouldContinue) return
+    if (!shouldContinue || error !== Error.NONE) return
 
     setStep(Step.CONNECTING)
   }, [initialize])
@@ -347,7 +347,6 @@ export function useFastboot() {
     if (error !== Error.NONE) {
       console.debug('[fastboot] error', error)
       setProgress(-1)
-      setOnContinue(null)
 
       setOnRetry(() => () => {
         console.debug('[fastboot] on retry')
