@@ -1,10 +1,11 @@
-import { useCallback } from 'react'
+'use client';
+
+import { useCallback, useEffect } from 'react'
 
 import { Step, Error, useFastboot } from '@/utils/fastboot'
 
 import bolt from '@/assets/bolt.svg'
 import cable from '@/assets/cable.svg'
-import cloud from '@/assets/cloud.svg'
 import cloudDownload from '@/assets/cloud_download.svg'
 import cloudError from '@/assets/cloud_error.svg'
 import deviceExclamation from '@/assets/device_exclamation_c3.svg'
@@ -16,11 +17,6 @@ import systemUpdate from '@/assets/system_update_c3.svg'
 
 
 const steps = {
-  [Step.INITIALIZING]: {
-    status: 'Initializing...',
-    bgColor: 'bg-gray-400 dark:bg-gray-700',
-    icon: cloud,
-  },
   [Step.READY]: {
     status: 'Ready',
     description: 'Tap the button above to begin',
@@ -189,10 +185,6 @@ export default function Flash() {
     serial,
   } = useFastboot()
 
-  const handleContinue = useCallback(() => {
-    onContinue?.()
-  }, [onContinue])
-
   const handleRetry = useCallback(() => {
     onRetry?.()
   }, [onRetry])
@@ -214,18 +206,24 @@ export default function Flash() {
   }
 
   // warn the user if they try to leave the page while flashing
-  if (Step.DOWNLOADING <= step && step <= Step.ERASING) {
-    window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  } else {
-    window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  }
+  useEffect(() => {
+    if (Step.DOWNLOADING <= step && step <= Step.ERASING) {
+      window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    } else {
+      window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    }
+
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    }
+  }, [step])
 
   return (
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
         className={`p-8 rounded-full ${bgColor}`}
-        style={{ cursor: onContinue ? 'pointer' : 'default' }}
-        onClick={handleContinue}
+        style={{ cursor: 'pointer' }}
+        onClick={onContinue}
       >
         <img
           src={icon}
