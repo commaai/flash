@@ -5,7 +5,6 @@ import fastbootPorts from '../../assets/fastboot-ports.svg'
 import zadigCreateNewDevice from '../../assets/zadig_create_new_device.png'
 import zadigForm from '../../assets/zadig_form.png'
 
-
 export default function App() {
   const version = import.meta?.env?.VITE_PUBLIC_GIT_SHA ?? 'dev'
   console.info(`flash.comma.ai version: ${version}`)
