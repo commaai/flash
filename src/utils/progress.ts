@@ -37,6 +37,7 @@ export function createSteps(
  * @returns {([T, progressCallback])[]}
  */
 export function withProgress(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   steps: number[] | any[],
   onProgress: (val: number) => void,
 ) {

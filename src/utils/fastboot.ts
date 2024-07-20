@@ -70,6 +70,7 @@ export class FastbootManager extends EventTarget {
   }
 
   init() {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore Check that the browser supports WebUSB
     if (typeof navigator.usb === "undefined") {
       console.error("[fastboot] WebUSB not supported");
@@ -261,7 +262,7 @@ export type FastbootManagerStateType = {
   error: FastbootError;
   connected: boolean;
   serial: string | null;
-  onContinue?: () => any;
+  onContinue?: () => void;
 };
 
 export enum FastbootStep {
@@ -288,7 +289,7 @@ export enum FastbootError {
   REQUIREMENTS_NOT_MET,
 }
 
-function isRecognizedDevice(deviceInfo: Record<string, any>) {
+function isRecognizedDevice(deviceInfo: Record<string, string | number>) {
   // check some variables are as expected for a comma three
   const {
     kernel,

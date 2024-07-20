@@ -43,6 +43,7 @@ export class Image {
    */
   archiveUrl: string;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(json: Record<string, any>) {
     this.name = json.name;
     this.sparse = json.sparse;
@@ -78,6 +79,7 @@ export function createManifest(text: string) {
     "system",
   ];
   const partitions: Image[] = JSON.parse(text).map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (image: any) => new Image(image),
   );
 
