@@ -33,6 +33,12 @@ export class FastbootManager extends EventTarget {
     this.manifest = null;
   }
 
+  on(type: string, listener: (data: FastbootManagerStateType) => void) {
+    this.addEventListener(type, ((
+      event: CustomEvent<FastbootManagerStateType>,
+    ) => listener(event.detail)) as EventListener);
+  }
+
   private setStep(step: FastbootStep) {
     this.state.step = step;
     this.dispatchEvent(new CustomEvent("step", { detail: this.state }));

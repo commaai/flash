@@ -11,50 +11,49 @@ import "./index.css";
 const fb = new FastbootManager();
 fb.init();
 
-const linearProgressCtnEl = document.getElementById("linear-progress-ctn")!;
-const linearProgressEl = document.getElementById("linear-progress")!;
-const titleEl = document.getElementById("title")!;
-const iconCtnEl = document.getElementById("icon-ctn")!;
-
-fb.addEventListener("step", ((event: CustomEvent<FastbootManagerStateType>) => {
-  const state = event.detail;
-  updateIcon(iconCtnEl, state);
-  updateTitle(titleEl, state);
-}) as EventListener);
-
-fb.addEventListener("progress", ((
-  event: CustomEvent<FastbootManagerStateType>,
-) => {
-  const state = event.detail;
-  console.log("progress", state);
-  updateLinearProgress(linearProgressEl, state);
-}) as EventListener);
-
-fb.addEventListener("message", ((
-  event: CustomEvent<FastbootManagerStateType>,
-) => {
-  const state = event.detail;
-  updateTitle(titleEl, state);
-}) as EventListener);
-
-fb.addEventListener("error", ((
-  event: CustomEvent<FastbootManagerStateType>,
-) => {
-  const state = event.detail;
-  updateIcon(iconCtnEl, state);
-}) as EventListener);
-
-function updateLinearProgress(
-  element: HTMLElement,
-  state: FastbootManagerStateType,
-) {
-  const { progress, step } = state;
-  element.style.transform = `translateX(${progress - 100}%)`;
-  element.className = `absolute top-0 bottom-0 left-0 w-full transition-all ${fbSteps[step].bgColor}`;
-  linearProgressCtnEl.style.opacity = progress === -1 ? "0" : "1";
+function setupProgressIndicatorView(initialState: FastbootManagerStateType) {
+  renderProgressIndicator(initialState);
+  fb.on("progress", renderProgressIndicator);
 }
 
-function updateTitle(el: HTMLElement, state: FastbootManagerStateType) {
+function setupStatusView(initialState: FastbootManagerStateType) {
+  renderStatusView(initialState);
+  fb.on("message", renderStatusView);
+  fb.on("step", renderStatusView);
+  fb.on("error", renderStatusView);
+}
+
+function setupIconView(initialState: FastbootManagerStateType) {
+  renderIconView(initialState);
+  fb.on("step", renderIconView);
+  fb.on("error", renderIconView);
+}
+
+function setupRetryButtonView(initialState: FastbootManagerStateType) {
+  renderRetryButtonView(initialState);
+  fb.on("error", renderRetryButtonView);
+}
+
+function setupDeviceStatusView(initialState: FastbootManagerStateType) {
+  renderDeviceStateView(initialState);
+  fb.on("connected", renderDeviceStateView);
+  fb.on("serial", renderDeviceStateView);
+}
+
+function renderProgressIndicator(state: FastbootManagerStateType) {
+  const el = document.getElementById("linear-progress")!;
+  const ctnEl = document.getElementById("linear-progress-ctn")!;
+
+  const { progress, step } = state;
+  el.style.transform = `translateX(${progress - 100}%)`;
+  el.className = `absolute top-0 bottom-0 left-0 w-full transition-all ${fbSteps[step].bgColor}`;
+  ctnEl.style.opacity = progress === -1 ? "0" : "1";
+}
+
+function renderStatusView(state: FastbootManagerStateType) {
+  const el = document.getElementById("title")!;
+  const subtitleEl = document.getElementById("subtitle")!;
+
   const { message, error, progress, step } = state;
   let title;
   if (message && !error) {
@@ -66,23 +65,23 @@ function updateTitle(el: HTMLElement, state: FastbootManagerStateType) {
     title = fbSteps[step].status;
   }
   el.innerHTML = title;
-  const subtitleEl = document.getElementById("subtitle")!;
   subtitleEl.innerHTML = fbSteps[step].description ?? "";
 }
 
-function updateIcon(el: HTMLElement, state: FastbootManagerStateType) {
+function renderIconView(state: FastbootManagerStateType) {
+  const el = document.getElementById("icon-ctn")!;
+  const img = el.getElementsByTagName("img")[0];
   const { step, error, onContinue } = state;
   el.className = `p-8 rounded-full ${fbSteps[step].bgColor}`;
   if (onContinue) {
     el.style.cursor = "pointer";
     el.addEventListener("click", onContinue);
   }
-  const img = el.getElementsByTagName("img")[0];
   img.src = fbSteps[step].icon;
   img.className = `${!error && step !== FastbootStep.DONE ? "animate-pulse" : ""}`;
 }
 
-function updateRetryButton(state: FastbootManagerStateType) {
+function renderRetryButtonView(state: FastbootManagerStateType) {
   const { error } = state;
   if (error !== FastbootError.NONE) {
     const el = document.getElementById("subtitle")!;
@@ -108,7 +107,7 @@ function updateRetryButton(state: FastbootManagerStateType) {
   }
 }
 
-function updateDeviceState(state: FastbootManagerStateType) {
+function renderDeviceStateView(state: FastbootManagerStateType) {
   const { serial, connected } = state;
   if (!connected) {
     const deviceStateEl = document.getElementById("device-state");
@@ -214,8 +213,8 @@ const fbSteps: Record<
   },
 };
 
-updateIcon(iconCtnEl, fb.state);
-updateTitle(titleEl, fb.state);
-updateLinearProgress(linearProgressEl, fb.state);
-updateRetryButton(fb.state);
-updateDeviceState(fb.state);
+setupProgressIndicatorView(fb.state);
+setupIconView(fb.state);
+setupStatusView(fb.state);
+setupDeviceStatusView(fb.state);
+setupRetryButtonView(fb.state);
