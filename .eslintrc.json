@@ -1,33 +1,18 @@
 {
   "root": true,
+  "parser": "@typescript-eslint/parser",
   "env": {
     "browser": true,
     "es2020": true,
     "node": true
   },
-  "extends": [
-    "eslint:recommended",
-    "plugin:react/recommended",
-    "plugin:react/jsx-runtime",
-    "plugin:react-hooks/recommended"
-  ],
-  "ignorePatterns": [
-    "node_modules",
-    "dist",
-    ".eslintrc.cjs"
-  ],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "ignorePatterns": ["node_modules", "dist", ".eslintrc.cjs"],
+  "plugins": ["@typescript-eslint"],
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "settings": {
-    "react": {
-      "version": "detect"
-    }
-  },
-  "plugins": [
-    "react-refresh"
-  ],
   "rules": {
     "no-constant-condition": [
       "error",
@@ -35,14 +20,6 @@
         "checkLoops": false
       }
     ],
-    "no-inner-declarations": "off",
-    "react/jsx-no-target-blank": "off",
-    "react/prop-types": "off",
-    "react-refresh/only-export-components": [
-      "warn",
-      {
-        "allowConstantExport": true
-      }
-    ]
+    "no-inner-declarations": "off"
   }
 }
