@@ -9,8 +9,8 @@ import { ImageWorkerType } from "./../workers/image.worker";
 async function getImageWorker() {
   let imageWorker: ImageWorkerType | undefined;
 
-  // // vi.mock("comlink");
-  vi.spyOn(Comlink, "expose").mockImplementation((worker) => {
+  vi.mock("comlink");
+  vi.mocked(Comlink.expose).mockImplementation((worker) => {
     imageWorker = worker;
     imageWorker!.init();
   });
