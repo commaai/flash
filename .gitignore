@@ -5,9 +5,11 @@
 .idea
 *.iml
 .vscode
+!.vscode/extensions.json
+
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.js
 /.pnpm-store
@@ -20,16 +22,28 @@
 /out/
 
 # production
-/build
+build
+dist
+dist-ssr
 
 # misc
 .DS_Store
 *.pem
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs
+*.log
 
 # local env files
 .env*.local
