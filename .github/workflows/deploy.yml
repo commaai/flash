@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: false
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
 
       - run: bun install
-      - run: bun run build
+      - run: bun run build --base=/flash/
 
       - uses: actions/upload-pages-artifact@v3
         with:
