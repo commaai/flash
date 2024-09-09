@@ -57,7 +57,7 @@ export class Image {
       this.fileName = `${this.name}-${json.hash_raw}.img`
       this.archiveUrl = json.url
       this.size = json.size
-    } 
+    }
 
     this.archiveFileName = this.archiveUrl.split('/').pop()
   }

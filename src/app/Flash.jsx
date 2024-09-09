@@ -1,6 +1,4 @@
-'use client'
-import React, { useCallback, useState } from 'react'
-import Image from 'next/image'
+import { useCallback, useState } from 'react'
 
 import { Step, Error, useQdl } from '@/utils/flash'
 
@@ -249,7 +247,7 @@ export default function Flash() {
         style={{ cursor: onContinue ? 'pointer' : 'default' }}
         onClick={handleContinue}
       >
-        <Image
+        <img
           src={icon}
           alt="cable"
           width={128}

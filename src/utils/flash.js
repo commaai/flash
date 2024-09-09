@@ -1,10 +1,8 @@
-'use client'
 import { useEffect, useRef, useState } from 'react'
 
 import { concatUint8Array } from '@/QDL/utils'
 import { qdlDevice } from '@/QDL/qdl'
 import * as Comlink from 'comlink'
-import { usePlausible } from 'next-plausible'
 
 import config from '@/config'
 import { download } from '@/utils/blob'
@@ -81,8 +79,6 @@ export function useQdl() {
 
   /** @type {React.RefObject<Image[]>} */
   const manifest = useRef(null)
-
-  const plausible = usePlausible()
 
   function setStep(step) {
     _setStep(step)
@@ -176,7 +172,6 @@ export function useQdl() {
 
                 setSerial(qdl.current.sahara.serial || 'unknown')
                 setConnected(true)
-                plausible('device-connected')
                 setStep(Step.DOWNLOADING)
               })
               .catch((err) => {
@@ -309,7 +304,6 @@ export function useQdl() {
           .then(() => {
             console.debug('[QDL] Erase complete')
             setStep(Step.DONE)
-            plausible('completed')
           })
           .catch((err) => {
             console.error('[QDL] Erase error', err)
@@ -318,12 +312,11 @@ export function useQdl() {
         break
       }
     }
-  }, [imageWorker, step])
+  }, [error, imageWorker, step])
 
   useEffect(() => {
     if (error !== Error.NONE) {
       console.debug('[QDL] error', error)
-      plausible('error', { props: { error }})
       setProgress(-1)
       setOnContinue(null)
 
