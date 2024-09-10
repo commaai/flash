@@ -139,7 +139,6 @@ export class Sahara {
     }
 
     try {
-      let processed = 0;
       const reader = response.body.getReader();
       while (true) {
         const { done, value } = await reader.read();
@@ -147,7 +146,6 @@ export class Sahara {
           break;
         }
         await writable.write(value);
-        processed += value.length;
       }
     } catch (error) {
       throw `Sahara - Could not read response body: ${error}`;

@@ -3,7 +3,6 @@ import { readBlobAsBuffer } from "./utils";
 const FILE_MAGIC = 0xed26ff3a;
 export const FILE_HEADER_SIZE = 28;
 const CHUNK_HEADER_SIZE = 12;
-const MAX_STORE_SIZE = 1024 * 1024 * 1024; // 1 GiB
 
 const ChunkType = {
   Raw : 0xCAC1,
