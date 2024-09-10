@@ -87,15 +87,15 @@ export class Firehose {
   }
 
   async configure() {
-    const connectCmd = `<?xml version=\"1.0\" encoding=\"UTF-8\" ?><data>` +
-              `<configure MemoryName=\"${this.cfg.MemoryName}\" ` +
-              `Verbose=\"0\" ` +
-              `AlwaysValidate=\"0\" ` +
-              `MaxDigestTableSizeInBytes=\"2048\" ` +
-              `MaxPayloadSizeToTargetInBytes=\"${this.cfg.MaxPayloadSizeToTargetInBytes}\" ` +
-              `ZLPAwareHost=\"${this.cfg.ZLPAwareHost}\" ` +
-              `SkipStorageInit=\"${this.cfg.SkipStorageInit}\" ` +
-              `SkipWrite=\"${this.cfg.SkipWrite}\"/>` +
+    const connectCmd = `<?xml version="1.0" encoding="UTF-8" ?><data>` +
+              `<configure MemoryName="${this.cfg.MemoryName}" ` +
+              `Verbose="0" ` +
+              `AlwaysValidate="0" ` +
+              `MaxDigestTableSizeInBytes="2048" ` +
+              `MaxPayloadSizeToTargetInBytes="${this.cfg.MaxPayloadSizeToTargetInBytes}" ` +
+              `ZLPAwareHost="${this.cfg.ZLPAwareHost}" ` +
+              `SkipStorageInit="${this.cfg.SkipStorageInit}" ` +
+              `SkipWrite="${this.cfg.SkipWrite}"/>` +
               `</data>`
 
     await this.xmlSend(connectCmd, false);
@@ -104,10 +104,10 @@ export class Firehose {
   }
 
   async cmdReadBuffer(physicalPartitionNumber, startSector, numPartitionSectors) {
-    const data = `<?xml version=\"1.0\" ?><data><read SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
-        ` num_partition_sectors=\"${numPartitionSectors}\"` +
-        ` physical_partition_number=\"${physicalPartitionNumber}\"` +
-        ` start_sector=\"${startSector}\"/>\n</data>`
+    const data = `<?xml version="1.0" ?><data><read SECTOR_SIZE_IN_BYTES="${this.cfg.SECTOR_SIZE_IN_BYTES}"` +
+        ` num_partition_sectors="${numPartitionSectors}"` +
+        ` physical_partition_number="${physicalPartitionNumber}"` +
+        ` start_sector="${startSector}"/>\n</data>`
 
     let rsp = await this.xmlSend(data);
     let resData = new Uint8Array();
@@ -175,11 +175,11 @@ export class Firehose {
       numPartitionSectors += 1;
     }
 
-    const data = `<?xml version=\"1.0\" ?><data>\n` +
-              `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
-              ` num_partition_sectors=\"${numPartitionSectors}\"` +
-              ` physical_partition_number=\"${physicalPartitionNumber}\"` +
-              ` start_sector=\"${startSector}\" />\n</data>`;
+    const data = `<?xml version="1.0" ?><data>\n` +
+              `<program SECTOR_SIZE_IN_BYTES="${this.cfg.SECTOR_SIZE_IN_BYTES}"` +
+              ` num_partition_sectors="${numPartitionSectors}"` +
+              ` physical_partition_number="${physicalPartitionNumber}"` +
+              ` start_sector="${startSector}" />\n</data>`;
     let i = 0;
     let bytesWritten = 0;
     let rsp = await this.xmlSend(data);
@@ -233,12 +233,11 @@ export class Firehose {
   }
 
   async cmdErase(physicalPartitionNumber, startSector, numPartitionSectors) {
-    const data = `<?xml version=\"1.0\" ?><data>\n` +
-          `<program SECTOR_SIZE_IN_BYTES=\"${this.cfg.SECTOR_SIZE_IN_BYTES}\"` +
-          ` num_partition_sectors=\"${numPartitionSectors}\"` +
-          ` physical_partition_number=\"${physicalPartitionNumber}\"` +
-          ` start_sector=\"${startSector}\" />\n</data>`;
-    let pos = 0;
+    const data = `<?xml version="1.0" ?><data>\n` +
+          `<program SECTOR_SIZE_IN_BYTES="${this.cfg.SECTOR_SIZE_IN_BYTES}"` +
+          ` num_partition_sectors="${numPartitionSectors}"` +
+          ` physical_partition_number="${physicalPartitionNumber}"` +
+          ` start_sector="${startSector}" />\n</data>`;
     let rsp = await this.xmlSend(data)
     let bytesToWrite = this.cfg.SECTOR_SIZE_IN_BYTES * numPartitionSectors;
     let empty = new Uint8Array(this.cfg.MaxPayloadSizeToTargetInBytes).fill(0);
@@ -248,7 +247,6 @@ export class Firehose {
         let wlen = Math.min(bytesToWrite, this.cfg.MaxPayloadSizeToTargetInBytes);
         await this.cdc.write(empty.slice(0, wlen));
         bytesToWrite -= wlen;
-        pos += wlen;
         await this.cdc.write(new Uint8Array(0));
       }
 
@@ -266,7 +264,7 @@ export class Firehose {
   }
 
   async cmdSetBootLunId(lun) {
-    const data = `<?xml version=\"1.0\" ?><data>\n<setbootablestoragedrive value=\"${lun}\" /></data>`
+    const data = `<?xml version="1.0" ?><data>\n<setbootablestoragedrive value="${lun}" /></data>`
     const val = await this.xmlSend(data);
     if (val.resp) {
       console.log(`Successfully set bootID to lun ${lun}`);
@@ -277,7 +275,7 @@ export class Firehose {
   }
 
   async cmdReset() {
-    let data = "<?xml version=\"1.0\" ?><data><power value=\"reset\"/></data>";
+    let data = '<?xml version="1.0" ?><data><power value="reset"/></data>';
     let val = await this.xmlSend(data);
     if (val.resp) {
       console.log("Reset succeeded");
