@@ -28,7 +28,7 @@ export class qdlDevice {
       if (this.cdc.connected) {
         console.log("QDL device detected");
         let resp = await runWithTimeout(this.sahara?.connect(), 10000);
-        if (resp.hasOwnProperty("mode")) {
+        if ("mode" in resp) {
           this.mode = resp["mode"];
           console.log("Mode detected:", this.mode);
           return resp;
@@ -93,7 +93,7 @@ export class qdlDevice {
       if (guidGpt === null) {
         break;
       } else {
-        if (guidGpt.partentries.hasOwnProperty(partitionName)) {
+        if (partitionName in guidGpt.partentries) {
           return sendFull ? [true, lun, data, guidGpt] : [true, lun, guidGpt.partentries[partitionName]];
         }
       }
@@ -136,7 +136,7 @@ export class qdlDevice {
     const luns = this.firehose.luns;
     for (const lun of luns) {
       let [guidGpt] = await this.getGpt(lun);
-      if (guidGpt.partentries.hasOwnProperty(partitionName)) {
+      if (partitionName in guidGpt.partentries) {
         const partition = guidGpt.partentries[partitionName];
         console.log(`Erasing ${partitionName}...`);
         await this.firehose.cmdErase(lun, partition.sector, partition.sectors);
@@ -248,7 +248,7 @@ export class qdlDevice {
         let sts;
         if (!checkGptHeader) {
           hasPartitionA = true;
-          if (guidGptA.partentries.hasOwnProperty(partitionNameB)) {
+          if (partitionNameB in guidGptA.partentries) {
             lunB = lunA;
             sameLun = true;
             gptDataB = gptDataA;

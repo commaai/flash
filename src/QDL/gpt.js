@@ -164,7 +164,7 @@ export class gpt {
       pa.flags = partentry.flags;
       pa.entryOffset = start + (idx * entrySize);
       const typeOfPartentry = new DataView(partentry.type.slice(0, 0x4).buffer, 0).getUint32(0, true);
-      if (efiType.hasOwnProperty(typeOfPartentry)) {
+      if (typeOfPartentry in efiType) {
         pa.type = efiType[typeOfPartentry];
       } else {
         pa.type = typeOfPartentry.toString(16);

@@ -80,7 +80,7 @@ export class Sahara {
     const dataToSend = packGenerator([cmd_t.SAHARA_EXECUTE_REQ, 0xC, mcmd]);
     await this.cdc.write(dataToSend);
     let res = await this.getResponse();
-    if (res.hasOwnProperty("cmd")) {
+    if ("cmd" in res) {
       let cmd = res["cmd"];
       if (cmd == cmd_t.SAHARA_EXECUTE_RSP) {
         let pkt = res["data"];
@@ -110,9 +110,9 @@ export class Sahara {
       return false;
     }
     let res = await this.getResponse();
-    if (res.hasOwnProperty("cmd")) {
+    if ("cmd" in res) {
       if (res["cmd"] === cmd_t.SAHARA_END_TRANSFER) {
-        if (res.hasOwnProperty("data")) {
+        if ("data" in res) {
           return false;
         }
       } else if (res["cmd"] === cmd_t.SAHARA_CMD_READY) {
@@ -190,7 +190,7 @@ export class Sahara {
     while (datalen >= 0) {
       let resp = await this.getResponse();
       let cmd;
-      if (resp.hasOwnProperty("cmd")) {
+      if ("cmd" in resp) {
         cmd = resp["cmd"];
       } else {
         throw "Sahara - Timeout while uploading loader. Wrong loader?";
@@ -236,12 +236,12 @@ export class Sahara {
     const toSendData = packGenerator([cmd_t.SAHARA_DONE_REQ, 0x8]);
     if (await this.cdc.write(toSendData)) {
       let res = await this.getResponse();
-      if (res.hasOwnProperty("cmd")) {
+      if ("cmd" in res) {
         let cmd = res["cmd"];
         if (cmd == cmd_t.SAHARA_DONE_RSP) {
           return true;
         } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
-          if (res.hasOwnProperty("data")) {
+          if ("data" in res) {
             let pkt = res["data"];
             if (pkt.iamge_txt_status == status_t.SAHARA_NAK_INVALID_CMD) {
               console.error("Invalid transfer command received");
