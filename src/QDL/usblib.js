@@ -101,14 +101,10 @@ export class usbClass {
     }
 
     while (covered < resplen) {
-      try {
-        let respPacket = await this.device?.transferIn(this.epIn?.endpointNumber, resplen);
-        respData = concatUint8Array([respData, new Uint8Array(respPacket.data.buffer)]);
-        resplen = respData.length;
-        covered += respData.length;
-      } catch (error) {
-        throw error;
-      }
+      let respPacket = await this.device?.transferIn(this.epIn?.endpointNumber, resplen);
+      respData = concatUint8Array([respData, new Uint8Array(respPacket.data.buffer)]);
+      resplen = respData.length;
+      covered += respData.length;
     }
     return respData;
   }
@@ -119,11 +115,7 @@ export class usbClass {
       try {
         await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
       } catch(error) {
-        try {
-          await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
-        } catch(error) {
-          throw error;
-        }
+        await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket);
       }
       return true;
     }
@@ -133,19 +125,15 @@ export class usbClass {
       pktSize = BULK_TRANSFER_SIZE;
     }
     while (offset < cmdPacket.length) {
-      try {
-        if (wait) {
-          await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
-        } else {
-          // this is a hack, webusb doesn't have timed out catching
-          // this only happens in sahara.configure(). The loader receive the packet but doesn't respond back (same as edl repo).
-          this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
-          await sleep(80);
-        }
-        offset += pktSize;
-      } catch (error) {
-        throw error;
+      if (wait) {
+        await this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
+      } else {
+        // this is a hack, webusb doesn't have timed out catching
+        // this only happens in sahara.configure(). The loader receive the packet but doesn't respond back (same as edl repo).
+        this.device?.transferOut(this.epOut?.endpointNumber, cmdPacket.slice(offset, offset + pktSize));
+        await sleep(80);
       }
+      offset += pktSize;
     }
     return true;
   }
