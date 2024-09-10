@@ -243,7 +243,7 @@ export class Sahara {
         } else if (cmd == cmd_t.SAHARA_END_TRANSFER) {
           if ("data" in res) {
             let pkt = res["data"];
-            if (pkt.iamge_txt_status == status_t.SAHARA_NAK_INVALID_CMD) {
+            if (pkt.image_tx_status == status_t.SAHARA_NAK_INVALID_CMD) {
               console.error("Invalid transfer command received");
               return false;
             }
