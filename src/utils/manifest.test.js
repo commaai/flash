@@ -1,27 +1,12 @@
-import { beforeAll, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import * as Comlink from 'comlink'
 
 import config from '../config'
 import { getManifest } from './manifest'
 
-let imageWorker, imageWorkerFileHandler
-beforeAll(async () => {
-  imageWorkerFileHandler = {
-    getFile: vi.fn(),
-    createWritable: vi.fn().mockImplementation(() => ({
-      write: vi.fn(),
-      close: vi.fn(),
-    })),
-  }
-
-  globalThis.navigator = {
-    storage: {
-      getDirectory: () => ({
-        getFileHandle: () => imageWorkerFileHandler,
-      })
-    }
-  }
+async function getImageWorker() {
+  let imageWorker
 
   vi.mock('comlink')
   vi.mocked(Comlink.expose).mockImplementation(worker => {
@@ -29,11 +14,32 @@ beforeAll(async () => {
     imageWorker.init()
   })
 
+  vi.resetModules() // this makes the import be reevaluated on each call
   await import('./../workers/image.worker')
-})
+
+  return imageWorker
+}
 
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
   describe(`${branch} manifest`, async () => {
+    const imageWorkerFileHandler = {
+      getFile: vi.fn(),
+      createWritable: vi.fn().mockImplementation(() => ({
+        write: vi.fn(),
+        close: vi.fn(),
+      })),
+    }
+
+    globalThis.navigator = {
+      storage: {
+        getDirectory: () => ({
+          getFileHandle: () => imageWorkerFileHandler,
+        })
+      }
+    }
+
+    const imageWorker = await getImageWorker()
+
     const images = await getManifest(manifestUrl)
 
     // Check all images are present
