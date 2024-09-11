@@ -14,7 +14,6 @@ async function getImageWorker() {
     imageWorker.init()
   })
 
-  vi.resetModules() // this makes the import be reevaluated on each call
   await import('./../workers/image.worker')
 
   return imageWorker
@@ -22,6 +21,24 @@ async function getImageWorker() {
 
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
   describe(`${branch} manifest`, async () => {
+    const imageWorkerFileHandler = {
+      getFile: vi.fn(),
+      createWritable: vi.fn().mockImplementation(() => ({
+        write: vi.fn(),
+        close: vi.fn(),
+      })),
+    }
+
+    globalThis.navigator = {
+      storage: {
+        getDirectory: () => ({
+          getFileHandle: () => imageWorkerFileHandler,
+        })
+      }
+    }
+
+    const imageWorker = await getImageWorker()
+
     const images = await getManifest(manifestUrl)
 
     // Check all images are present
@@ -43,30 +60,12 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         }
 
         test('image and checksum', async () => {
-          const imageWorkerFileHandler = {
-            getFile: vi.fn(),
-            createWritable: vi.fn().mockImplementation(() => ({
-              write: vi.fn(),
-              close: vi.fn(),
-            })),
-          }
-
-          globalThis.navigator = {
-            storage: {
-              getDirectory: () => ({
-                getFileHandle: () => imageWorkerFileHandler,
-              })
-            }
-          }
-
           imageWorkerFileHandler.getFile.mockImplementation(async () => {
             const response = await fetch(image.archiveUrl)
             expect(response.ok, 'to be uploaded').toBe(true)
 
             return response.blob()
           })
-
-          const imageWorker = await getImageWorker()
 
           await imageWorker.unpackImage(image)
         }, 8 * 60 * 1000)
