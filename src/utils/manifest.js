@@ -47,7 +47,7 @@ export class Image {
     this.name = json.name
     this.sparse = json.sparse
 
-    if (this.name === 'system') {
+    if (this.name === 'system' && json.alt) {
       this.checksum = json.alt.hash
       this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
       this.archiveUrl = json.alt.url
