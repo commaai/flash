@@ -135,7 +135,7 @@ export class Sahara {
     const programmerUrl = config.loader['url'];
     const response = await fetch(programmerUrl, { mode: 'cors' })
     if (!response.ok) {
-      throw `Sahara - Failed to fetch Loader: ${response.status} ${response.statusText}`;
+      throw `Sahara - Failed to fetch loader: ${response.status} ${response.statusText}`;
     }
 
     try {
@@ -177,7 +177,7 @@ export class Sahara {
     }
 
     await this.connect();
-    console.log("Uploading Programmer...");
+    console.log("Uploading loader...");
     await this.downloadLoader();
     const loaderBlob = await this.getLoader();
     let programmer = new Uint8Array(await readBlobAsBuffer(loaderBlob));
@@ -223,7 +223,7 @@ export class Sahara {
           if (await this.cmdDone()) {
             console.log("Loader successfully uploaded");
           } else {
-            throw "Sahara - Failed to upload Loader";
+            throw "Sahara - Failed to upload loader";
           }
           return this.mode;
         }
