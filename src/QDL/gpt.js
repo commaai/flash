@@ -1,5 +1,5 @@
 import { containsBytes, bytes2Number } from "./utils"
-import { buf } from "crc-32"
+import { buf as crc32 } from "crc-32"
 
 export const AB_FLAG_OFFSET = 6;
 export const AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2);
@@ -189,11 +189,11 @@ export class gpt {
     let headerdata = Uint8Array.from(data.slice(headerOffset, headerOffset + this.header.headerSize));
 
     let view = new DataView(new ArrayBuffer(4));
-    view.setInt32(0, buf(partdata), true);
+    view.setInt32(0, crc32(partdata), true);
     headerdata.set(new Uint8Array(view.buffer), 0x58);
     view.setInt32(0, 0, true);
     headerdata.set(new Uint8Array(view.buffer) , 0x10);
-    view.setInt32(0, buf(headerdata), true);
+    view.setInt32(0, crc32(headerdata), true);
     headerdata.set(new Uint8Array(view.buffer), 0x10);
 
     data.set(headerdata, headerOffset);
