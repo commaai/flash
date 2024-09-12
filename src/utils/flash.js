@@ -125,9 +125,8 @@ export function useQdl() {
           break
         }
 
-        // TODO: change manifest once alt image is in release
         imageWorker.current?.init()
-          .then(() => download(config.manifests['master']))
+          .then(() => download(config.manifests['release']))
           .then(blob => blob.text())
           .then(text => {
             manifest.current = createManifest(text)
