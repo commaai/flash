@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'preact/hooks'
 
 import { FastbootDevice, setDebugLevel } from 'android-fastboot'
 import * as Comlink from 'comlink'
@@ -101,7 +101,7 @@ export function useFastboot() {
   const imageWorker = useImageWorker()
   const fastboot = useRef(new FastbootDevice())
 
-  /** @type {React.RefObject<Image[]>} */
+  /** @type {preact.RefObject<Image[]>} */
   const manifest = useRef(null)
 
   function setStep(step) {
