@@ -2,7 +2,7 @@
 
 ► [flash.comma.ai](https://flash.comma.ai)
 
-This tool allows you to flash AGNOS onto your comma device. Uses a fork of [fastboot.js](https://github.com/kdrag0n/fastboot.js).
+This tool allows you to flash AGNOS onto your comma device.
 
 ## Development
 
