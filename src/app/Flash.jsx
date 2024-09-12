@@ -87,7 +87,7 @@ const errors = {
   },
   [Error.DOWNLOAD_FAILED]: {
     status: 'Download failed',
-    description:'The system image could not be downloaded. Unpluck your device and wait for 20s. ' +
+    description:'The system image could not be downloaded. Unplug your device and wait for 20s. ' +
                 'Check your internet connection and try again.',
     icon: cloudError,
   },
