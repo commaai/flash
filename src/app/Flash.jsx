@@ -117,7 +117,7 @@ const errors = {
 
 const detachScript = [
   "bus=$(lsusb | grep 05c6:9008 | awk '{print $2}' | sed 's/Bus //;s/^0*//')",
-  "port=$(lsusb -t | grep Driver=qcserial | awk -F'Port ' '{print $2}' | cut -d ':' -f 1)",
+  "port=$(lsusb -t | grep Driver=qcserial | awk -F'Port ' '{print $2}' | cut -d ':' -f 1 | sed 's/^0*//')",
   "echo -n \"$bus-$port:1.0\" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null"
 ];
 
