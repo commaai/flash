@@ -279,6 +279,12 @@ export class Firehose {
     let val = await this.xmlSend(data);
     if (val.resp) {
       console.log("Reset succeeded");
+      // Drain log buffer
+      try {
+        await this.waitForData();
+      } catch {
+        // Ignore any errors
+      }
       return true;
     } else {
       throw "Firehose - Reset failed";
