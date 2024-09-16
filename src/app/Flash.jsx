@@ -263,10 +263,10 @@ export default function Flash() {
           <span className={`text-l dark:text-white px-2 max-w-xl`}>
             It seems that you&apos;re on Linux, make sure to run the script below in your terminal after plugging in your device.
           </span>
-          <div className="relative mt-2">
+          <div className="relative mt-2 max-w-3xl">
             <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
               <div className="relative">
-                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m">
+                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap">
                   {detachScript.map((line, index) => (
                     <span key={index} className="block">
                       {line}
