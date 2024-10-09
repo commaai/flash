@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { createSignal, onCleanup } from 'solid-js'
 
 import { Step, Error, useQdl } from '@/utils/flash'
 
@@ -121,12 +121,13 @@ const detachScript = [
 
 const isLinux = navigator.userAgent.toLowerCase().includes('linux');
 
-function LinearProgress({ value, barColor }) {
+function LinearProgress(props) {
+  let value = props.value
   if (value === -1 || value > 100) value = 100
   return (
-    <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+    <div class="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
       <div
-        className={`absolute top-0 bottom-0 left-0 w-full transition-all ${barColor}`}
+        class={`absolute top-0 bottom-0 left-0 w-full transition-all ${props.barColor}`}
         style={{ transform: `translateX(${value - 100}%)` }}
       />
     </div>
@@ -135,11 +136,11 @@ function LinearProgress({ value, barColor }) {
 
 
 function USBIndicator() {
-  return <div className="flex flex-row gap-2">
+  return <div class="flex flex-row gap-2">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 96 960 960"
-      className="text-green-500 dark:text-[#51ff00]"
+      class="text-green-500 dark:text-[#51ff00]"
       height="24"
       width="24"
     >
@@ -153,32 +154,31 @@ function USBIndicator() {
 }
 
 
-function SerialIndicator({ serial }) {
-  return <div className="flex flex-row gap-2">
+function SerialIndicator(props) {
+  return <div class="flex flex-row gap-2">
     <span>
       Serial:
-      <span className="ml-2 font-mono">{serial || 'unknown'}</span>
+      <span class="ml-2 font-mono">{props.serial || 'unknown'}</span>
     </span>
   </div>
 }
 
 
-function DeviceState({ serial }) {
+function DeviceState(props) {
   return (
     <div
-      className="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
+      class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
       style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
     >
       <USBIndicator />
-      <span className="text-gray-400">|</span>
-      <SerialIndicator serial={serial} />
+      <span class="text-gray-400">|</span>
+      <SerialIndicator serial={props.serial} />
     </div>
   )
 }
 
 
 function beforeUnloadListener(event) {
-  // NOTE: not all browsers will show this message
   event.preventDefault()
   return (event.returnValue = "Flash in progress. Are you sure you want to leave?")
 }
@@ -190,21 +190,24 @@ export default function Flash() {
     message,
     progress,
     error,
-
     onContinue,
     onRetry,
-
     connected,
     serial,
   } = useQdl()
 
-  const handleContinue = useCallback(() => {
-    onContinue?.()
-  }, [onContinue])
+  const [copied, setCopied] = createSignal(false);
 
-  const handleRetry = useCallback(() => {
-    onRetry?.()
-  }, [onRetry])
+  const handleCopy = () => {
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 1000);
+  };
+
+  onCleanup(() => {
+    window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
+  })
 
   const uiState = steps[step]
   if (error) {
@@ -222,64 +225,54 @@ export default function Flash() {
     title = status
   }
 
-  // warn the user if they try to leave the page while flashing
   if (Step.DOWNLOADING <= step && step <= Step.ERASING) {
     window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
   } else {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
   }
 
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 1000);
-  };
-
-
   return (
-    <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
+    <div id="flash" class="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
-        className={`p-8 rounded-full ${bgColor}`}
+        class={`p-8 rounded-full ${bgColor}`}
         style={{ cursor: onContinue ? 'pointer' : 'default' }}
-        onClick={handleContinue}
+        onClick={onContinue}
       >
         <img
           src={icon}
           alt="cable"
           width={128}
           height={128}
-          className={`${iconStyle} ${!error && step !== Step.DONE ? 'animate-pulse' : ''}`}
+          class={`${iconStyle} ${!error && step !== Step.DONE ? 'animate-pulse' : ''}`}
         />
       </div>
-      <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
+      <div class="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
         <LinearProgress value={progress * 100} barColor={bgColor} />
       </div>
-      <span className={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
-      <span className={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
+      <span class={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
+      <span class={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
       {(title === "Lost connection" || title === "Ready") && isLinux && (
         <>
-          <span className={`text-l dark:text-white px-2 max-w-xl`}>
-            It seems that you&apos;re on Linux, make sure to run the script below in your terminal after plugging in your device.
+          <span class={`text-l dark:text-white px-2 max-w-xl`}>
+            It seems that you're on Linux, make sure to run the script below in your terminal after plugging in your device.
           </span>
-          <div className="relative mt-2 max-w-3xl">
-            <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
-              <div className="relative">
-                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap">
+          <div class="relative mt-2 max-w-3xl">
+            <div class="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
+              <div class="relative">
+                <pre class="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap">
                   {detachScript.map((line, index) => (
-                    <span key={index} className="block">
+                    <span key={index} class="block">
                       {line}
                     </span>
                   ))}
                 </pre>
-                <div className="absolute top-2 right-2">
+                <div class="absolute top-2 right-2">
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(detachScript.join('\n'));
                       handleCopy();
                     }}
-                    className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
+                    class={`bg-${copied() ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
                   >
                     Copy
                   </button>
@@ -291,12 +284,12 @@ export default function Flash() {
       )}
       {error && (
         <button
-          className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
-          onClick={handleRetry}
+          class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
+          onClick={onRetry}
         >
           Retry
         </button>
-      ) || false}
+      )}
       {connected && <DeviceState connected={connected} serial={serial} />}
     </div>
   )

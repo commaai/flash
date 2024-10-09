@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { createResource } from 'solid-js'
 
 import comma from '../assets/comma.svg'
 import fastbootPorts from '../assets/fastboot-ports.svg'
@@ -9,12 +9,13 @@ const Flash = lazy(() => import('./Flash'))
 
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
-  console.info(`flash.comma.ai version: ${version}`);
+  console.info(`flash.comma.ai version: ${version}`)
+
   return (
-    <div className="flex flex-col lg:flex-row flex-wrap">
-      <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
+    <div class="flex flex-col lg:flex-row flex-wrap">
+      <main class="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
         <section>
-          <img src={comma} alt="comma" width={128} height={128} className="dark:invert" />
+          <img src={comma} alt="comma" width={128} height={128} class="dark:invert" />
           <h1>flash.comma.ai</h1>
 
           <p>This tool allows you to flash AGNOS onto your comma device.</p>
@@ -140,19 +141,19 @@ export default function App() {
           </p>
         </section>
 
-        <div className="hidden lg:block">
+        <div class="hidden lg:block">
           <hr />
           flash.comma.ai version: <code>{version}</code>
         </div>
       </main>
 
-      <div className="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
-        <Suspense fallback={<p className="text-black dark:text-white">Loading...</p>}>
+      <div class="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
+        <Suspense fallback={<p class="text-black dark:text-white">Loading...</p>}>
           <Flash />
         </Suspense>
       </div>
 
-      <div className="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
+      <div class="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
         flash.comma.ai version: <code>{version.substring(0, 7)}</code>
       </div>
     </div>
