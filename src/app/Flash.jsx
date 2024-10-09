@@ -1,4 +1,4 @@
-import { createSignal, onCleanup } from 'solid-js'
+import { createSignal, createMemo, onCleanup, createEffect } from 'solid-js'
 
 import { Step, Error, useQdl } from '@/utils/flash'
 
@@ -205,55 +205,64 @@ export default function Flash() {
     }, 1000);
   };
 
+  const uiState = createMemo(() => {
+    const currentStep = steps[step()]
+    if (error()) {
+      return { ...currentStep, ...errors[Error.UNKNOWN], ...errors[error()] }
+    }
+    return currentStep
+  })
+
+  const title = createMemo(() => {
+    if (message() && !error()) {
+      let t = message() + '...'
+      if (progress() >= 0) {
+        t += ` (${(progress() * 100).toFixed(0)}%)`
+      }
+      return t
+    }
+    return uiState().status
+  })
+
+  createEffect(() => {
+    if (Step.DOWNLOADING <= step() && step() <= Step.ERASING) {
+      window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    } else {
+      window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    }
+  })
+
   onCleanup(() => {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
   })
 
-  const uiState = steps[step]
-  if (error) {
-    Object.assign(uiState, errors[Error.UNKNOWN], errors[error])
-  }
-  const { status, description, bgColor, icon, iconStyle = 'invert' } = uiState
-
-  let title
-  if (message && !error) {
-    title = message + '...'
-    if (progress >= 0) {
-      title += ` (${(progress * 100).toFixed(0)}%)`
-    }
-  } else {
-    title = status
-  }
-
-  if (Step.DOWNLOADING <= step && step <= Step.ERASING) {
-    window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  } else {
-    window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  }
-
   return (
     <div id="flash" class="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
-        class={`p-8 rounded-full ${bgColor}`}
+        class="p-8 rounded-full"
+        classList={{ [uiState().bgColor]: true }}
         style={{ cursor: onContinue ? 'pointer' : 'default' }}
         onClick={onContinue}
-      >
+>
         <img
-          src={icon}
+          src={uiState().icon}
           alt="cable"
           width={128}
           height={128}
-          class={`${iconStyle} ${!error && step !== Step.DONE ? 'animate-pulse' : ''}`}
+          classList={{
+            [uiState().iconStyle]: true,
+            'animate-pulse': !error() && step() !== Step.DONE
+          }}
         />
       </div>
-      <div class="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
-        <LinearProgress value={progress * 100} barColor={bgColor} />
+      <div class="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: () => progress() === -1 ? 0 : 1 }}>
+        <LinearProgress value={() => progress() * 100} barColor={() => uiState().bgColor} />
       </div>
-      <span class={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
-      <span class={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
-      {(title === "Lost connection" || title === "Ready") && isLinux && (
+      <span class="text-3xl dark:text-white font-mono font-light">{title()}</span>
+      <span class="text-xl dark:text-white px-8 max-w-xl">{() => uiState().description}</span>
+      {() => (title() === "Lost connection" || title() === "Ready") && isLinux && (
         <>
-          <span class={`text-l dark:text-white px-2 max-w-xl`}>
+          <span class="text-l dark:text-white px-2 max-w-xl">
             It seems that you're on Linux, make sure to run the script below in your terminal after plugging in your device.
           </span>
           <div class="relative mt-2 max-w-3xl">
@@ -272,7 +281,7 @@ export default function Flash() {
                       navigator.clipboard.writeText(detachScript.join('\n'));
                       handleCopy();
                     }}
-                    class={`bg-${copied() ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
+                    class={() => `bg-${copied() ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
                   >
                     Copy
                   </button>
@@ -282,7 +291,7 @@ export default function Flash() {
           </div>
         </>
       )}
-      {error && (
+      {error() && (
         <button
           class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
           onClick={onRetry}
@@ -290,7 +299,7 @@ export default function Flash() {
           Retry
         </button>
       )}
-      {connected && <DeviceState connected={connected} serial={serial} />}
+      {connected() && <DeviceState connected={connected()} serial={serial()} />}
     </div>
   )
 }

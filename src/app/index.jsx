@@ -1,4 +1,4 @@
-import { createResource } from 'solid-js'
+import { createResource, lazy, Suspense } from 'solid-js'
 
 import comma from '../assets/comma.svg'
 import fastbootPorts from '../assets/fastboot-ports.svg'
