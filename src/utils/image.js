@@ -1,17 +1,21 @@
-import { useEffect, useRef } from 'react'
-
+import { createSignal, createEffect, onCleanup } from 'solid-js'
 import * as Comlink from 'comlink'
 
 export function useImageWorker() {
-  const apiRef = useRef()
+  const [apiRef, setApiRef] = createSignal({ current: null })
 
-  useEffect(() => {
+  createEffect(() => {
     const worker = new Worker(new URL('../workers/image.worker', import.meta.url), {
       type: 'module',
     })
-    apiRef.current = Comlink.wrap(worker)
-    return () => worker.terminate()
-  }, [])
+    const wrappedWorker = Comlink.wrap(worker)
+    setApiRef({ current: wrappedWorker })
+
+    onCleanup(() => {
+      worker.terminate()
+      setApiRef({ current: null })
+    })
+  })
 
   return apiRef
 }
