@@ -19,21 +19,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
-
-      - run: bun install
-      - run: bun run build
-
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./
 
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
-    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

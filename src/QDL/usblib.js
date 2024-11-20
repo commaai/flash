@@ -1,4 +1,4 @@
-import { concatUint8Array, sleep } from "./utils";
+import { concatUint8Array, sleep } from "./utils.js";
 
 const vendorID = 0x05c6;
 const productID = 0x9008;

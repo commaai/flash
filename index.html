@@ -9,10 +9,42 @@
       content="Update your comma device to the latest software"
     />
     <title>flash.comma.ai</title>
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.1.0/index.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource-variable/jetbrains-mono@5.1.1/index.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            backgroundImage: {
+              'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+              'gradient-conic':
+                'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+            },
+            fontFamily: {
+              sans: ['Inter Variable', 'sans-serif'],
+              monospace: ['JetBrains Mono Variable', 'monospace'],
+            },
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://cdn.jsdelivr.net/npm/react@18.3.1/+esm",
+          "react-dom": "https://cdn.jsdelivr.net/npm/react-dom@18.3.1/+esm",
+          "comlink": "https://cdn.jsdelivr.net/npm/comlink@4.4.2/+esm",
+          "crc-32": "https://cdn.jsdelivr.net/npm/crc-32@1.2.2/+esm",
+          "jssha": "https://cdn.jsdelivr.net/npm/jssha@3.3.1/+esm",
+          "xz-decompress": "https://cdn.jsdelivr.net/npm/xz-decompress@0.2.1/+esm"
+        }
+      }
+    </script>    
+    <script type="module" src="/src/main.js"></script>
     <script
       defer
       data-domain="flash.comma.ai"

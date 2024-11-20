@@ -1,8 +1,8 @@
-import * as gpt from "./gpt"
-import { usbClass } from "./usblib"
-import { Sahara } from  "./sahara"
-import { Firehose } from "./firehose"
-import { concatUint8Array, runWithTimeout, containsBytes } from "./utils"
+import * as gpt from "./gpt.js"
+import { usbClass } from "./usblib.js"
+import { Sahara } from  "./sahara.js"
+import { Firehose } from "./firehose.js"
+import { concatUint8Array, runWithTimeout, containsBytes } from "./utils.js"
 
 
 export class qdlDevice {

@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { concatUint8Array } from '@/QDL/utils'
-import { qdlDevice } from '@/QDL/qdl'
+import { concatUint8Array } from '../QDL/utils.js'
+import { qdlDevice } from '../QDL/qdl.js'
 import * as Comlink from 'comlink'
 
-import config from '@/config'
-import { download } from '@/utils/blob'
-import { useImageWorker } from '@/utils/image'
-import { createManifest } from '@/utils/manifest'
-import { withProgress } from '@/utils/progress'
+import config from '../config.js'
+import { download } from '../utils/blob.js'
+import { useImageWorker } from '../utils/image.js'
+import { createManifest } from '../utils/manifest.js'
+import { withProgress } from '../utils/progress.js'
 
 /**
  * @typedef {import('./manifest.js').Image} Image
@@ -125,7 +125,7 @@ export function useQdl() {
           break
         }
 
-        imageWorker.current?.init()
+        Promise.resolve(() => imageWorker.current.init())
           .then(() => download(config.manifests['release']))
           .then(blob => blob.text())
           .then(text => {
