@@ -1,6 +1,6 @@
-import { xmlParser } from "./xmlParser"
-import { concatUint8Array, containsBytes, compareStringToBytes, sleep, readBlobAsBuffer } from "./utils"
-import * as Sparse from "./sparse"
+import { xmlParser } from "./xmlParser.js"
+import { concatUint8Array, containsBytes, compareStringToBytes, sleep, readBlobAsBuffer } from "./utils.js"
+import * as Sparse from "./sparse.js"
 
 
 class response {

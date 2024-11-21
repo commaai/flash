@@ -1,6 +1,6 @@
-import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./saharaDefs"
-import { concatUint8Array, packGenerator, readBlobAsBuffer } from "./utils";
-import config from "@/config"
+import { CommandHandler, cmd_t, sahara_mode_t, status_t, exec_cmd_t } from "./saharaDefs.js"
+import { concatUint8Array, packGenerator, readBlobAsBuffer } from "./utils.js";
+import config from "../config.js"
 
 
 export class Sahara {

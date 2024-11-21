@@ -1,5 +1,5 @@
-import { containsBytes, bytes2Number } from "./utils"
-import { buf as crc32 } from "crc-32"
+import { containsBytes, bytes2Number } from "./utils.js"
+import CRC32 from "crc-32"
 
 export const AB_FLAG_OFFSET = 6;
 export const AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2);
@@ -7,6 +7,7 @@ export const PART_ATT_PRIORITY_BIT = BigInt(48)
 export const PART_ATT_ACTIVE_BIT = BigInt(50)
 export const PART_ATT_ACTIVE_VAL = BigInt(0x1) << PART_ATT_ACTIVE_BIT
 
+const crc32 = CRC32.buf
 const efiType = {
   0x00000000 : "EFI_UNUSED",
   0xEBD0A0A2 : "EFI_BASIC_DATA",
