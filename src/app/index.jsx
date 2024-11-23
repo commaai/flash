@@ -169,7 +169,7 @@ export default function App() {
 
       <div className="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
         <Suspense
-          fallback={<p class="text-black dark:text-white">Loading...</p>}
+          fallback={<p className="text-black dark:text-white">Loading...</p>}
         >
           <Flash />
         </Suspense>
