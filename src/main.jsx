@@ -2,9 +2,15 @@ import { render } from "solid-js/web";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/jetbrains-mono";
 import "./index.css";
+import config from "./config";
 import App from "./app";
 
-render(() => <App />, document.getElementById("root"));
+const manifestPromise = fetch(config.manifests.release).then((r) => r.text());
+
+render(
+  () => <App manifestPromise={manifestPromise} />,
+  document.getElementById("root"),
+);
 
 const script = document.createElement("script");
 script.defer = true;
