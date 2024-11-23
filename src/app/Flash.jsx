@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, createEffect } from "solid-js";
+import { createSignal, onCleanup, createEffect, Show } from "solid-js";
 
 import { Step, Error, useQdl } from "@/utils/flash";
 
@@ -277,47 +277,47 @@ export default function Flash() {
       </span>
 
       {/* Linux instructions */}
-      {(title() === "Lost connection" || title() === "Ready") && isLinux && (
-        <>
-          <span className="text-l dark:text-white px-2 max-w-xl">
-            It seems that you&apos;re on Linux, make sure to run the script
-            below in your terminal after plugging in your device.
-          </span>
-          <div className="relative mt-2 max-w-3xl">
-            <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
-              <div className="relative">
-                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap">
-                  {detachScript.map((line, index) => (
-                    <span className="block" key={index}>
-                      {line}
-                    </span>
-                  ))}
-                </pre>
-                <div className="absolute top-2 right-2">
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(detachScript.join("\n"));
-                      handleCopy();
-                    }}
-                    className={`bg-${copied() ? "green" : "blue"}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
-                  >
-                    Copy
-                  </button>
-                </div>
+      <Show
+        when={(title() === "Lost connection" || title() === "Ready") && isLinux}
+      >
+        <span className="text-l dark:text-white px-2 max-w-xl">
+          It seems that you&apos;re on Linux, make sure to run the script below
+          in your terminal after plugging in your device.
+        </span>
+        <div className="relative mt-2 max-w-3xl">
+          <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
+            <div className="relative">
+              <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap">
+                {detachScript.map((line, index) => (
+                  <span className="block" key={index}>
+                    {line}
+                  </span>
+                ))}
+              </pre>
+              <div className="absolute top-2 right-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(detachScript.join("\n"));
+                    handleCopy();
+                  }}
+                  className={`bg-${copied() ? "green" : "blue"}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
+                >
+                  Copy
+                </button>
               </div>
             </div>
           </div>
-        </>
-      )}
+        </div>
+      </Show>
 
-      {error() && (
+      <Show when={error()}>
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
           onClick={() => onRetry()?.()}
         >
           Retry
         </button>
-      )}
+      </Show>
 
       {connected() && <DeviceState connected={connected} serial={serial} />}
     </div>
