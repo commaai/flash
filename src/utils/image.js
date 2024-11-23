@@ -1,17 +1,22 @@
-import { useEffect, useRef } from 'react'
-
-import * as Comlink from 'comlink'
+import { onCleanup } from "solid-js";
+import * as Comlink from "comlink";
 
 export function useImageWorker() {
-  const apiRef = useRef()
+  let worker = new Worker(new URL("../workers/image.worker", import.meta.url), {
+    type: "module",
+  });
 
-  useEffect(() => {
-    const worker = new Worker(new URL('../workers/image.worker', import.meta.url), {
-      type: 'module',
-    })
-    apiRef.current = Comlink.wrap(worker)
-    return () => worker.terminate()
-  }, [])
+  const api = Comlink.wrap(worker);
 
-  return apiRef
+  onCleanup(() => {
+    worker.terminate();
+    worker = null;
+  });
+
+  return {
+    init: () => api.init(),
+    downloadImage: (image, progress) => api.downloadImage(image, progress),
+    unpackImage: (image, progress) => api.unpackImage(image, progress),
+    getImage: (image) => api.getImage(image),
+  };
 }

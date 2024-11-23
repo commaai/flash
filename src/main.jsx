@@ -1,14 +1,7 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
+import { render } from "solid-js/web";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/jetbrains-mono";
+import "./index.css";
+import App from "./app";
 
-import '@fontsource-variable/inter'
-import '@fontsource-variable/jetbrains-mono'
-
-import './index.css'
-import App from './app'
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+render(() => <App />, document.getElementById("root"));
