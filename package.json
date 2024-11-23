@@ -21,6 +21,7 @@
     "jssha": "^3.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "solid-js": "^1.8.15",
     "xz-decompress": "^0.2.1"
   },
   "devDependencies": {
@@ -29,6 +30,7 @@
     "@testing-library/react": "^15.0.7",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "vite-plugin-solid": "^2.10.1",
     "@vitejs/plugin-react": "^4.3.0",
     "autoprefixer": "10.4.14",
     "eslint": "^8.57.0",
