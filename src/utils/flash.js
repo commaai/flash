@@ -101,7 +101,7 @@ function isRecognizedDevice(slotCount, partitions) {
   return true;
 }
 
-export function useQdl() {
+export function useQdl(manifestPromise) {
   const [step, setStep] = createSignal(Step.INITIALIZING);
   const [message, setMessage] = createSignal("");
   const [progress, setProgress] = createSignal(0);
@@ -141,12 +141,14 @@ export function useQdl() {
 
         imageWorker
           .init()
-          .then(() => download(config.manifests["release"]))
-          .then((blob) => blob.text())
+          .then(
+            () =>
+              manifestPromise ||
+              download(config.manifests["release"]).then((b) => b.text()),
+          )
           .then((text) => {
             manifest = createManifest(text);
             if (manifest.length === 0) throw "Manifest is empty";
-            console.debug("[QDL] Loaded manifest", manifest);
             setStep(Step.READY);
           })
           .catch((err) => {
