@@ -1,4 +1,10 @@
-import { createSignal, onCleanup, createEffect, Show } from "solid-js";
+import {
+  createSignal,
+  onCleanup,
+  createEffect,
+  createMemo,
+  Show,
+} from "solid-js";
 
 import { Step, Error, useQdl } from "@/utils/flash";
 
@@ -224,15 +230,15 @@ export default function Flash() {
     }
   });
 
-  const uiState = () => {
+  const uiState = createMemo(() => {
     const state = steps[step()];
     if (error()) {
       return { ...state, ...errors[Error.UNKNOWN], ...errors[error()] };
     }
     return state;
-  };
+  });
 
-  const title = () => {
+  const title = createMemo(() => {
     if (message() && !error()) {
       let text = message() + "...";
       if (progress() >= 0) {
@@ -241,7 +247,7 @@ export default function Flash() {
       return text;
     }
     return uiState().status;
-  };
+  });
 
   return (
     <div
