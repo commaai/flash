@@ -1,10 +1,17 @@
-import { Suspense } from 'react'
-import { expect, test } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, expect, test } from "vitest";
+import { render, screen } from "@solidjs/testing-library";
+import { Suspense } from "solid-js";
+import App from ".";
 
-import App from '.'
-
-test('renders without crashing', () => {
-  render(<Suspense fallback="loading"><App /></Suspense>)
-  expect(screen.getByText('flash.comma.ai')).toBeInTheDocument()
-})
+describe("App", () => {
+  test("renders without crashing", () => {
+    render(() => (
+      <div>
+        <Suspense fallback="loading">
+          <App />
+        </Suspense>
+      </div>
+    ));
+    expect(screen.getByText("flash.comma.ai")).toBeInTheDocument();
+  });
+});
