@@ -258,7 +258,7 @@ export default function Flash() {
           alt="status"
           width={128}
           height={128}
-          className={`${uiState().iconStyle || "invert"} ${!error() && step() !== Step.DONE ? "animate-pulse" : ""}`}
+          className={`${uiState().iconStyle} ${!error() && step() !== Step.DONE ? "animate-pulse" : ""}`}
         />
       </div>
 
