@@ -1,9 +1,10 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
+import { h, render } from 'preact'
 import Flash from './app/Flash.js'
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  React.createElement(React.StrictMode, null,
-    React.createElement(Flash, null)
-  )
-)
+render(h(Flash, null), document.getElementById('root'))
+
+// ReactDOM.createRoot(document.getElementById('root')).render(
+//   React.createElement(React.StrictMode, null,
+//     React.createElement(Flash, null)
+//   )
+// )

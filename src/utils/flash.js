@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'preact/hooks'
 
 import { concatUint8Array } from '../QDL/utils.js'
 import { qdlDevice } from '../QDL/qdl.js'

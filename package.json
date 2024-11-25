@@ -6,17 +6,16 @@
   "scripts": {
     "dev": "vite",
     "start": "python3 -m http.server 5173",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
+    "lint": "eslint . --ext js --report-unused-disable-directives",
     "test": "vitest"
   },
   "engines": {
     "node": ">=20.11.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "preact": "^10.25.0"
+  },
   "devDependencies": {
-    "eslint": "^8.57.0",
-    "eslint-plugin-react": "^7.34.2",
-    "eslint-plugin-react-hooks": "^4.6.2",
-    "eslint-plugin-react-refresh": "^0.4.7"
+    "eslint": "^8.57.0"
   }
 }

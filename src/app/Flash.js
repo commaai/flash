@@ -1,4 +1,5 @@
-import React, { useCallback, useState } from 'react'
+import { createElement, Fragment } from 'preact'
+import { useCallback, useState } from 'preact/hooks'
 
 import { Step, Error, useQdl } from '../utils/flash.js'
 
@@ -111,8 +112,8 @@ const isLinux = navigator.userAgent.toLowerCase().includes('linux');
 function LinearProgress({ value, barColor }) {
   if (value === -1 || value > 100) value = 100;
 
-  return React.createElement("div", { className: "relative w-full h-2 bg-gray-200 rounded-full overflow-hidden" },
-    React.createElement("div", {
+  return createElement("div", { className: "relative w-full h-2 bg-gray-200 rounded-full overflow-hidden" },
+    createElement("div", {
       className: `absolute top-0 bottom-0 left-0 w-full transition-all ${barColor}`,
       style: { transform: `translateX(${value - 100}%)` },
     })
@@ -121,39 +122,39 @@ function LinearProgress({ value, barColor }) {
 
 
 function USBIndicator() {
-  return React.createElement("div", { className: "flex flex-row gap-2" },
-    React.createElement("svg", {
+  return createElement("div", { className: "flex flex-row gap-2" },
+    createElement("svg", {
       xmlns: "http://www.w3.org/2000/svg",
       viewBox: "0 96 960 960",
       className: "text-green-500 dark:text-[#51ff00]",
       height: "24",
       width: "24",
     },
-      React.createElement("path", {
+      createElement("path", {
         fill: "currentColor",
         d: "M480 976q-32 0-52-20t-20-52q0-22 11-40t31-29V724H302q-24 0-42-18t-18-42V555q-20-9-31-26.609-11-17.608-11-40.108Q200 456 220 436t52-20q32 0 52 20t20 52.411Q344 511 333 528.5T302 555v109h148V324h-80l110-149 110 149h-80v340h148V560h-42V416h144v144h-42v104q0 24-18 42t-42 18H510v111q19.95 10.652 30.975 29.826Q552 884 552 904q0 32-20 52t-52 20Z",
       })
     ),
-    React.createElement("span", null, "Device connected")
+    createElement("span", null, "Device connected")
   );
 }
 
 
 function SerialIndicator({ serial }) {
-  return React.createElement("div", { className: "flex flex-row gap-2" },
-    React.createElement("span", null, "Serial:", React.createElement("span", { className: "ml-2 font-mono" }, serial || "unknown"))
+  return createElement("div", { className: "flex flex-row gap-2" },
+    createElement("span", null, "Serial:", createElement("span", { className: "ml-2 font-mono" }, serial || "unknown"))
   );
 }
 
 
 function DeviceState({ serial }) {
-  return React.createElement("div", {
+  return createElement("div", {
     className: "absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2",
     style: { left: "50%", transform: "translate(-50%, -50%)" },
   },
-    React.createElement(USBIndicator),
-    React.createElement("span", { className: "text-gray-400" }, "|"),
-    React.createElement(SerialIndicator, { serial })
+    createElement(USBIndicator),
+    createElement("span", { className: "text-gray-400" }, "|"),
+    createElement(SerialIndicator, { serial })
   );
 }
 
@@ -218,14 +219,13 @@ export default function Flash() {
     }, 1000);
   };
 
-
-  return React.createElement("div", { id: "flash", className: "relative flex flex-col gap-8 justify-center items-center h-full" },
-    React.createElement("div", {
+  return createElement("div", { id: "flash", className: "relative flex flex-col gap-8 justify-center items-center h-full" },
+    createElement("div", {
       className: `p-8 rounded-full ${bgColor}`,
       style: { cursor: onContinue ? "pointer" : "default" },
       onClick: handleContinue,
     },
-      React.createElement("img", {
+      createElement("img", {
         src: icon,
         alt: "cable",
         width: 128,
@@ -233,30 +233,30 @@ export default function Flash() {
         className: `${iconStyle} ${!error && step !== Step.DONE ? "animate-pulse" : ""}`,
       })
     ),
-    React.createElement("div", {
+    createElement("div", {
       className: "w-full max-w-3xl px-8 transition-opacity duration-300",
       style: { opacity: progress === -1 ? 0 : 1 },
     },
-      React.createElement(LinearProgress, { value: progress * 100, barColor: bgColor })
+      createElement(LinearProgress, { value: progress * 100, barColor: bgColor })
     ),
-    React.createElement("span", { className: "text-3xl dark:text-white font-mono font-light" }, title),
-    React.createElement("span", { className: "text-xl dark:text-white px-8 max-w-xl" }, description),
+    createElement("span", { className: "text-3xl dark:text-white font-mono font-light" }, title),
+    createElement("span", { className: "text-xl dark:text-white px-8 max-w-xl" }, description),
     (title === "Lost connection" || title === "Ready") && isLinux && (
-      React.createElement(React.Fragment, null,
-        React.createElement("span",
+      createElement(Fragment, null,
+        createElement("span",
           { className: "text-l dark:text-white px-2 max-w-xl" },
           "It seems that you're on Linux, make sure to run the script below in your terminal after plugging in your device."
         ),
-        React.createElement("div", { className: "relative mt-2 max-w-3xl" },
-          React.createElement("div", { className: "bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto" },
-            React.createElement("div", { className: "relative" },
-              React.createElement("pre", { className: "font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap" },
+        createElement("div", { className: "relative mt-2 max-w-3xl" },
+          createElement("div", { className: "bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto" },
+            createElement("div", { className: "relative" },
+              createElement("pre", { className: "font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap" },
                 detachScript.map((line, index) =>
-                  React.createElement("span", { key: index, className: "block" }, line)
+                  createElement("span", { key: index, className: "block" }, line)
                 )
               ),
-              React.createElement("div", { className: "absolute top-2 right-2" },
-                React.createElement("button", {
+              createElement("div", { className: "absolute top-2 right-2" },
+                createElement("button", {
                   onClick: () => {
                     navigator.clipboard.writeText(detachScript.join("\n"));
                     handleCopy();
@@ -270,12 +270,12 @@ export default function Flash() {
       )
     ),
     error && (
-      React.createElement("button", {
+      createElement("button", {
         className:
           "px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors",
         onClick: handleRetry,
       }, "Retry")
     ) || false,
-    connected && React.createElement(DeviceState, { connected, serial })
+    connected && createElement(DeviceState, { connected, serial })
   )
 }

@@ -6,10 +6,7 @@
     "node": true
   },
   "extends": [
-    "eslint:recommended",
-    "plugin:react/recommended",
-    "plugin:react/jsx-runtime",
-    "plugin:react-hooks/recommended"
+    "eslint:recommended"
   ],
   "ignorePatterns": [
     "node_modules",
@@ -25,9 +22,6 @@
       "version": "detect"
     }
   },
-  "plugins": [
-    "react-refresh"
-  ],
   "rules": {
     "no-constant-condition": [
       "error",
@@ -35,14 +29,6 @@
         "checkLoops": false
       }
     ],
-    "no-inner-declarations": "off",
-    "react/jsx-no-target-blank": "off",
-    "react/prop-types": "off",
-    "react-refresh/only-export-components": [
-      "warn",
-      {
-        "allowConstantExport": true
-      }
-    ]
+    "no-inner-declarations": "off"
   }
 }
