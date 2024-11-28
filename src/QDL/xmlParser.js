@@ -5,7 +5,7 @@ export class xmlParser {
     let content = {}
     const replaceBytes = new TextDecoder().decode(new Uint8Array([0xf0, 0xe9, 0x88, 0x14]));
     for (let line of lines) {
-      if ("" == line) {
+      if ("" === line) {
         continue;
       }
       line = "<?xml" + line;
@@ -31,7 +31,7 @@ export class xmlParser {
     let data = [];
     const replaceBytes = new TextDecoder().decode(new Uint8Array([0xf0, 0xe9, 0x88, 0x14]));
     for (let line of lines) {
-      if ("" == line) {
+      if ("" === line) {
         continue;
       }
       line = "<?xml" + line;
@@ -42,7 +42,7 @@ export class xmlParser {
       const responseElement = xmlDoc.querySelector('log');
       if (responseElement !== null) {
         data = Array.from(responseElement.attributes).reduce((obj, attr) => {
-          if (attr.name == "value")
+          if (attr.name === "value")
            obj.push(attr.value);
           return obj;
         }, data);
