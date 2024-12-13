@@ -8,7 +8,9 @@
     "build": "vite build",
     "start": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
-    "test": "vitest"
+    "test": "vitest",
+    "build:jquery-css": "tailwindcss -i src/index-jquery.css -o public/index-jquery.css",
+    "watch:jquery-css": "tailwindcss -i src/index-jquery.css -o public/index-jquery.css --watch"
   },
   "engines": {
     "node": ">=20.11.0"
