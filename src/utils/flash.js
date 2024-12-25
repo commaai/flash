@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { FastbootDevice, setDebugLevel } from 'android-fastboot'
+import { concatUint8Array } from '@/QDL/utils'
+import { qdlDevice } from '@/QDL/qdl'
 import * as Comlink from 'comlink'
 
 import config from '@/config'
@@ -12,9 +13,6 @@ import { withProgress } from '@/utils/progress'
 /**
  * @typedef {import('./manifest.js').Image} Image
  */
-
-// Verbose logging for fastboot
-setDebugLevel(2)
 
 export const Step = {
   INITIALIZING: 0,
@@ -40,27 +38,11 @@ export const Error = {
   REQUIREMENTS_NOT_MET: 8,
 }
 
-function isRecognizedDevice(deviceInfo) {
-  // check some variables are as expected for a comma three
-  const {
-    kernel,
-    "max-download-size": maxDownloadSize,
-    "slot-count": slotCount,
-  } = deviceInfo
-  if (kernel !== "uefi" || maxDownloadSize !== "104857600" || slotCount !== "2") {
-    console.error('[fastboot] Unrecognised device (kernel, maxDownloadSize or slotCount)', deviceInfo)
-    return false
-  }
+function isRecognizedDevice(slotCount, partitions) {
 
-  const partitions = []
-  for (const key of Object.keys(deviceInfo)) {
-    if (!key.startsWith("partition-type:")) continue
-    let partition = key.substring("partition-type:".length)
-    if (partition.endsWith("_a") || partition.endsWith("_b")) {
-      partition = partition.substring(0, partition.length - 2)
-    }
-    if (partitions.includes(partition)) continue
-    partitions.push(partition)
+  if (slotCount !== 2) {
+    console.error('[QDL] Unrecognised device (slotCount)')
+    return false
   }
 
   // check we have the expected partitions to make sure it's a comma three
@@ -73,20 +55,14 @@ function isRecognizedDevice(deviceInfo) {
     "xbl_config"
   ]
   if (!partitions.every(partition => expectedPartitions.includes(partition))) {
-    console.error('[fastboot] Unrecognised device (partitions)', partitions)
+    console.error('[QDL] Unrecognised device (partitions)', partitions)
     return false
   }
-
-  // sanity check, also useful for logging
-  if (!deviceInfo['serialno']) {
-    console.error('[fastboot] Unrecognised device (missing serialno)', deviceInfo)
-    return false
-  }
-
   return true
 }
 
-export function useFastboot() {
+
+export function useQdl() {
   const [step, _setStep] = useState(Step.INITIALIZING)
   const [message, _setMessage] = useState('')
   const [progress, setProgress] = useState(0)
@@ -99,7 +75,7 @@ export function useFastboot() {
   const [onRetry, setOnRetry] = useState(null)
 
   const imageWorker = useImageWorker()
-  const fastboot = useRef(new FastbootDevice())
+  const qdl = useRef(new qdlDevice())
 
   /** @type {React.RefObject<Image[]>} */
   const manifest = useRef(null)
@@ -109,21 +85,20 @@ export function useFastboot() {
   }
 
   function setMessage(message = '') {
-    if (message) console.info('[fastboot]', message)
+    if (message) console.info('[QDL]', message)
     _setMessage(message)
   }
 
   function setError(error) {
     _setError(error)
   }
-
   useEffect(() => {
     setProgress(-1)
     setMessage()
 
     if (error) return
     if (!imageWorker.current) {
-      console.debug('[fastboot] Waiting for image worker')
+      console.debug('[QDL] Waiting for image worker')
       return
     }
 
@@ -131,21 +106,21 @@ export function useFastboot() {
       case Step.INITIALIZING: {
         // Check that the browser supports WebUSB
         if (typeof navigator.usb === 'undefined') {
-          console.error('[fastboot] WebUSB not supported')
+          console.error('[QDL] WebUSB not supported')
           setError(Error.REQUIREMENTS_NOT_MET)
           break
         }
 
         // Check that the browser supports Web Workers
         if (typeof Worker === 'undefined') {
-          console.error('[fastboot] Web Workers not supported')
+          console.error('[QDL] Web Workers not supported')
           setError(Error.REQUIREMENTS_NOT_MET)
           break
         }
 
         // Check that the browser supports Storage API
         if (typeof Storage === 'undefined') {
-          console.error('[fastboot] Storage API not supported')
+          console.error('[QDL] Storage API not supported')
           setError(Error.REQUIREMENTS_NOT_MET)
           break
         }
@@ -161,11 +136,11 @@ export function useFastboot() {
               throw 'Manifest is empty'
             }
 
-            console.debug('[fastboot] Loaded manifest', manifest.current)
+            console.debug('[QDL] Loaded manifest', manifest.current)
             setStep(Step.READY)
           })
           .catch((err) => {
-            console.error('[fastboot] Initialization error', err)
+            console.error('[QDL] Initialization error', err)
             setError(Error.UNKNOWN)
           })
         break
@@ -181,46 +156,38 @@ export function useFastboot() {
       }
 
       case Step.CONNECTING: {
-        fastboot.current.waitForConnect()
+        qdl.current.waitForConnect()
           .then(() => {
-            console.info('[fastboot] Connected', { fastboot: fastboot.current })
-            return fastboot.current.getVariable('all')
-              .then((all) => {
-                const deviceInfo = all.split('\n').reduce((obj, line) => {
-                  const parts = line.split(':')
-                  const key = parts.slice(0, -1).join(':').trim()
-                  obj[key] = parts.slice(-1)[0].trim()
-                  return obj
-                }, {})
-
-                const recognized = isRecognizedDevice(deviceInfo)
-                console.debug('[fastboot] Device info', { recognized, deviceInfo })
+            console.info('[QDL] Connected')
+            return qdl.current.getDevicePartitionsInfo()
+              .then(([slotCount, partitions]) => {
+                const recognized = isRecognizedDevice(slotCount, partitions)
+                console.debug('[QDL] Device info', { recognized,  partitions})
 
                 if (!recognized) {
                   setError(Error.UNRECOGNIZED_DEVICE)
                   return
                 }
 
-                setSerial(deviceInfo['serialno'] || 'unknown')
+                setSerial(qdl.current.sahara.serial || 'unknown')
                 setConnected(true)
                 setStep(Step.DOWNLOADING)
               })
               .catch((err) => {
-                console.error('[fastboot] Error getting device information', err)
+                console.error('[QDL] Error getting device information', err)
                 setError(Error.UNKNOWN)
               })
           })
           .catch((err) => {
-            console.error('[fastboot] Connection lost', err)
+            console.error('[QDL] Connection lost', err)
             setError(Error.LOST_CONNECTION)
             setConnected(false)
           })
-
-        fastboot.current.connect()
+        qdl.current.connect()
           .catch((err) => {
-            console.error('[fastboot] Connection error', err)
+            console.error('[QDL] Connection error', err)
             setStep(Step.READY)
-          })
+        })
         break
       }
 
@@ -236,11 +203,11 @@ export function useFastboot() {
 
         downloadImages()
           .then(() => {
-            console.debug('[fastboot] Downloaded all images')
+            console.debug('[QDL] Downloaded all images')
             setStep(Step.UNPACKING)
           })
           .catch((err) => {
-            console.error('[fastboot] Download error', err)
+            console.error('[QDL] Download error', err)
             setError(Error.DOWNLOAD_FAILED)
           })
         break
@@ -258,11 +225,11 @@ export function useFastboot() {
 
         unpackImages()
           .then(() => {
-            console.debug('[fastboot] Unpacked all images')
+            console.debug('[QDL] Unpacked all images')
             setStep(Step.FLASHING)
           })
           .catch((err) => {
-            console.error('[fastboot] Unpack error', err)
+            console.error('[QDL] Unpack error', err)
             if (err.startsWith('Checksum mismatch')) {
               setError(Error.CHECKSUM_MISMATCH)
             } else {
@@ -276,36 +243,37 @@ export function useFastboot() {
         setProgress(0)
 
         async function flashDevice() {
-          const currentSlot = await fastboot.current.getVariable('current-slot')
+          const currentSlot = await qdl.current.getActiveSlot();
           if (!['a', 'b'].includes(currentSlot)) {
             throw `Unknown current slot ${currentSlot}`
           }
+          const otherSlot = currentSlot === 'a' ? 'b' : 'a'
+
+          // Erase current xbl partition so if users try to power up device
+          // with corrupted primary gpt header, it would not update the backup
+          await qdl.current.erase("xbl"+`_${currentSlot}`)
 
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
 
-            if (image.sparse) {
-              setMessage(`Erasing ${image.name}`)
-              await fastboot.current.runCommand(`erase:${image.name}`)
-            }
             setMessage(`Flashing ${image.name}`)
-            await fastboot.current.flashBlob(image.name, blob, onProgress, 'other')
+            const partitionName = image.name + `_${otherSlot}`
+            await qdl.current.flashBlob(partitionName, blob, onProgress)
           }
-          console.debug('[fastboot] Flashed all partitions')
+          console.debug('[QDL] Flashed all partitions')
 
-          const otherSlot = currentSlot === 'a' ? 'b' : 'a'
           setMessage(`Changing slot to ${otherSlot}`)
-          await fastboot.current.runCommand(`set_active:${otherSlot}`)
+          await qdl.current.setActiveSlot(otherSlot)
         }
 
         flashDevice()
           .then(() => {
-            console.debug('[fastboot] Flash complete')
+            console.debug('[QDL] Flash complete')
             setStep(Step.ERASING)
           })
           .catch((err) => {
-            console.error('[fastboot] Flashing error', err)
+            console.error('[QDL] Flashing error', err)
             setError(Error.FLASH_FAILED)
           })
         break
@@ -314,24 +282,30 @@ export function useFastboot() {
       case Step.ERASING: {
         setProgress(0)
 
+        async function resetUserdata() {
+          let wData = new TextEncoder().encode("COMMA_RESET")
+          wData = new Blob([concatUint8Array([wData, new Uint8Array(28 - wData.length).fill(0)])]) // make equal sparseHeaderSize
+          await qdl.current.flashBlob("userdata", wData)
+        }
+
         async function eraseDevice() {
           setMessage('Erasing userdata')
-          await fastboot.current.runCommand('erase:userdata')
+          await resetUserdata()
           setProgress(0.9)
 
           setMessage('Rebooting')
-          await fastboot.current.runCommand('continue')
+          await qdl.current.reset()
           setProgress(1)
           setConnected(false)
         }
 
         eraseDevice()
           .then(() => {
-            console.debug('[fastboot] Erase complete')
+            console.debug('[QDL] Erase complete')
             setStep(Step.DONE)
           })
           .catch((err) => {
-            console.error('[fastboot] Erase error', err)
+            console.error('[QDL] Erase error', err)
             setError(Error.ERASE_FAILED)
           })
         break
@@ -341,12 +315,12 @@ export function useFastboot() {
 
   useEffect(() => {
     if (error !== Error.NONE) {
-      console.debug('[fastboot] error', error)
+      console.debug('[QDL] error', error)
       setProgress(-1)
       setOnContinue(null)
 
       setOnRetry(() => () => {
-        console.debug('[fastboot] on retry')
+        console.debug('[QDL] on retry')
         window.location.reload()
       })
     }
@@ -365,3 +339,4 @@ export function useFastboot() {
     onRetry,
   }
 }
+
