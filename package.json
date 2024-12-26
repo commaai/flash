@@ -21,9 +21,11 @@
     "jssha": "^3.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "solid-js": "^1.8.15",
     "xz-decompress": "^0.2.1"
   },
   "devDependencies": {
+    "@solidjs/testing-library": "^0.8.10",
     "@tailwindcss/typography": "^0.5.13",
     "@testing-library/jest-dom": "^6.4.5",
     "@testing-library/react": "^15.0.7",
@@ -39,6 +41,7 @@
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "vite": "^5.2.12",
+    "vite-plugin-solid": "^2.10.1",
     "vite-svg-loader": "^5.1.0",
     "vitest": "^1.6.0"
   }
