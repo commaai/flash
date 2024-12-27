@@ -1,4 +1,4 @@
-import { readBlobAsBuffer } from "./utils";
+import { readBlobAsBuffer } from "./utils.js";
 
 const FILE_MAGIC = 0xed26ff3a;
 export const FILE_HEADER_SIZE = 28;
