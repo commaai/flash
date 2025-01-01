@@ -47,9 +47,7 @@ export class Image {
     this.name = json.name
     this.sparse = json.sparse
 
-    // before AGNOS 11 - flash alt skip-chunks image
-    // after AGNOS 11  - flash main non-sparse image
-    if (this.name === 'system' && this.sparse && json.alt) {
+    if (this.name === 'system') {
       this.checksum = json.alt.hash
       this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
       this.archiveUrl = json.alt.url
