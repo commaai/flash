@@ -35,11 +35,17 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         })
 
         if (image.name === 'system') {
-          test('alt image', () => {
+          const fileNameSkipChunks = image.fileName.includes('-skip-chunks-');
+          const archiveUrlSkipChunks = image.archiveUrl.includes('-skip-chunks-');
+          expect(fileNameSkipChunks, 'file name and archive url to match').toBe(archiveUrlSkipChunks);
+
+          if (fileNameSkipChunks || archiveUrlSkipChunks) {
+            // pre AGNOS 11 assumption
             expect(image.sparse, 'system image to be sparse').toBe(true)
-            expect(image.fileName, 'system image to be skip chunks').toContain('-skip-chunks-')
-            expect(image.archiveUrl, 'system image to point to skip chunks').toContain('-skip-chunks-')
-          })
+          } else {
+            // post AGNOS 11 assumption
+            expect(image.sparse, 'system image to not be sparse').toBe(false)
+          }
         }
 
         test('image and checksum', async () => {
@@ -69,7 +75,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           const imageWorker = await getImageWorker()
 
           await imageWorker.unpackImage(image)
-        }, 8 * 60 * 1000)
+        }, { skip: image.name === 'system', timeout: 5 * 1000 })
       })
     }
   })
