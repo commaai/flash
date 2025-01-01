@@ -2,6 +2,7 @@
 export default {
   content: [
     './index.html',
+    './index-jquery.html',
     './src/**/*.{js,jsx}',
   ],
   theme: {
