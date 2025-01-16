@@ -1,18 +1,18 @@
 import { useCallback } from 'react'
 
-import { Step, Error, useFastboot } from '@/utils/fastboot'
+import { Step, Error, useFastboot } from '../utils/fastboot'
 
-import bolt from '@/assets/bolt.svg'
-import cable from '@/assets/cable.svg'
-import cloud from '@/assets/cloud.svg'
-import cloudDownload from '@/assets/cloud_download.svg'
-import cloudError from '@/assets/cloud_error.svg'
-import deviceExclamation from '@/assets/device_exclamation_c3.svg'
-import deviceQuestion from '@/assets/device_question_c3.svg'
-import done from '@/assets/done.svg'
-import exclamation from '@/assets/exclamation.svg'
-import frameAlert from '@/assets/frame_alert.svg'
-import systemUpdate from '@/assets/system_update_c3.svg'
+import bolt from '../assets/bolt.svg'
+import cable from '../assets/cable.svg'
+import cloud from '../assets/cloud.svg'
+import cloudDownload from '../assets/cloud_download.svg'
+import cloudError from '../assets/cloud_error.svg'
+import deviceExclamation from '../assets/device_exclamation_c3.svg'
+import deviceQuestion from '../assets/device_question_c3.svg'
+import done from '../assets/done.svg'
+import exclamation from '../assets/exclamation.svg'
+import frameAlert from '../assets/frame_alert.svg'
+import systemUpdate from '../assets/system_update_c3.svg'
 
 
 const steps = {

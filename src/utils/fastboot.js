@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { FastbootDevice, setDebugLevel } from 'android-fastboot'
 import * as Comlink from 'comlink'
 
-import config from '@/config'
-import { download } from '@/utils/blob'
-import { useImageWorker } from '@/utils/image'
-import { createManifest } from '@/utils/manifest'
-import { withProgress } from '@/utils/progress'
+import config from '../config'
+import { download } from '../utils/blob'
+import { useImageWorker } from '../utils/image'
+import { createManifest } from '../utils/manifest'
+import { withProgress } from '../utils/progress'
 
 /**
  * @typedef {import('./manifest.js').Image} Image

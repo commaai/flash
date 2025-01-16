@@ -4,7 +4,7 @@ import jsSHA from 'jssha'
 import { XzReadableStream } from 'xz-decompress'
 
 /**
- * @typedef {import('@/utils/manifest').Image} Image
+ * @typedef {import('../utils/manifest').Image} Image
  */
 
 /**
