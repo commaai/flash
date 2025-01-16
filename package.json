@@ -24,6 +24,7 @@
     "xz-decompress": "^0.2.1"
   },
   "devDependencies": {
+    "@happy-dom/global-registrator": "^16.6.0",
     "@tailwindcss/typography": "^0.5.13",
     "@testing-library/jest-dom": "^6.4.5",
     "@testing-library/react": "^15.0.7",
