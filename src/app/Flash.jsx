@@ -1,6 +1,6 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
-import { Step, Error, useFastboot } from '../utils/fastboot'
+import { Step, Error, useQdl } from '../utils/flash'
 
 import bolt from '../assets/bolt.svg'
 import cable from '../assets/cable.svg'
@@ -57,8 +57,9 @@ const steps = {
   },
   [Step.DONE]: {
     status: 'Done',
-    description: 'Your device has been updated successfully. You can now unplug the USB cable from your computer. To ' +
-      'complete the system reset, follow the instructions on your device.',
+    description: 'Your device has been updated successfully. You can now unplug the all cables from your device, '
+                 +'and wait for the light to stop blinking then plug the power cord in again. '
+                 +' To complete the system reset, follow the instructions on your device.',
     bgColor: 'bg-green-500',
     icon: done,
   },
@@ -67,7 +68,8 @@ const steps = {
 const errors = {
   [Error.UNKNOWN]: {
     status: 'Unknown error',
-    description: 'An unknown error has occurred. Restart your browser and try again.',
+    description: 'An unknown error has occurred. Unplug your device and wait for 20s. ' +
+                 'Restart your browser and try again.',
     bgColor: 'bg-red-500',
     icon: exclamation,
   },
@@ -79,12 +81,14 @@ const errors = {
   },
   [Error.LOST_CONNECTION]: {
     status: 'Lost connection',
-    description: 'The connection to your device was lost. Check that your cables are connected properly and try again.',
+    description: 'The connection to your device was lost. Check that your cables are connected properly and try again. ' +
+                 'Unplug your device and wait for around 20s.',
     icon: cable,
   },
   [Error.DOWNLOAD_FAILED]: {
     status: 'Download failed',
-    description: 'The system image could not be downloaded. Check your internet connection and try again.',
+    description:'The system image could not be downloaded. Unplug your device and wait for 20s. ' +
+                'Check your internet connection and try again.',
     icon: cloudError,
   },
   [Error.CHECKSUM_MISMATCH]: {
@@ -111,6 +115,11 @@ const errors = {
   },
 }
 
+const detachScript = [
+  "for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e \"$d\" ] && echo -n \"$(basename $d)\" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done"
+];
+
+const isLinux = navigator.userAgent.toLowerCase().includes('linux');
 
 function LinearProgress({ value, barColor }) {
   if (value === -1 || value > 100) value = 100
@@ -187,7 +196,7 @@ export default function Flash() {
 
     connected,
     serial,
-  } = useFastboot()
+  } = useQdl()
 
   const handleContinue = useCallback(() => {
     onContinue?.()
@@ -220,6 +229,15 @@ export default function Flash() {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
   }
 
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 1000);
+  };
+
+
   return (
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
@@ -240,6 +258,37 @@ export default function Flash() {
       </div>
       <span className={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
       <span className={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
+      {(title === "Lost connection" || title === "Ready") && isLinux && (
+        <>
+          <span className={`text-l dark:text-white px-2 max-w-xl`}>
+            It seems that you&apos;re on Linux, make sure to run the script below in your terminal after plugging in your device.
+          </span>
+          <div className="relative mt-2 max-w-3xl">
+            <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
+              <div className="relative">
+                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap">
+                  {detachScript.map((line, index) => (
+                    <span key={index} className="block">
+                      {line}
+                    </span>
+                  ))}
+                </pre>
+                <div className="absolute top-2 right-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(detachScript.join('\n'));
+                      handleCopy();
+                    }}
+                    className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
       {error && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
