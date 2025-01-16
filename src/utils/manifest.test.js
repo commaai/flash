@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'bun:test'
 
 import * as Comlink from 'comlink'
 
@@ -57,13 +57,13 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
             })),
           }
 
-          globalThis.navigator = {
+          Object.assign(globalThis.navigator, {
             storage: {
               getDirectory: () => ({
                 getFileHandle: () => imageWorkerFileHandler,
               })
             }
-          }
+          })
 
           imageWorkerFileHandler.getFile.mockImplementation(async () => {
             const response = await fetch(image.archiveUrl)
