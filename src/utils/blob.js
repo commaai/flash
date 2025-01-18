@@ -13,7 +13,7 @@ export async function download(url) {
 
   const blob = new Blob(chunks)
   console.debug('[blob] Downloaded', url, blob.size)
-  if (blob.size !== contentLength) console.warn('[blob] Download size mismatch', {
+  if (blob.size !== contentLength) console.debug('[blob] Download size mismatch', {
     url,
     expected: contentLength,
     actual: blob.size,
