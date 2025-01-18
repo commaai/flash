@@ -2,6 +2,7 @@ export async function download(url) {
   const response = await fetch(url, { mode: 'cors' })
   const reader = response.body.getReader()
   const contentLength = +response.headers.get('Content-Length')
+  const contentEncoding = response.headers.get('Content-Encoding')
   console.debug('[blob] Downloading', url, contentLength)
 
   const chunks = []
@@ -13,7 +14,7 @@ export async function download(url) {
 
   const blob = new Blob(chunks)
   console.debug('[blob] Downloaded', url, blob.size)
-  if (blob.size !== contentLength) console.warn('[blob] Download size mismatch', {
+  if (!contentEncoding && blob.size !== contentLength) console.warn('[blob] Download size mismatch', {
     url,
     expected: contentLength,
     actual: blob.size,
