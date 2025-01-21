@@ -4,7 +4,7 @@ const config = {
     master: 'https://raw.githubusercontent.com/commaai/openpilot/master/system/hardware/tici/agnos.json',
   },
   loader: {
-    url: 'https://raw.githubusercontent.com/commaai/flash/master/src/QDL/sdm845_fhprg.bin',
+    url: 'https://raw.githubusercontent.com/commaai/flash/master/src/QDL/programmer.bin',
   },
 }
 

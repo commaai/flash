@@ -74,7 +74,7 @@ export function useQdl() {
   const [onRetry, setOnRetry] = useState(null)
 
   const imageWorker = useImageWorker()
-  const qdl = useRef(new qdlDevice())
+  const qdl = useRef(new qdlDevice(config.loader.url))
 
   /** @type {React.RefObject<Image[]>} */
   const manifest = useRef(null)
