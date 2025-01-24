@@ -1,11 +1,11 @@
-export const getPlatform = () => {
+const platform = (() => {
   if ('userAgentData' in navigator && 'platform' in navigator.userAgentData && navigator.userAgentData.platform) {
     return navigator.userAgentData.platform
   }
   const userAgent = navigator.userAgent.toLowerCase()
-  if (userAgent.includes('linux')) return 'Linux'
-  if (userAgent.includes('win32')) return 'Windows'
+  if (userAgent.includes('linux')) return 'Linux' // includes Android
+  if (userAgent.includes('win32') || userAgent.includes('windows')) return 'Windows'
   return null
-}
+})()
 
-export const isWindows = !getPlatform() || getPlatform() === 'Windows'
+export const isWindows = !platform || platform === 'Windows'
