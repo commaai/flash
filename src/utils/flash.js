@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { qdlDevice } from '@commaai/qdl'
-import { concatUint8Array } from '@commaai/qdl/utils'
 import * as Comlink from 'comlink'
 
 import config from '../config'
@@ -243,9 +242,6 @@ export function useQdl() {
 
         async function flashDevice() {
           const currentSlot = await qdl.current.getActiveSlot()
-          if (!['a', 'b'].includes(currentSlot)) {
-            throw `Unknown current slot ${currentSlot}`
-          }
           const otherSlot = currentSlot === 'a' ? 'b' : 'a'
 
           // Erase current xbl partition so if users try to power up device
@@ -257,7 +253,7 @@ export function useQdl() {
             const blob = await fileHandle.getFile()
 
             setMessage(`Flashing ${image.name}`)
-            const partitionName = image.name + `_${otherSlot}`
+            const partitionName = `${image.name}_${otherSlot}`
             await qdl.current.flashBlob(partitionName, blob, onProgress)
           }
           console.debug('[QDL] Flashed all partitions')
