@@ -22,8 +22,7 @@ const steps = {
     icon: cloud,
   },
   [Step.READY]: {
-    status: 'Ready',
-    description: 'Tap the button above to begin',
+    status: 'Tap to start',
     bgColor: 'bg-[#51ff00]',
     icon: bolt,
     iconStyle: '',

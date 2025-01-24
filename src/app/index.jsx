@@ -70,13 +70,10 @@ export default function App() {
           </ul>
           {isWindows && (<>
             <h3>USB Driver</h3>
-            <p>
-              You need additional driver software for Windows before you connect
-              your device.
-            </p>
+            <p>You need additional driver software for Windows before you connect your device.</p>
             <ol>
               <li>
-                Download and install <a href="https://zadig.akeo.ie/">Zadig</a>.
+                Download and run <a href="https://zadig.akeo.ie/" target="_blank">Zadig</a>.
               </li>
               <li>
                 Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
@@ -110,7 +107,7 @@ export default function App() {
           <p>Follow these steps to put your device into QDL mode:</p>
           <ol>
             <li>Unplug the device and wait for the LED to switch off.</li>
-            <li>Connect the device to your computer using the lower <span className="whitespace-nowrap">USB-C</span> port.</li>
+            <li>Connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port.</li>
           </ol>
           <img
             src={qdlPorts}
@@ -118,6 +115,7 @@ export default function App() {
             width={450}
             height={300}
           />
+          <p>Your device&apos;s screen will remain blank for the entire flashing process. This is normal.</p>
           {isLinux && (<>
             <strong>Note for Linux users</strong>
             <p>
@@ -128,8 +126,8 @@ export default function App() {
             <CopyText>{DETACH_SCRIPT}</CopyText>
           </>)}
           <p>
-            After your device is in QDL mode, you can click the button to start flashing. A prompt may appear to
-            select a device; choose the device starts with <code>QUSB_BULK</code>.
+            Next, click the button to start flashing. From the prompt select the device which starts with
+            &ldquo;QUSB_BULK&rdquo;.
           </p>
           <p>
             The process can take 30+ minutes depending on your internet connection and system performance. Do not
@@ -142,14 +140,18 @@ export default function App() {
           <h2>Troubleshooting</h2>
           <h3>Lost connection</h3>
           <p>
-            Try using a different USB cable or USB port. Sometimes USB 2.0 ports work better than USB 3.0 (blue) ports.
-            If you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
-            USB hub between your computer and the device.
+            Try using high quality USB 3 cables. You should also try different USB ports on the front or back of your
+            computer. If you&apos;re using a USB hub, try connecting directly to your computer instead.
           </p>
           <h3>My device&apos;s screen is blank</h3>
           <p>
-            The device screen will be blank in QDL mode, but you can verify that it is in QDL if the device shows up
-            when you press the Flash icon.
+            This is normal in QDL mode. You can verify that the &ldquo;QUSB_BULK&rdquo; device shows up when you press
+            the Flash button to know that it is working correctly.
+          </p>
+          <h3>My device says &ldquo;fastboot mode&rdquo;</h3>
+          <p>
+            You may have followed outdated instructions for flashing. Please read the instructions above for putting
+            your device into QDL mode.
           </p>
           <h3>After flashing, device says unable to mount data partition</h3>
           <p>This is expected after the filesystem is erased. Press confirm to finish resetting your device.</p>
