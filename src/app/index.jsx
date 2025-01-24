@@ -9,20 +9,21 @@ import { isWindows } from '../utils/platform'
 
 const Flash = lazy(() => import('./Flash'))
 
+const VENDOR_ID = '18D1'
+const PRODUCT_ID = 'D00D'
+
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
-  console.info(`flash.comma.ai version: ${version}`);
+  console.info(`flash.comma.ai version: ${version}`)
   return (
     <div className="flex flex-col lg:flex-row flex-wrap">
       <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
         <section>
           <img src={comma} alt="comma" width={128} height={128} className="dark:invert" />
           <h1>flash.comma.ai</h1>
-
-          <p>This tool allows you to flash AGNOS onto your comma device.</p>
           <p>
-            AGNOS is the Ubuntu-based operating system for your{" "}
-            <a href="https://comma.ai/shop/comma-3x" target="_blank">comma 3/3X</a>.
+            This tool allows you to flash AGNOS onto your comma device. AGNOS is the Ubuntu-based operating system for
+            your <a href="https://comma.ai/shop/comma-3x" target="_blank">comma 3/3X</a>.
           </p>
         </section>
         <hr />
@@ -31,24 +32,23 @@ export default function App() {
           <h2>Requirements</h2>
           <ul>
             <li>
-              A web browser which supports WebUSB (such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
+              A web browser which supports <a href="https://caniuse.com/webusb" target="_blank">WebUSB</a>
+              {" "}(such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
             </li>
             <li>
               A USB-C cable to power your device outside the car.
             </li>
             <li>
-              Another USB-C cable to connect the device to your computer.
+              A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span>
+              {" "}is recommended for faster flashing speed.
             </li>
           </ul>
           {isWindows && (<>
             <h3>USB Driver</h3>
-            <p>
-              You need additional driver software for Windows before you connect
-              your device.
-            </p>
+            <p>You need additional driver software for Windows before you connect your device.</p>
             <ol>
               <li>
-                Download and install <a href="https://zadig.akeo.ie/">Zadig</a>.
+                Download and run <a href="https://zadig.akeo.ie/" target="_blank">Zadig</a>.
               </li>
               <li>
                 Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
@@ -60,10 +60,9 @@ export default function App() {
                 />
               </li>
               <li>
-                Fill in three fields. The first field is just a description and
-                you can fill in anything.  The next two fields are very important.
-                Fill them in with <code>18D1</code> and <code>D00D</code> respectively.
-                Press &quot;Install Driver&quot; and give it a few minutes to install.
+                Fill in three fields. The first field is just a description and you can fill in anything. The next two
+                fields are very important. Fill them in with <code>{VENDOR_ID}</code> and <code>{PRODUCT_ID}</code>
+                respectively. Press &quot;Install Driver&quot; and give it a few minutes to install.
                 <img
                   src={zadigForm}
                   alt="Zadig Form"
@@ -72,9 +71,7 @@ export default function App() {
                 />
               </li>
             </ol>
-            <p>
-              No additional software is required for macOS or Linux.
-            </p>
+            <p>No additional software is required for macOS, Linux or Android.</p>
           </>)}
           </section>
         <hr />
@@ -159,7 +156,7 @@ export default function App() {
       </div>
 
       <div className="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
-        flash.comma.ai version: <code>{version.substring(0, 7)}</code>
+        flash.comma.ai version: <code>{version}</code>
       </div>
     </div>
   )
