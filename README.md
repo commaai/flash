@@ -2,7 +2,7 @@
 
 ► [flash.comma.ai](https://flash.comma.ai)
 
-This tool allows you to flash AGNOS onto your comma device.
+This tool allows you to flash AGNOS onto your comma device. Uses [qdl.js](https://github.com/commaai/qdl.js).
 
 ## Development
 
