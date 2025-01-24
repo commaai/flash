@@ -1,16 +1,44 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useState } from 'react'
 
 import comma from '../assets/comma.svg'
 import qdlPorts from '../assets/qdl-ports.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
-import { isWindows } from '../utils/platform'
+import { isLinux, isWindows } from '../utils/platform'
 
 const Flash = lazy(() => import('./Flash'))
 
-const VENDOR_ID = "05C6";
-const PRODUCT_ID = "9008";
+const VENDOR_ID = '05C6'
+const PRODUCT_ID = '9008'
+const DETACH_SCRIPT = 'for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e "$d" ] && echo -n "$(basename $d)" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done';
+
+function CopyText({ children: text }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = () => {
+    setCopied(true)
+    setTimeout(() => {
+      setCopied(false)
+    }, 1000)
+  }
+
+  return <div className="relative w-full">
+    <pre className="font-mono text-sm px-4 py-6">
+      {text}
+    </pre>
+    <div className="absolute top-2 right-2">
+      <button
+        onClick={() => {
+          void navigator.clipboard.writeText(text);
+          handleCopy();
+        }}
+        className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
+      >
+        Copy
+      </button>
+    </div>
+  </div>;
+}
 
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
@@ -90,6 +118,15 @@ export default function App() {
             width={450}
             height={300}
           />
+          {isLinux && (<>
+            <strong>Note for Linux users</strong>
+            <p>
+              On Linux systems, devices in QDL mode are automatically bound to the kernel&apos;s qcserial driver, and
+              need to be unbound before we can access the device. Copy the script below into your terminal and run it
+              after plugging in your device.
+            </p>
+            <CopyText>{DETACH_SCRIPT}</CopyText>
+          </>)}
           <p>
             After your device is in QDL mode, you can click the button to start flashing. A prompt may appear to
             select a device; choose the device starts with <code>QUSB_BULK</code>.

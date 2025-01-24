@@ -1,7 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 import { Step, Error, useQdl } from '../utils/flash'
-import { isLinux } from '../utils/platform'
 
 import bolt from '../assets/bolt.svg'
 import cable from '../assets/cable.svg'
@@ -116,8 +115,6 @@ const errors = {
   },
 }
 
-const DETACH_SCRIPT = "for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e \"$d\" ] && echo -n \"$(basename $d)\" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done";
-
 function LinearProgress({ value, barColor }) {
   if (value === -1 || value > 100) value = 100
   return (
@@ -226,14 +223,6 @@ export default function Flash() {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
   }
 
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 1000);
-  };
-
   return (
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
@@ -254,34 +243,6 @@ export default function Flash() {
       </div>
       <span className="text-3xl dark:text-white font-mono font-light">{title}</span>
       <span className="text-xl dark:text-white px-8 max-w-xl">{description}</span>
-      {(title === "Ready" || title === "Lost connection") && isLinux && (
-        <>
-          <span className="text-l dark:text-white px-2 max-w-xl">
-            On Linux systems, devices in QDL mode are automatically bound to the kernel&apos;s qcserial driver, and need to be unbound before we can access the device.
-            Run the script below in your terminal after plugging in your device.
-          </span>
-          <div className="relative mt-2 max-w-3xl">
-            <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
-              <div className="relative">
-                <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap">
-                  {DETACH_SCRIPT}
-                </pre>
-                <div className="absolute top-2 right-2">
-                  <button
-                    onClick={() => {
-                      void navigator.clipboard.writeText(DETACH_SCRIPT);
-                      handleCopy();
-                    }}
-                    className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
       {error && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
