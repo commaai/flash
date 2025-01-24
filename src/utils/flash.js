@@ -282,9 +282,9 @@ export function useQdl() {
         setProgress(0)
 
         async function resetUserdata() {
-          let wData = new TextEncoder().encode("COMMA_RESET")
-          wData = new Blob([concatUint8Array([wData, new Uint8Array(28 - wData.length).fill(0)])]) // make equal sparseHeaderSize
-          await qdl.current.flashBlob("userdata", wData)
+          const label = new Uint8Array(28).fill(0)  // sparse header size
+          label.set(new TextEncoder().encode('COMMA_RESET'), 0)
+          await qdl.current.flashBlob('userdata', new Blob([label]))
         }
 
         async function eraseDevice() {
