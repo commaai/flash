@@ -234,7 +234,6 @@ export default function Flash() {
     }, 1000);
   };
 
-
   return (
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div

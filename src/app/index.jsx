@@ -14,7 +14,7 @@ const PRODUCT_ID = "9008";
 
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
-  console.info(`flash.comma.ai version: ${version}`);
+  console.info(`flash.comma.ai version: ${version}`)
   return (
     <div className="flex flex-col lg:flex-row flex-wrap">
       <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
@@ -22,10 +22,9 @@ export default function App() {
           <img src={comma} alt="comma" width={128} height={128} className="dark:invert" />
           <h1>flash.comma.ai</h1>
 
-          <p>This tool allows you to flash AGNOS onto your comma device.</p>
           <p>
-            AGNOS is the Ubuntu-based operating system for your{" "}
-            <a href="https://comma.ai/shop/comma-3x" target="_blank">comma 3/3X</a>.
+            This tool allows you to flash AGNOS onto your comma device. AGNOS is the Ubuntu-based
+            operating system for your <a href="https://comma.ai/shop/comma-3x" target="_blank">comma 3/3X</a>.
           </p>
         </section>
         <hr />
@@ -34,10 +33,10 @@ export default function App() {
           <h2>Requirements</h2>
           <ul>
             <li>
-              A web browser which supports WebUSB (such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
+              A web browser which supports <a href="https://caniuse.com/webusb" target="_blank">WebUSB</a> (such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
             </li>
             <li>
-              A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span> is recommended.
+              A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span> is recommended for faster flashing speed.
             </li>
           </ul>
           {isWindows && (<>
@@ -105,11 +104,7 @@ export default function App() {
 
         <section>
           <h2>Troubleshooting</h2>
-          <h3>Too slow</h3>
-          <p>
-            It is recommended that you use a USB 3.0 cable when flashing since it will speed up the flashing time by a lot.
-          </p>
-          <h3>Cannot enter QDL</h3>
+          <h3>Lost connection</h3>
           <p>
             Try using a different USB cable or USB port. Sometimes USB 2.0 ports work better than USB 3.0 (blue) ports.
             If you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
