@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react'
+import { Suspense, lazy } from 'react'
 
 import comma from '../assets/comma.svg'
 import qdlPorts from '../assets/qdl-ports.svg'
@@ -14,29 +14,14 @@ const PRODUCT_ID = '9008'
 const DETACH_SCRIPT = 'for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e "$d" ] && echo -n "$(basename $d)" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done';
 
 function CopyText({ children: text }) {
-  const [copied, setCopied] = useState(false)
-  const handleCopy = () => {
-    setCopied(true)
-    setTimeout(() => {
-      setCopied(false)
-    }, 1000)
-  }
-
-  return <div className="relative w-full">
-    <pre className="font-mono text-sm px-4 py-6">
-      {text}
-    </pre>
-    <div className="absolute top-2 right-2">
-      <button
-        onClick={() => {
-          void navigator.clipboard.writeText(text);
-          handleCopy();
-        }}
-        className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
-      >
-        Copy
-      </button>
-    </div>
+  return <div className="relative text-sm">
+    <pre className="font-mono pt-12">{text}</pre>
+    <button
+      onClick={() => navigator.clipboard.writeText(text)}
+      className={"absolute top-2 right-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-300 transition-colors text-white p-1 rounded-md"}
+    >
+      Copy
+    </button>
   </div>;
 }
 
