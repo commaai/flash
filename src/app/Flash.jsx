@@ -56,8 +56,7 @@ const steps = {
   },
   [Step.DONE]: {
     status: 'Done',
-    description: 'Your device has been flashed successfully. To complete the system reset, follow the instructions ' +
-                 'on your device.',
+    description: 'Your device has been flashed successfully. You can now unplug the USB cable.',
     bgColor: 'bg-green-500',
     icon: done,
   },
