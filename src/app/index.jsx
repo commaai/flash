@@ -35,8 +35,8 @@ export default function App() {
           <img src={comma} alt="comma" width={128} height={128} className="dark:invert" />
           <h1>flash.comma.ai</h1>
           <p>
-            This tool allows you to flash AGNOS onto your comma device. AGNOS is the Ubuntu-based
-            operating system for your <a href="https://comma.ai/shop/comma-3x" target="_blank">comma 3/3X</a>.
+            This tool allows you to flash AGNOS onto your comma device. AGNOS is the Ubuntu-based operating system for
+            your <a href="https://comma.ai/shop/comma-3x" target="_blank">comma 3/3X</a>.
           </p>
         </section>
         <hr />
@@ -49,8 +49,8 @@ export default function App() {
               {" "}(such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
             </li>
             <li>
-              A good quality USB-C cable to connect the device to your computer.{" "}
-              <span title="SuperSpeed">USB 3</span> is recommended for faster flashing speed.
+              A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span>
+              {" "}is recommended for faster flashing speed.
             </li>
           </ul>
           {isWindows && (<>
@@ -70,10 +70,9 @@ export default function App() {
                 />
               </li>
               <li>
-                Fill in three fields. The first field is just a description and
-                you can fill in anything.  The next two fields are very important.
-                Fill them in with <code>{VENDOR_ID}</code> and <code>{PRODUCT_ID}</code> respectively.
-                Press &quot;Install Driver&quot; and give it a few minutes to install.
+                Fill in three fields. The first field is just a description and you can fill in anything. The next two
+                fields are very important. Fill them in with <code>{VENDOR_ID}</code> and <code>{PRODUCT_ID}</code>
+                respectively. Press &quot;Install Driver&quot; and give it a few minutes to install.
                 <img
                   src={zadigForm}
                   alt="Zadig Form"
