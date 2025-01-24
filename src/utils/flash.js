@@ -38,7 +38,6 @@ export const Error = {
 }
 
 function isRecognizedDevice(slotCount, partitions) {
-
   if (slotCount !== 2) {
     console.error('[QDL] Unrecognised device (slotCount)')
     return false
@@ -91,6 +90,7 @@ export function useQdl() {
   function setError(error) {
     _setError(error)
   }
+
   useEffect(() => {
     setProgress(-1)
     setMessage()
@@ -186,7 +186,7 @@ export function useQdl() {
           .catch((err) => {
             console.error('[QDL] Connection error', err)
             setStep(Step.READY)
-        })
+          })
         break
       }
 
@@ -242,7 +242,7 @@ export function useQdl() {
         setProgress(0)
 
         async function flashDevice() {
-          const currentSlot = await qdl.current.getActiveSlot();
+          const currentSlot = await qdl.current.getActiveSlot()
           if (!['a', 'b'].includes(currentSlot)) {
             throw `Unknown current slot ${currentSlot}`
           }
@@ -250,7 +250,7 @@ export function useQdl() {
 
           // Erase current xbl partition so if users try to power up device
           // with corrupted primary gpt header, it would not update the backup
-          await qdl.current.erase("xbl"+`_${currentSlot}`)
+          await qdl.current.erase(`xbl_${currentSlot}`)
 
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             const fileHandle = await imageWorker.current.getImage(image)
