@@ -56,9 +56,8 @@ const steps = {
   },
   [Step.DONE]: {
     status: 'Done',
-    description: 'Your device has been updated successfully. You can now unplug the all cables from your device, '
-                 +'and wait for the light to stop blinking then plug the power cord in again. '
-                 +' To complete the system reset, follow the instructions on your device.',
+    description: 'Your device has been flashed successfully. To complete the system reset, follow the instructions ' +
+                 'on your device.',
     bgColor: 'bg-green-500',
     icon: done,
   },
@@ -67,8 +66,7 @@ const steps = {
 const errors = {
   [Error.UNKNOWN]: {
     status: 'Unknown error',
-    description: 'An unknown error has occurred. Unplug your device and wait for 20s. ' +
-                 'Restart your browser and try again.',
+    description: 'An unknown error has occurred. Unplug your device, restart your browser and try again.',
     bgColor: 'bg-red-500',
     icon: exclamation,
   },
@@ -80,14 +78,12 @@ const errors = {
   },
   [Error.LOST_CONNECTION]: {
     status: 'Lost connection',
-    description: 'The connection to your device was lost. Check that your cables are connected properly and try again. ' +
-                 'Unplug your device and wait for around 20s.',
+    description: 'The connection to your device was lost. Check that your cables are connected properly and try again.',
     icon: cable,
   },
   [Error.DOWNLOAD_FAILED]: {
     status: 'Download failed',
-    description:'The system image could not be downloaded. Unplug your device and wait for 20s. ' +
-                'Check your internet connection and try again.',
+    description: 'The system image could not be downloaded. Check your internet connection and try again.',
     icon: cloudError,
   },
   [Error.CHECKSUM_MISMATCH]: {
@@ -113,6 +109,7 @@ const errors = {
       'supports WebUSB and is up to date.',
   },
 }
+
 
 function LinearProgress({ value, barColor }) {
   if (value === -1 || value > 100) value = 100
