@@ -238,8 +238,8 @@ export default function Flash() {
       <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
         <LinearProgress value={progress * 100} barColor={bgColor} />
       </div>
-      <span className={`text-3xl dark:text-white font-mono font-light`}>{title}</span>
-      <span className={`text-xl dark:text-white px-8 max-w-xl`}>{description}</span>
+      <span className="text-3xl dark:text-white font-mono font-light">{title}</span>
+      <span className="text-xl dark:text-white px-8 max-w-xl">{description}</span>
       {error && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
