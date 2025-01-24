@@ -115,10 +115,7 @@ const errors = {
   },
 }
 
-const detachScript = [
-  "for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e \"$d\" ] && echo -n \"$(basename $d)\" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done"
-];
-
+const detachScript = "for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e \"$d\" ] && echo -n \"$(basename $d)\" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done";
 const isLinux = navigator.userAgent.toLowerCase().includes('linux');
 
 function LinearProgress({ value, barColor }) {
@@ -267,16 +264,12 @@ export default function Flash() {
             <div className="bg-gray-200 dark:bg-gray-800 rounded-md overflow-x-auto">
               <div className="relative">
                 <pre className="font-mono text-sm text-gray-800 dark:text-gray-200 bg-gray-300 dark:bg-gray-700 rounded-md p-6 flex-grow max-w-m text-wrap">
-                  {detachScript.map((line, index) => (
-                    <span key={index} className="block">
-                      {line}
-                    </span>
-                  ))}
+                  {detachScript}
                 </pre>
                 <div className="absolute top-2 right-2">
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(detachScript.join('\n'));
+                      navigator.clipboard.writeText(detachScript);
                       handleCopy();
                     }}
                     className={`bg-${copied ? 'green' : 'blue'}-500 text-white px-1 py-1 rounded-md ml-2 text-sm`}
