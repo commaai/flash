@@ -5,7 +5,12 @@ import fastbootPorts from '../assets/fastboot-ports.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
+import { isWindows } from '../utils/platform'
+
 const Flash = lazy(() => import('./Flash'))
+
+const VENDOR_ID = "05C6";
+const PRODUCT_ID = "9008";
 
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
@@ -38,40 +43,42 @@ export default function App() {
               Another USB-C cable to connect the device to your computer.
             </li>
           </ul>
-          <h3>USB Driver</h3>
-          <p>
-            You need additional driver software for Windows before you connect
-            your device.
-          </p>
-          <ol>
-            <li>
-              Download and install <a href="https://zadig.akeo.ie/">Zadig</a>.
-            </li>
-            <li>
-              Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
-              <img
-                src={zadigCreateNewDevice}
-                alt="Zadig Create New Device"
-                width={575}
-                height={254}
-              />
-            </li>
-            <li>
-              Fill in three fields. The first field is just a description and
-              you can fill in anything.  The next two fields are very important.
-              Fill them in with <code>05C6</code> and <code>9008</code> respectively.
-              Press &quot;Install Driver&quot; and give it a few minutes to install.
-              <img
-                src={zadigForm}
-                alt="Zadig Form"
-                width={575}
-                height={254}
-              />
-            </li>
-          </ol>
-          <p>
-            No additional software is required for macOS or Linux.
-          </p>
+          {isWindows && (<>
+            <h3>USB Driver</h3>
+            <p>
+              You need additional driver software for Windows before you connect
+              your device.
+            </p>
+            <ol>
+              <li>
+                Download and install <a href="https://zadig.akeo.ie/">Zadig</a>.
+              </li>
+              <li>
+                Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
+                <img
+                  src={zadigCreateNewDevice}
+                  alt="Zadig Create New Device"
+                  width={575}
+                  height={254}
+                />
+              </li>
+              <li>
+                Fill in three fields. The first field is just a description and
+                you can fill in anything.  The next two fields are very important.
+                Fill them in with <code>{VENDOR_ID}</code> and <code>{PRODUCT_ID}</code> respectively.
+                Press &quot;Install Driver&quot; and give it a few minutes to install.
+                <img
+                  src={zadigForm}
+                  alt="Zadig Form"
+                  width={575}
+                  height={254}
+                />
+              </li>
+            </ol>
+            <p>
+              No additional software is required for macOS or Linux.
+            </p>
+          </>)}
         </section>
         <hr />
 
