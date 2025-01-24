@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react'
 
 import comma from '../assets/comma.svg'
-import fastbootPorts from '../assets/fastboot-ports.svg'
+import qdlPorts from '../assets/qdl-ports.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
@@ -37,10 +37,7 @@ export default function App() {
               A web browser which supports WebUSB (such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
             </li>
             <li>
-              A USB-C cable to power your device outside the car.
-            </li>
-            <li>
-              Another USB-C cable to connect the device to your computer.
+              A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span> is recommended.
             </li>
           </ul>
           {isWindows && (<>
@@ -83,25 +80,18 @@ export default function App() {
         <hr />
 
         <section>
-          <h2>QDL Mode</h2>
+          <h2>Flashing</h2>
           <p>Follow these steps to put your device into QDL mode:</p>
           <ol>
-            <li>Power off the device and wait for the LEDs to switch off.</li>
-            <li>Connect the device to your computer using the USB-C port <strong>(port 2)</strong>.</li>
-            <li>Connect power to the OBD-C port <strong>(port 1)</strong>.</li>
-            <li>The device then should be visible as an option when choosing the device to flash</li>
+            <li>Unplug the device and wait for the LED to switch off.</li>
+            <li>Connect the device to your computer using the lower <span className="whitespace-nowrap">USB-C</span> port.</li>
           </ol>
           <img
-            src={fastbootPorts}
-            alt="image showing comma three and two ports. the upper port is labeled 1. the lower port is labeled 2."
+            src={qdlPorts}
+            alt="image showing comma three and two ports. the upper port is labeled with a cross. the lower port is labeled with a checkmark."
             width={450}
             height={300}
           />
-        </section>
-        <hr />
-
-        <section>
-          <h2>Flashing</h2>
           <p>
             After your device is in QDL mode, you can click the button to start flashing. A prompt may appear to
             select a device; choose the device starts with <code>QUSB_BULK</code>.
