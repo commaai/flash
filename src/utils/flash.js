@@ -154,7 +154,7 @@ export function useQdl() {
       }
 
       case Step.CONNECTING: {
-        qdl.current.waitForConnect()
+        qdl.current.connect()
           .then(() => {
             console.info('[QDL] Connected')
             return qdl.current.getDevicePartitionsInfo()
@@ -180,11 +180,6 @@ export function useQdl() {
             console.error('[QDL] Connection lost', err)
             setError(Error.LOST_CONNECTION)
             setConnected(false)
-          })
-        qdl.current.connect()
-          .catch((err) => {
-            console.error('[QDL] Connection error', err)
-            setStep(Step.READY)
           })
         break
       }
