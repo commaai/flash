@@ -3,9 +3,8 @@ import { qdlDevice } from '@commaai/qdl'
 import * as Comlink from 'comlink'
 
 import config from '../config'
-import { download } from '../utils/blob'
 import { useImageWorker } from '../utils/image'
-import { createManifest } from '../utils/manifest'
+import { getManifest } from '../utils/manifest'
 import { withProgress } from '../utils/progress'
 
 /**
@@ -124,10 +123,9 @@ export function useQdl() {
         }
 
         imageWorker.current?.init()
-          .then(() => download(config.manifests['release']))
-          .then(blob => blob.text())
-          .then(text => {
-            manifest.current = createManifest(text)
+          .then(() => getManifest(config.manifests.release))
+          .then((images) => {
+            manifest.current = images
 
             // sanity check
             if (manifest.current.length === 0) {
