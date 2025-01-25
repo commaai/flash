@@ -47,9 +47,7 @@ export class Image {
    * Whether the image is compressed and should be unpacked
    * @type {boolean}
    */
-  get compressed() {
-    return this.archiveFileName.endsWith('.xz')
-  }
+  compressed
 
   constructor(json) {
     this.name = json.name
@@ -71,6 +69,7 @@ export class Image {
     }
 
     this.archiveFileName = this.archiveUrl.split('/').pop()
+    this.compressed = this.archiveFileName.endsWith('.xz')
   }
 }
 
