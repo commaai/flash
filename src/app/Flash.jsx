@@ -111,6 +111,7 @@ const errors = {
 }
 
 if (isLinux) {
+  // this is likely in Step.CONNECTING
   errors[Error.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?'
 }
 
