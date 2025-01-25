@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 
 import { Step, Error, useQdl } from '../utils/flash'
+import { isLinux } from '../utils/platform'
 
 import bolt from '../assets/bolt.svg'
 import cable from '../assets/cable.svg'
@@ -77,7 +78,7 @@ const errors = {
   },
   [Error.LOST_CONNECTION]: {
     status: 'Lost connection',
-    description: 'The connection to your device was lost. Check that your cables are connected properly and try again.',
+    description: 'The connection to your device was lost. Unplug your device and try again.',
     icon: cable,
   },
   [Error.DOWNLOAD_FAILED]: {
@@ -107,6 +108,10 @@ const errors = {
     description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
       'supports WebUSB and is up to date.',
   },
+}
+
+if (isLinux) {
+  errors[Error.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?'
 }
 
 
