@@ -160,7 +160,7 @@ export function useQdl() {
             return qdl.current.getDevicePartitionsInfo()
               .then(([slotCount, partitions]) => {
                 const recognized = isRecognizedDevice(slotCount, partitions)
-                console.debug('[QDL] Device info', { recognized,  partitions})
+                console.debug('[QDL] Device info', { slotCount, partitions, recognized })
 
                 if (!recognized) {
                   setError(Error.UNRECOGNIZED_DEVICE)
