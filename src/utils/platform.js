@@ -9,3 +9,4 @@ const platform = (() => {
 })()
 
 export const isWindows = !platform || platform === 'Windows'
+export const isLinux = platform === 'Linux'

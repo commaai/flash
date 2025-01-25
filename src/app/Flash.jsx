@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 
-import { Step, Error, useFastboot } from '../utils/fastboot'
+import { Step, Error, useQdl } from '../utils/flash'
+import { isLinux } from '../utils/platform'
 
 import bolt from '../assets/bolt.svg'
 import cable from '../assets/cable.svg'
@@ -22,8 +23,7 @@ const steps = {
     icon: cloud,
   },
   [Step.READY]: {
-    status: 'Ready',
-    description: 'Tap the button above to begin',
+    status: 'Tap to start',
     bgColor: 'bg-[#51ff00]',
     icon: bolt,
     iconStyle: '',
@@ -57,8 +57,7 @@ const steps = {
   },
   [Step.DONE]: {
     status: 'Done',
-    description: 'Your device has been updated successfully. You can now unplug the USB cable from your computer. To ' +
-      'complete the system reset, follow the instructions on your device.',
+    description: 'Your device was flashed successfully. You can now unplug the USB cable.',
     bgColor: 'bg-green-500',
     icon: done,
   },
@@ -67,7 +66,7 @@ const steps = {
 const errors = {
   [Error.UNKNOWN]: {
     status: 'Unknown error',
-    description: 'An unknown error has occurred. Restart your browser and try again.',
+    description: 'An unknown error has occurred. Unplug your device, restart your browser and try again.',
     bgColor: 'bg-red-500',
     icon: exclamation,
   },
@@ -79,7 +78,7 @@ const errors = {
   },
   [Error.LOST_CONNECTION]: {
     status: 'Lost connection',
-    description: 'The connection to your device was lost. Check that your cables are connected properly and try again.',
+    description: 'The connection to your device was lost. Unplug your device and try again.',
     icon: cable,
   },
   [Error.DOWNLOAD_FAILED]: {
@@ -109,6 +108,11 @@ const errors = {
     description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
       'supports WebUSB and is up to date.',
   },
+}
+
+if (isLinux) {
+  // this is likely in Step.CONNECTING
+  errors[Error.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?'
 }
 
 
@@ -187,7 +191,7 @@ export default function Flash() {
 
     connected,
     serial,
-  } = useFastboot()
+  } = useQdl()
 
   const handleContinue = useCallback(() => {
     onContinue?.()

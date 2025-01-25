@@ -1,16 +1,29 @@
 import { Suspense, lazy } from 'react'
 
 import comma from '../assets/comma.svg'
-import fastbootPorts from '../assets/fastboot-ports.svg'
+import qdlPorts from '../assets/qdl-ports.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
-import { isWindows } from '../utils/platform'
+import { isLinux, isWindows } from '../utils/platform'
 
 const Flash = lazy(() => import('./Flash'))
 
-const VENDOR_ID = '18D1'
-const PRODUCT_ID = 'D00D'
+const VENDOR_ID = '05C6'
+const PRODUCT_ID = '9008'
+const DETACH_SCRIPT = 'for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e "$d" ] && echo -n "$(basename $d)" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done';
+
+function CopyText({ children: text }) {
+  return <div className="relative text-sm">
+    <pre className="font-mono pt-12">{text}</pre>
+    <button
+      className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-300 transition-colors text-white p-1 rounded-md"
+      onClick={() => navigator.clipboard.writeText(text)}
+    >
+      Copy
+    </button>
+  </div>;
+}
 
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
@@ -34,9 +47,6 @@ export default function App() {
             <li>
               A web browser which supports <a href="https://caniuse.com/webusb" target="_blank">WebUSB</a>
               {" "}(such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
-            </li>
-            <li>
-              A USB-C cable to power your device outside the car.
             </li>
             <li>
               A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span>
@@ -73,40 +83,38 @@ export default function App() {
             </ol>
             <p>No additional software is required for macOS, Linux or Android.</p>
           </>)}
-          </section>
-        <hr />
-
-        <section>
-          <h2>Fastboot</h2>
-          <p>Follow these steps to put your device into fastboot mode:</p>
-          <ol>
-            <li>Power off the device and wait for the LEDs to switch off.</li>
-            <li>Connect power to the OBD-C port <strong>(port 1)</strong>.</li>
-            <li>Then, <a href="https://youtube.com/clip/Ugkx1pbkpkvFU9gGsUwvkrl7yxx-SfHOZejM?si=nsJ0WJHJwS-rnHXL">quickly</a> connect
-              the device to your computer using the USB-C port <strong>(port 2)</strong>.</li>
-            <li>After a few seconds, the device should indicate it&apos;s in fastboot mode and show its serial number.</li>
-          </ol>
-          <img
-            src={fastbootPorts}
-            alt="image showing comma three and two ports. the upper port is labeled 1. the lower port is labeled 2."
-            width={450}
-            height={300}
-          />
-          <p>
-            If your device shows the comma spinner with a loading bar, then it&apos;s not in fastboot mode.
-            Unplug all cables, wait for the device to switch off, and try again.
-          </p>
         </section>
         <hr />
 
         <section>
           <h2>Flashing</h2>
+          <p>Follow these steps to put your device into QDL mode:</p>
+          <ol>
+            <li>Unplug the device and wait for the LED to switch off.</li>
+            <li>Connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port.</li>
+          </ol>
+          <img
+            src={qdlPorts}
+            alt="image showing comma three and two ports. the upper port is labeled with a cross. the lower port is labeled with a checkmark."
+            width={450}
+            height={300}
+          />
+          <p>Your device&apos;s screen will remain blank for the entire flashing process. This is normal.</p>
+          {isLinux && (<>
+            <strong>Note for Linux users</strong>
+            <p>
+              On Linux systems, devices in QDL mode are automatically bound to the kernel&apos;s qcserial driver, and
+              need to be unbound before we can access the device. Copy the script below into your terminal and run it
+              after plugging in your device.
+            </p>
+            <CopyText>{DETACH_SCRIPT}</CopyText>
+          </>)}
           <p>
-            After your device is in fastboot mode, you can click the button to start flashing. A prompt may appear to
-            select a device; choose the device labeled &quot;Android&quot;.
+            Next, click the button to start flashing. From the prompt select the device which starts with
+            &ldquo;QUSB_BULK&rdquo;.
           </p>
           <p>
-            The process can take 15+ minutes depending on your internet connection and system performance. Do not
+            The process can take 30+ minutes depending on your internet connection and system performance. Do not
             unplug the device until all steps are complete.
           </p>
         </section>
@@ -114,22 +122,23 @@ export default function App() {
 
         <section>
           <h2>Troubleshooting</h2>
-          <h3>Cannot enter fastboot or device says &quot;Press any key to continue&quot;</h3>
+          <h3>Lost connection</h3>
           <p>
-            Try using a different USB cable or USB port. Sometimes USB 2.0 ports work better than USB 3.0 (blue) ports.
-            If you&apos;re using a USB hub, try connecting the device directly to your computer, or alternatively use a
-            USB hub between your computer and the device.
+            Try using high quality USB 3 cables. You should also try different USB ports on the front or back of your
+            computer. If you&apos;re using a USB hub, try connecting directly to your computer instead.
           </p>
           <h3>My device&apos;s screen is blank</h3>
           <p>
-            The device can still be in fastboot mode and reflashed normally if the screen isn&apos;t displaying
-            anything. A blank screen is usually caused by installing older software that doesn&apos;t support newer
-            displays. If a reflash doesn&apos;t fix the blank screen, then the device&apos;s display may be damaged.
+            This is normal in QDL mode. You can verify that the &ldquo;QUSB_BULK&rdquo; device shows up when you press
+            the Flash button to know that it is working correctly.
+          </p>
+          <h3>My device says &ldquo;fastboot mode&rdquo;</h3>
+          <p>
+            You may have followed outdated instructions for flashing. Please read the instructions above for putting
+            your device into QDL mode.
           </p>
           <h3>After flashing, device says unable to mount data partition</h3>
-          <p>
-            This is expected after the filesystem is erased. Press confirm to finish resetting your device.
-          </p>
+          <p>This is expected after the filesystem is erased. Press confirm to finish resetting your device.</p>
           <h3>General Tips</h3>
           <ul>
             <li>Try another computer or OS</li>
