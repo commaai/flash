@@ -43,20 +43,29 @@ export class Image {
    */
   archiveUrl
 
+  /**
+   * Whether the image is compressed and should be unpacked
+   * @type {boolean}
+   */
+  get compressed() {
+    return this.archiveFileName.endsWith('.xz')
+  }
+
   constructor(json) {
     this.name = json.name
     this.sparse = json.sparse
 
-    // before AGNOS 11 - flash alt skip-chunks image
-    // after AGNOS 11  - flash main non-sparse image
-    if (this.name === 'system' && this.sparse && json.alt) {
+    this.fileName = `${this.name}-${json.hash_raw}.img`
+    if (this.name === 'system' && json.alt) {
+      if (this.sparse) {
+        // before AGNOS 11 - skip-chunks image
+        this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
+      }
       this.checksum = json.alt.hash
-      this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
       this.archiveUrl = json.alt.url
       this.size = json.alt.size
     } else {
       this.checksum = json.hash
-      this.fileName = `${this.name}-${json.hash_raw}.img`
       this.archiveUrl = json.url
       this.size = json.size
     }
