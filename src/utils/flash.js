@@ -123,7 +123,7 @@ export function useQdl() {
         }
 
         imageWorker.current?.init()
-          .then(() => getManifest(config.manifests.staging))
+          .then(() => getManifest(config.manifests.release))
           .then((images) => {
             manifest.current = images
 
