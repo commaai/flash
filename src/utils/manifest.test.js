@@ -30,23 +30,31 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
     for (const image of images) {
       describe(`${image.name} image`, async () => {
         test('xz archive', () => {
-          expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
-          expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
-        })
+          expect(image.fileName, 'file to be uncompressed').not.toContain('.xz')
+          if (image.name === 'system') {
+            const fileNameSkipChunks = image.fileName.includes('-skip-chunks-');
+            const archiveUrlSkipChunks = image.archiveUrl.includes('-skip-chunks-');
+            expect(fileNameSkipChunks, 'file name and archive url to match').toBe(archiveUrlSkipChunks);
 
-        if (image.name === 'system') {
-          const fileNameSkipChunks = image.fileName.includes('-skip-chunks-');
-          const archiveUrlSkipChunks = image.archiveUrl.includes('-skip-chunks-');
-          expect(fileNameSkipChunks, 'file name and archive url to match').toBe(archiveUrlSkipChunks);
+            if (fileNameSkipChunks || archiveUrlSkipChunks) {
+              // pre AGNOS 11 assumption
+              expect(image.sparse, 'system image to be sparse').toBe(true)
+            } else {
+              // post AGNOS 11 assumption
+              expect(image.sparse, 'system image to not be sparse').toBe(false)
+            }
 
-          if (fileNameSkipChunks || archiveUrlSkipChunks) {
-            // pre AGNOS 11 assumption
-            expect(image.sparse, 'system image to be sparse').toBe(true)
+            if (image.compressed) {
+              expect(image.fileName, 'not to equal archive name').not.toEqual(image.archiveFileName)
+              expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
+              expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
+            }
           } else {
-            // post AGNOS 11 assumption
-            expect(image.sparse, 'system image to not be sparse').toBe(false)
+            expect(image.compressed, 'image to be compressed').toBe(true)
+            expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
+            expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
           }
-        }
+        })
 
         test('image and checksum', async () => {
           const imageWorkerFileHandler = {

@@ -112,6 +112,7 @@ const imageWorker = {
   async unpackImage(image, onProgress = undefined) {
     const { archiveFileName, checksum: expectedChecksum, fileName, size: imageSize } = image
 
+    /** @type {File} */
     let archiveFile
     try {
       const archiveFileHandle = await root.getFileHandle(archiveFileName, { create: false })
@@ -120,22 +121,30 @@ const imageWorker = {
       throw `Error opening archive file handle: ${e}`
     }
 
-    let writable
-    try {
-      const fileHandle = await root.getFileHandle(fileName, { create: true })
-      writable = await fileHandle.createWritable()
-    } catch (e) {
-      throw `Error opening output file handle: ${e}`
+    // We don't need to write out the image if it isn't compressed
+    /** @type {FileSystemWritableFileStream|undefined} */
+    let writable = undefined
+    if (archiveFileName !== fileName) {
+      try {
+        const fileHandle = await root.getFileHandle(fileName, { create: true })
+        writable = await fileHandle.createWritable()
+      } catch (e) {
+        throw `Error opening output file handle: ${e}`
+      }
     }
 
     const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
     let complete
     try {
-      const reader = (new XzReadableStream(archiveFile.stream())).getReader()
+      let stream = archiveFile.stream()
+      if (image.compressed) {
+        stream = new XzReadableStream(stream)
+      }
 
+      const reader = stream.getReader()
       await readChunks(reader, imageSize, {
         onChunk: async (chunk) => {
-          await writable.write(chunk)
+          await writable?.write(chunk)
           shaObj.update(chunk)
         },
         onProgress,
@@ -152,7 +161,7 @@ const imageWorker = {
     }
 
     try {
-      await writable.close()
+      await writable?.close()
     } catch (e) {
       throw `Error closing file handle: ${e}`
     }
