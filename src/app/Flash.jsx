@@ -57,7 +57,7 @@ const steps = {
   },
   [Step.DONE]: {
     status: 'Done',
-    description: 'Your device has been flashed successfully. You can now unplug the USB cable.',
+    description: 'Your device was flashed successfully. You can now unplug the USB cable.',
     bgColor: 'bg-green-500',
     icon: done,
   },
