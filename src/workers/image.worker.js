@@ -45,6 +45,10 @@ async function readChunks(reader, total, { onChunk, onProgress = undefined }) {
 
 let root
 
+/**
+ * @typedef {imageWorker} ImageWorker
+ */
+
 const imageWorker = {
   async init() {
     if (root) {
