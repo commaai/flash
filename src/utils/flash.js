@@ -157,8 +157,8 @@ export function useQdl() {
             console.info('[QDL] Connected')
             return qdl.current.getStorageInfo()
               .then(({ serial_num }) => {
-                setSerial(Number(serial_num).toString(16).padStart(8, '0'));
-                return qdl.current.getDevicePartitionsInfo();
+                setSerial(Number(serial_num).toString(16).padStart(8, '0'))
+                return qdl.current.getDevicePartitionsInfo()
               })
               .then(([slotCount, partitions]) => {
                 const recognized = isRecognizedDevice(slotCount, partitions)
