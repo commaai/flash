@@ -155,7 +155,11 @@ export function useQdl() {
         qdl.current.connect()
           .then(() => {
             console.info('[QDL] Connected')
-            return qdl.current.getDevicePartitionsInfo()
+            return qdl.current.getStorageInfo()
+              .then(({ serial_num }) => {
+                setSerial(Number(serial_num).toString(16).padStart(8, '0'));
+                return qdl.current.getDevicePartitionsInfo();
+              })
               .then(([slotCount, partitions]) => {
                 const recognized = isRecognizedDevice(slotCount, partitions)
                 console.debug('[QDL] Device info', { slotCount, partitions, recognized })
@@ -165,7 +169,6 @@ export function useQdl() {
                   return
                 }
 
-                setSerial(qdl.current.sahara.serial || 'unknown')
                 setConnected(true)
                 setStep(Step.DOWNLOADING)
               })
