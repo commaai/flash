@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react'
 
 import * as Comlink from 'comlink'
 
+/**
+ * @returns {React.MutableRefObject<ImageWorker>}
+ */
 export function useImageWorker() {
   const apiRef = useRef()
 

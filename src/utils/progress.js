@@ -29,7 +29,7 @@ export function createSteps(steps, onProgress) {
 /**
  * Iterate over a list of steps while reporting progress.
  * @template T
- * @param {(number[]|T[])} steps
+ * @param {T[]} steps
  * @param {progressCallback} onProgress
  * @returns {([T, progressCallback])[]}
  */
