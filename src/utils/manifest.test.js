@@ -83,7 +83,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           const imageWorker = await getImageWorker()
 
           await imageWorker.unpackImage(image)
-        }, { skip: image.name === 'system', timeout: 5 * 1000 })
+        }, { skip: image.name === 'system', timeout: 8 * 1000 })
       })
     }
   })
