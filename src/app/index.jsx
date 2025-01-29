@@ -1,11 +1,13 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useState } from 'react'
 
 import comma from '../assets/comma.svg'
 import qdlPorts from '../assets/qdl-ports.svg'
+import settings from '../assets/settings.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
 import { isLinux, isWindows } from '../utils/platform'
+import { SettingsDialog, SettingsProvider } from './settings'
 
 const Flash = lazy(() => import('./Flash'))
 
@@ -28,6 +30,8 @@ function CopyText({ children: text }) {
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
   console.info(`flash.comma.ai version: ${version}`)
+
+  const [showSettings, setShowSettings] = useState(false)
   return (
     <div className="flex flex-col lg:flex-row flex-wrap">
       <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
@@ -159,9 +163,20 @@ export default function App() {
       </main>
 
       <div className="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
-        <Suspense fallback={<p className="text-black dark:text-white">Loading...</p>}>
-          <Flash />
-        </Suspense>
+        <SettingsProvider>
+          <SettingsDialog open={showSettings} onClose={() => setShowSettings(false)} />
+          <Suspense fallback={<p className="text-black dark:text-white">Loading...</p>}>
+            <div className="relative size-full">
+              <div
+                className="absolute top-4 right-4 p-2 rounded-full cursor-pointer hover:bg-black/20 active:bg-black/30 dark:invert z-10"
+                onClick={() => setShowSettings(true)}
+              >
+                <img src={settings} alt="open settings" width={32} height={32} />
+              </div>
+              <Flash />
+            </div>
+          </Suspense>
+        </SettingsProvider>
       </div>
 
       <div className="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
