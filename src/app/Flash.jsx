@@ -148,16 +148,6 @@ function USBIndicator() {
 }
 
 
-function SerialIndicator({ serial }) {
-  return <div className="flex flex-row gap-2">
-    <span>
-      Serial:
-      <span className="ml-2 font-mono">{serial || 'unknown'}</span>
-    </span>
-  </div>
-}
-
-
 function DeviceState({ serial }) {
   return (
     <div
@@ -166,7 +156,12 @@ function DeviceState({ serial }) {
     >
       <USBIndicator />
       <span className="text-gray-400">|</span>
-      <SerialIndicator serial={serial} />
+      <div className="flex flex-row gap-2">
+        <span>
+          Serial:
+          <span className="ml-2 font-mono">{serial || 'unknown'}</span>
+        </span>
+      </div>
     </div>
   )
 }
