@@ -1,9 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import config from '../config.js'
+import settings from '../assets/settings.svg'
 
 /**
  * @typedef {{
+ *   open: boolean
  *   manifest: string
+ *   disabled: boolean
  * }} Settings
  */
 
@@ -15,26 +18,36 @@ export const SettingsContext = createContext(null)
 export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState({
     manifest: 'release',
+    open: false,
+    disabled: true,
   })
-  const updateSettings = useCallback((update) => {
-    setSettings(Object.assign({}, settings, update))
-  }, [settings])
+  const updateSettings = useCallback((newSettings) => {
+    setSettings((prevSettings) => ({ ...prevSettings, ...newSettings }))
+  }, [setSettings])
   return <SettingsContext.Provider value={[settings, updateSettings]}>
     {children}
   </SettingsContext.Provider>
 }
 
-export function SettingsDialog({ open, onClose }) {
+export function SettingsDialog() {
   const dialogRef = useRef(null)
   const [settings, updateSettings] = useContext(SettingsContext)
 
   useEffect(() => {
-    if (dialogRef.current?.open && !open) {
+    if (dialogRef.current?.open && !settings.open) {
       dialogRef.current?.close()
-    } else if (!dialogRef.current?.open && open) {
+    } else if (!dialogRef.current?.open && settings.open) {
       dialogRef.current?.showModal()
     }
-  }, [open])
+  }, [settings])
+
+  const onChangeManifest = useCallback((ev) => updateSettings({
+    manifest: ev.target.value,
+  }), [updateSettings])
+
+  const onClose = useCallback(() => updateSettings({
+    open: false,
+  }), [updateSettings])
 
   return (
     <dialog
@@ -48,9 +61,10 @@ export function SettingsDialog({ open, onClose }) {
         <label>
           Manifest:
           <select
-            className="ms-2 p-1 rounded-lg text-black"
+            className="ms-2 p-1 rounded-lg text-black bg-white dark:bg-gray-600 dark:text-white"
             value={settings.manifest}
-            onChange={(ev) => updateSettings({ manifest: ev.target.value })}
+            onChange={onChangeManifest}
+            disabled={settings.disabled}
           >
             {Object.keys(config.manifests).map((name) => <option key={name} value={name}>{name}</option>)}
           </select>
@@ -62,5 +76,20 @@ export function SettingsDialog({ open, onClose }) {
         </button>
       </footer>
     </dialog>
+  )
+}
+
+export function SettingsButton() {
+  const [, updateSettings] = useContext(SettingsContext)
+  const openSettings = useCallback(() => updateSettings({
+    open: true,
+  }), [updateSettings])
+  return (
+    <div
+      className="absolute top-4 right-4 p-2 rounded-full cursor-pointer hover:bg-black/20 active:bg-black/30 dark:invert z-10"
+      onClick={openSettings}
+    >
+      <img src={settings} alt="open settings" width={32} height={32} />
+    </div>
   )
 }

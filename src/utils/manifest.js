@@ -1,3 +1,7 @@
+import { useMemo, useRef } from 'react'
+
+import config from '../config'
+
 /**
  * Represents a partition image defined in the AGNOS manifest.
  *
@@ -92,10 +96,37 @@ export function createManifest(text) {
 
 /**
  * @param {string} url
+ * @param {RequestInit} [init]
  * @returns {Promise<Image[]>}
  */
-export function getManifest(url) {
-  return fetch(url)
+export function getManifest(url, init) {
+  return fetch(url, init)
     .then((response) => response.text())
     .then(createManifest)
+}
+
+/**
+ * @param {string} manifestName
+ * @returns {RefObject<Image[]>}
+ */
+export function useManifest(manifestName) {
+  const ref = useRef([])
+
+  useMemo(() => {
+    if (!manifestName) return
+    if (!(manifestName in config.manifests) || !config.manifests[manifestName]) {
+      console.warn("unrecognised manifest name:", manifestName)
+      return
+    }
+    const controller = new AbortController()
+    getManifest(config.manifests[manifestName], { signal: controller.signal })
+      .then((manifest) => {
+        console.debug(manifestName, manifest)
+        ref.current = manifest
+      })
+      .catch((error) => console.warn("[QDL] Fetching manifest interrupted:", error))
+    return () => controller.abort("new manifest selected")
+  }, [manifestName])
+
+  return ref
 }

@@ -12,8 +12,12 @@ export function useImageWorker() {
     const worker = new Worker(new URL('../workers/image.worker', import.meta.url), {
       type: 'module',
     })
-    apiRef.current = Comlink.wrap(worker)
-    return () => worker.terminate()
+    const proxy = Comlink.wrap(worker)
+    apiRef.current = proxy
+    return () => {
+      proxy.releaseProxy()
+      worker.terminate()
+    }
   }, [])
 
   return apiRef

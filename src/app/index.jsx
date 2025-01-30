@@ -2,12 +2,11 @@ import { Suspense, lazy, useState } from 'react'
 
 import comma from '../assets/comma.svg'
 import qdlPorts from '../assets/qdl-ports.svg'
-import settings from '../assets/settings.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
 import { isLinux, isWindows } from '../utils/platform'
-import { SettingsDialog, SettingsProvider } from './settings'
+import { SettingsButton, SettingsDialog, SettingsProvider } from './settings'
 
 const Flash = lazy(() => import('./Flash'))
 
@@ -167,12 +166,7 @@ export default function App() {
           <SettingsDialog open={showSettings} onClose={() => setShowSettings(false)} />
           <Suspense fallback={<p className="text-black dark:text-white">Loading...</p>}>
             <div className="relative size-full">
-              <div
-                className="absolute top-4 right-4 p-2 rounded-full cursor-pointer hover:bg-black/20 active:bg-black/30 dark:invert z-10"
-                onClick={() => setShowSettings(true)}
-              >
-                <img src={settings} alt="open settings" width={32} height={32} />
-              </div>
+              <SettingsButton />
               <Flash />
             </div>
           </Suspense>

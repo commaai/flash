@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { qdlDevice } from '@commaai/qdl'
 import * as Comlink from 'comlink'
 
+import { SettingsContext } from '../app/settings'
 import config from '../config'
-import { useImageWorker } from '../utils/image'
-import { getManifest } from '../utils/manifest'
-import { withProgress } from '../utils/progress'
+import { useImageWorker } from './image'
+import { useManifest } from './manifest'
+import { withProgress } from './progress'
 
 /**
  * @typedef {import('./manifest.js').Image} Image
@@ -57,7 +58,6 @@ function isRecognizedDevice(slotCount, partitions) {
   return true
 }
 
-
 export function useQdl() {
   const [step, _setStep] = useState(Step.INITIALIZING)
   const [message, _setMessage] = useState('')
@@ -73,8 +73,8 @@ export function useQdl() {
   const imageWorker = useImageWorker()
   const qdl = useRef(new qdlDevice(config.loader.url))
 
-  /** @type {React.RefObject<Image[]>} */
-  const manifest = useRef(null)
+  const [settings, updateSettings] = useContext(SettingsContext)
+  const manifest = useManifest(settings.manifest)
 
   function setStep(step) {
     _setStep(step)
@@ -94,10 +94,6 @@ export function useQdl() {
     setMessage()
 
     if (error) return
-    if (!imageWorker.current) {
-      console.debug('[QDL] Waiting for image worker')
-      return
-    }
 
     switch (step) {
       case Step.INITIALIZING: {
@@ -123,17 +119,15 @@ export function useQdl() {
         }
 
         imageWorker.current?.init()
-          .then(() => getManifest(config.manifests.release))
-          .then((images) => {
-            manifest.current = images
-
-            // sanity check
+          .then(() => {
             if (manifest.current.length === 0) {
-              throw 'Manifest is empty'
+              console.debug('[QDL] Manifest not loaded yet')
+              return
             }
 
-            console.debug('[QDL] Loaded manifest', manifest.current)
+            console.debug('[QDL] Ready')
             setStep(Step.READY)
+            updateSettings({ disabled: false })
           })
           .catch((err) => {
             console.error('[QDL] Initialization error', err)
@@ -147,6 +141,7 @@ export function useQdl() {
         setOnContinue(() => () => {
           setOnContinue(null)
           setStep(Step.CONNECTING)
+          updateSettings({ disabled: true })
         })
         break
       }
@@ -191,7 +186,7 @@ export function useQdl() {
         async function downloadImages() {
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             setMessage(`Downloading ${image.name}`)
-            await imageWorker.current.downloadImage(image, Comlink.proxy(onProgress))
+            await imageWorker.current?.downloadImage(image, Comlink.proxy(onProgress))
           }
         }
 
@@ -213,7 +208,7 @@ export function useQdl() {
         async function unpackImages() {
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
             setMessage(`Unpacking ${image.name}`)
-            await imageWorker.current.unpackImage(image, Comlink.proxy(onProgress))
+            await imageWorker.current?.unpackImage(image, Comlink.proxy(onProgress))
           }
         }
 
@@ -245,7 +240,7 @@ export function useQdl() {
           await qdl.current.erase(`xbl_${currentSlot}`)
 
           for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
-            const fileHandle = await imageWorker.current.getImage(image)
+            const fileHandle = await imageWorker.current?.getImage(image)
             const blob = await fileHandle.getFile()
 
             setMessage(`Flashing ${image.name}`)
@@ -302,7 +297,7 @@ export function useQdl() {
         break
       }
     }
-  }, [error, imageWorker, step])
+  }, [step, error, imageWorker, manifest])
 
   useEffect(() => {
     if (error !== Error.NONE) {
