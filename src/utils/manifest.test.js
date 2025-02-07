@@ -32,11 +32,13 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         test('xz archive', () => {
           expect(image.fileName, 'file to be uncompressed').not.toContain('.xz')
           if (image.name === 'system') {
-            expect(image.compressed).toBe(false)
             if (image.compressed) {
               expect(image.fileName, 'not to equal archive name').not.toEqual(image.archiveFileName)
               expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
               expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
+            } else {
+              expect(image.fileName, 'to equal archive name').toEqual(image.archiveFileName)
+              expect(image.archiveUrl, 'archive url to not be in xz format').not.toContain('.xz')
             }
           } else {
             expect(image.compressed, 'image to be compressed').toBe(true)
