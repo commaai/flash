@@ -55,10 +55,6 @@ export class Image {
 
     this.fileName = `${this.name}-${json.hash_raw}.img`
     if (this.name === 'system' && json.alt) {
-      if (this.sparse) {
-        // before AGNOS 11 - skip-chunks image
-        this.fileName = `${this.name}-skip-chunks-${json.hash_raw}.img`
-      }
       this.checksum = json.alt.hash
       this.archiveUrl = json.alt.url
       this.size = json.alt.size
