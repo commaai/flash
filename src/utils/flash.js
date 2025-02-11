@@ -8,7 +8,7 @@ import { getManifest } from '../utils/manifest'
 import { withProgress } from '../utils/progress'
 
 /**
- * @typedef {import('./manifest.js').Image} ManifestImage
+ * @typedef {import('./manifest.js').Image} Image
  */
 
 export const Step = {
@@ -73,7 +73,7 @@ export function useQdl() {
   const imageWorker = useImageWorker()
   const qdl = useRef(new qdlDevice(config.loader.url))
 
-  /** @type {React.RefObject<ManifestImage[]>} */
+  /** @type {React.RefObject<Image[]>} */
   const manifest = useRef(null)
 
   function setStep(step) {
