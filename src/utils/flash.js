@@ -260,7 +260,7 @@ export function useQdl() {
             steps.push([image, `${name}_${otherSlot}`])
           }
 
-          for (const [[image, partitionName], onProgress] of withProgress(steps, setProgress, ([image]) => image.size)) {
+          for (const [[image, partitionName], onProgress] of withProgress(steps, setProgress, ([image]) => Math.sqrt(image.size))) {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
             setMessage(`Flashing ${partitionName}`)
