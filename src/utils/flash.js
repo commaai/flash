@@ -244,12 +244,26 @@ export function useQdl() {
           // with corrupted primary gpt header, it would not update the backup
           await qdl.current.erase(`xbl_${currentSlot}`)
 
-          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
+          /** @type {[Image, string][]} */
+          const steps = []
+          const findImage = (name) => manifest.current.find((it) => it.name === name)
+
+          // Flash aop, abl, xbl, xbl_config, devcfg to both slots
+          for (const name of ['aop', 'abl', 'xbl', 'xbl_config', 'devcfg']) {
+            const image = findImage(name)
+            steps.push([image, `${name}_a`], [image, `${name}_b`])
+          }
+
+          // Flash boot, system to other slot
+          for (const name of ['boot', 'system']) {
+            const image = findImage(name)
+            steps.push([image, `${name}_${otherSlot}`])
+          }
+
+          for (const [[image, partitionName], onProgress] of withProgress(steps, setProgress, ([image]) => Math.sqrt(image.size))) {
             const fileHandle = await imageWorker.current.getImage(image)
             const blob = await fileHandle.getFile()
-
-            setMessage(`Flashing ${image.name}`)
-            const partitionName = `${image.name}_${otherSlot}`
+            setMessage(`Flashing ${partitionName}`)
             await qdl.current.flashBlob(partitionName, blob, onProgress)
           }
           console.debug('[QDL] Flashed all partitions')
