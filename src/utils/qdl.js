@@ -1,4 +1,5 @@
 import { qdlDevice } from '@commaai/qdl'
+import { usbClass } from '@commaai/qdl/usblib'
 import * as Comlink from 'comlink'
 
 import { getManifest } from '../utils/manifest'
@@ -207,7 +208,7 @@ export class QdlManager {
    */
   async connect() {
     try {
-      await this.qdl.connect()
+      await this.qdl.connect(new usbClass())
       console.info('[QDL] Connected')
 
       const { serial_num } = await this.qdl.getStorageInfo()
