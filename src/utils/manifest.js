@@ -3,7 +3,7 @@
  *
  * Image archives can be retrieved from {@link archiveUrl}.
  */
-export class Image {
+export class ManifestImage {
   /**
    * Partition name
    * @type {string}
@@ -71,11 +71,11 @@ export class Image {
 
 /**
  * @param {string} text
- * @returns {Image[]}
+ * @returns {ManifestImage[]}
  */
 export function createManifest(text) {
   const expectedPartitions = ['aop', 'devcfg', 'xbl', 'xbl_config', 'abl', 'boot', 'system']
-  const partitions = JSON.parse(text).map((image) => new Image(image))
+  const partitions = JSON.parse(text).map((image) => new ManifestImage(image))
 
   // Sort into consistent order
   partitions.sort((a, b) => expectedPartitions.indexOf(a.name) - expectedPartitions.indexOf(b.name))
@@ -92,7 +92,7 @@ export function createManifest(text) {
 
 /**
  * @param {string} url
- * @returns {Promise<Image[]>}
+ * @returns {Promise<ManifestImage[]>}
  */
 export function getManifest(url) {
   return fetch(url)

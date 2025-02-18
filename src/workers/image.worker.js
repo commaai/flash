@@ -4,10 +4,6 @@ import jsSHA from 'jssha'
 import { XzReadableStream } from 'xz-decompress'
 
 /**
- * @typedef {import('../utils/manifest').Image} Image
- */
-
-/**
  * Chunk callback
  *
  * @callback chunkCallback
@@ -64,7 +60,7 @@ const imageWorker = {
   /**
    * Download an image to persistent storage.
    *
-   * @param {Image} image
+   * @param {ManifestImage} image
    * @param {progressCallback} [onProgress]
    * @returns {Promise<void>}
    */
@@ -109,7 +105,7 @@ const imageWorker = {
    *
    * Throws an error if the checksum does not match.
    *
-   * @param {Image} image
+   * @param {ManifestImage} image
    * @param {progressCallback} [onProgress]
    * @returns {Promise<void>}
    */
@@ -178,7 +174,7 @@ const imageWorker = {
 
   /**
    * Get a file handle for an image.
-   * @param {Image} image
+   * @param {ManifestImage} image
    * @returns {Promise<FileSystemHandle>}
    */
   async getImage(image) {

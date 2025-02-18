@@ -1,15 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
 import { qdlDevice } from '@commaai/qdl'
 import * as Comlink from 'comlink'
 
-import config from '../config'
-import { useImageWorker } from '../utils/image'
 import { getManifest } from '../utils/manifest'
 import { withProgress } from '../utils/progress'
-
-/**
- * @typedef {import('./manifest.js').Image} Image
- */
 
 export const Step = {
   INITIALIZING: 0,
@@ -57,291 +50,246 @@ function isRecognizedDevice(slotCount, partitions) {
   return true
 }
 
+export class QdlManager {
+  constructor(manifestUrl, programmerUrl, callbacks = {}) {
+    this.callbacks = {
+      onStepChange: (step) => {},
+      onMessageChange: (message) => {},
+      onProgressChange: (progress) => {},
+      onErrorChange: (error) => {},
+      onConnectionChange: (connected) => {},
+      onSerialChange: (serial) => {},
+      ...callbacks
+    }
 
-export function useQdl() {
-  const [step, _setStep] = useState(Step.INITIALIZING)
-  const [message, _setMessage] = useState('')
-  const [progress, setProgress] = useState(0)
-  const [error, _setError] = useState(Error.NONE)
-
-  const [connected, setConnected] = useState(false)
-  const [serial, setSerial] = useState(null)
-
-  const [onContinue, setOnContinue] = useState(null)
-  const [onRetry, setOnRetry] = useState(null)
-
-  const imageWorker = useImageWorker()
-  const qdl = useRef(new qdlDevice(config.loader.url))
-
-  /** @type {React.RefObject<Image[]>} */
-  const manifest = useRef(null)
-
-  function setStep(step) {
-    _setStep(step)
+    this.manifestUrl = manifestUrl
+    this.qdl = new qdlDevice(programmerUrl)
+    this.imageWorker = null
+    /** @type {ManifestImage[]|null} */
+    this.manifest = null
+    this.step = Step.INITIALIZING
+    this.error = Error.NONE
   }
 
-  function setMessage(message = '') {
+  setStep(step) {
+    this.step = step
+    this.callbacks.onStepChange(step)
+  }
+
+  setMessage(message = '') {
     if (message) console.info('[QDL]', message)
-    _setMessage(message)
+    this.callbacks.onMessageChange(message)
   }
 
-  function setError(error) {
-    _setError(error)
+  setProgress(progress) {
+    this.callbacks.onProgressChange(progress)
   }
 
-  useEffect(() => {
-    setProgress(-1)
-    setMessage()
+  setError(error) {
+    this.error = error
+    this.callbacks.onErrorChange(error)
+    this.setProgress(-1)
 
-    if (error) return
-    if (!imageWorker.current) {
-      console.debug('[QDL] Waiting for image worker')
+    if (error !== Error.NONE) {
+      console.debug('[QDL] error', error)
+    }
+  }
+
+  setConnected(connected) {
+    this.callbacks.onConnectionChange(connected)
+  }
+
+  setSerial(serial) {
+    this.callbacks.onSerialChange(serial)
+  }
+
+  async initialize(imageWorker) {
+    this.imageWorker = imageWorker
+    this.setProgress(-1)
+    this.setMessage()
+
+    if (!this.checkRequirements()) {
       return
     }
 
-    switch (step) {
-      case Step.INITIALIZING: {
-        // Check that the browser supports WebUSB
-        if (typeof navigator.usb === 'undefined') {
-          console.error('[QDL] WebUSB not supported')
-          setError(Error.REQUIREMENTS_NOT_MET)
-          break
-        }
+    try {
+      await this.imageWorker.init()
+      this.manifest = await getManifest(this.manifestUrl)
 
-        // Check that the browser supports Web Workers
-        if (typeof Worker === 'undefined') {
-          console.error('[QDL] Web Workers not supported')
-          setError(Error.REQUIREMENTS_NOT_MET)
-          break
-        }
-
-        // Check that the browser supports Storage API
-        if (typeof Storage === 'undefined') {
-          console.error('[QDL] Storage API not supported')
-          setError(Error.REQUIREMENTS_NOT_MET)
-          break
-        }
-
-        imageWorker.current?.init()
-          .then(() => getManifest(config.manifests.release))
-          .then((images) => {
-            manifest.current = images
-
-            // sanity check
-            if (manifest.current.length === 0) {
-              throw 'Manifest is empty'
-            }
-
-            console.debug('[QDL] Loaded manifest', manifest.current)
-            setStep(Step.READY)
-          })
-          .catch((err) => {
-            console.error('[QDL] Initialization error', err)
-            setError(Error.UNKNOWN)
-          })
-        break
+      if (this.manifest.length === 0) {
+        throw 'Manifest is empty'
       }
 
-      case Step.READY: {
-        // wait for user interaction (we can't use WebUSB without user event)
-        setOnContinue(() => () => {
-          setOnContinue(null)
-          setStep(Step.CONNECTING)
-        })
-        break
+      console.debug('[QDL] Loaded manifest', this.manifest)
+      this.setStep(Step.READY)
+    } catch (err) {
+      console.error('[QDL] Initialization error', err)
+      this.setError(Error.UNKNOWN)
+    }
+  }
+
+  checkRequirements() {
+    if (typeof navigator.usb === 'undefined') {
+      console.error('[QDL] WebUSB not supported')
+      this.setError(Error.REQUIREMENTS_NOT_MET)
+      return false
+    }
+
+    if (typeof Worker === 'undefined') {
+      console.error('[QDL] Web Workers not supported')
+      this.setError(Error.REQUIREMENTS_NOT_MET)
+      return false
+    }
+
+    if (typeof Storage === 'undefined') {
+      console.error('[QDL] Storage API not supported')
+      this.setError(Error.REQUIREMENTS_NOT_MET)
+      return false
+    }
+
+    return true
+  }
+
+  async connect() {
+    try {
+      await this.qdl.connect()
+      console.info('[QDL] Connected')
+
+      const { serial_num } = await this.qdl.getStorageInfo()
+      this.setSerial(Number(serial_num).toString(16).padStart(8, '0'))
+
+      const [slotCount, partitions] = await this.qdl.getDevicePartitionsInfo()
+      const recognized = isRecognizedDevice(slotCount, partitions)
+      console.debug('[QDL] Device info', { slotCount, partitions, recognized })
+
+      if (!recognized) {
+        this.setError(Error.UNRECOGNIZED_DEVICE)
+        return
       }
 
-      case Step.CONNECTING: {
-        qdl.current.connect()
-          .then(() => {
-            console.info('[QDL] Connected')
-            return qdl.current.getStorageInfo()
-              .then(({ serial_num }) => {
-                setSerial(Number(serial_num).toString(16).padStart(8, '0'))
-                return qdl.current.getDevicePartitionsInfo()
-              })
-              .then(([slotCount, partitions]) => {
-                const recognized = isRecognizedDevice(slotCount, partitions)
-                console.debug('[QDL] Device info', { slotCount, partitions, recognized })
+      this.setConnected(true)
+      this.setStep(Step.DOWNLOADING)
+    } catch (err) {
+      console.error('[QDL] Connection lost', err)
+      this.setError(Error.LOST_CONNECTION)
+      this.setConnected(false)
+    }
+  }
 
-                if (!recognized) {
-                  setError(Error.UNRECOGNIZED_DEVICE)
-                  return
-                }
+  async downloadImages() {
+    this.setProgress(0)
 
-                setConnected(true)
-                setStep(Step.DOWNLOADING)
-              })
-              .catch((err) => {
-                console.error('[QDL] Error getting device information', err)
-                setError(Error.UNKNOWN)
-              })
-          })
-          .catch((err) => {
-            console.error('[QDL] Connection lost', err)
-            setError(Error.LOST_CONNECTION)
-            setConnected(false)
-          })
-        break
+    try {
+      for await (const [image, onProgress] of withProgress(this.manifest, this.setProgress.bind(this))) {
+        this.setMessage(`Downloading ${image.name}`)
+        await this.imageWorker.downloadImage(image, Comlink.proxy(onProgress))
       }
 
-      case Step.DOWNLOADING: {
-        setProgress(0)
+      console.debug('[QDL] Downloaded all images')
+      this.setStep(Step.UNPACKING)
+    } catch (err) {
+      console.error('[QDL] Download error', err)
+      this.setError(Error.DOWNLOAD_FAILED)
+    }
+  }
 
-        async function downloadImages() {
-          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
-            setMessage(`Downloading ${image.name}`)
-            await imageWorker.current.downloadImage(image, Comlink.proxy(onProgress))
-          }
-        }
+  async unpackImages() {
+    this.setProgress(0)
 
-        downloadImages()
-          .then(() => {
-            console.debug('[QDL] Downloaded all images')
-            setStep(Step.UNPACKING)
-          })
-          .catch((err) => {
-            console.error('[QDL] Download error', err)
-            setError(Error.DOWNLOAD_FAILED)
-          })
-        break
+    try {
+      for await (const [image, onProgress] of withProgress(this.manifest, this.setProgress.bind(this))) {
+        this.setMessage(`Unpacking ${image.name}`)
+        await this.imageWorker.unpackImage(image, Comlink.proxy(onProgress))
       }
 
-      case Step.UNPACKING: {
-        setProgress(0)
-
-        async function unpackImages() {
-          for await (const [image, onProgress] of withProgress(manifest.current, setProgress)) {
-            setMessage(`Unpacking ${image.name}`)
-            await imageWorker.current.unpackImage(image, Comlink.proxy(onProgress))
-          }
-        }
-
-        unpackImages()
-          .then(() => {
-            console.debug('[QDL] Unpacked all images')
-            setStep(Step.FLASHING)
-          })
-          .catch((err) => {
-            console.error('[QDL] Unpack error', err)
-            if (err.startsWith('Checksum mismatch')) {
-              setError(Error.CHECKSUM_MISMATCH)
-            } else {
-              setError(Error.UNPACK_FAILED)
-            }
-          })
-        break
-      }
-
-      case Step.FLASHING: {
-        setProgress(0)
-
-        async function flashDevice() {
-          const currentSlot = await qdl.current.getActiveSlot()
-          const otherSlot = currentSlot === 'a' ? 'b' : 'a'
-
-          // Erase current xbl partition so if users try to power up device
-          // with corrupted primary gpt header, it would not update the backup
-          await qdl.current.erase(`xbl_${currentSlot}`)
-
-          /** @type {[Image, string][]} */
-          const steps = []
-          const findImage = (name) => manifest.current.find((it) => it.name === name)
-
-          // Flash aop, abl, xbl, xbl_config, devcfg to both slots
-          for (const name of ['aop', 'abl', 'xbl', 'xbl_config', 'devcfg']) {
-            const image = findImage(name)
-            steps.push([image, `${name}_a`], [image, `${name}_b`])
-          }
-
-          // Flash boot, system to other slot
-          for (const name of ['boot', 'system']) {
-            const image = findImage(name)
-            steps.push([image, `${name}_${otherSlot}`])
-          }
-
-          for (const [[image, partitionName], onProgress] of withProgress(steps, setProgress, ([image]) => Math.sqrt(image.size))) {
-            const fileHandle = await imageWorker.current.getImage(image)
-            const blob = await fileHandle.getFile()
-            setMessage(`Flashing ${partitionName}`)
-            await qdl.current.flashBlob(partitionName, blob, onProgress)
-          }
-          console.debug('[QDL] Flashed all partitions')
-
-          setMessage(`Changing slot to ${otherSlot}`)
-          await qdl.current.setActiveSlot(otherSlot)
-        }
-
-        flashDevice()
-          .then(() => {
-            console.debug('[QDL] Flash complete')
-            setStep(Step.ERASING)
-          })
-          .catch((err) => {
-            console.error('[QDL] Flashing error', err)
-            setError(Error.FLASH_FAILED)
-          })
-        break
-      }
-
-      case Step.ERASING: {
-        setProgress(0)
-
-        async function resetUserdata() {
-          const label = new Uint8Array(28).fill(0)  // sparse header size
-          label.set(new TextEncoder().encode('COMMA_RESET'), 0)
-          await qdl.current.flashBlob('userdata', new Blob([label]))
-        }
-
-        async function eraseDevice() {
-          setMessage('Erasing userdata')
-          await resetUserdata()
-          setProgress(0.9)
-
-          setMessage('Rebooting')
-          await qdl.current.reset()
-          setProgress(1)
-          setConnected(false)
-        }
-
-        eraseDevice()
-          .then(() => {
-            console.debug('[QDL] Erase complete')
-            setStep(Step.DONE)
-          })
-          .catch((err) => {
-            console.error('[QDL] Erase error', err)
-            setError(Error.ERASE_FAILED)
-          })
-        break
+      console.debug('[QDL] Unpacked all images')
+      this.setStep(Step.FLASHING)
+    } catch (err) {
+      console.error('[QDL] Unpack error', err)
+      if (err.startsWith('Checksum mismatch')) {
+        this.setError(Error.CHECKSUM_MISMATCH)
+      } else {
+        this.setError(Error.UNPACK_FAILED)
       }
     }
-  }, [error, imageWorker, step])
+  }
 
-  useEffect(() => {
-    if (error !== Error.NONE) {
-      console.debug('[QDL] error', error)
-      setProgress(-1)
-      setOnContinue(null)
+  async flashDevice() {
+    this.setProgress(0)
 
-      setOnRetry(() => () => {
-        console.debug('[QDL] on retry')
-        window.location.reload()
-      })
+    try {
+      const currentSlot = await this.qdl.getActiveSlot()
+      const otherSlot = currentSlot === 'a' ? 'b' : 'a'
+
+      // Erase current xbl partition
+      await this.qdl.erase(`xbl_${currentSlot}`)
+
+      const steps = []
+      const findImage = (name) => this.manifest.find((it) => it.name === name)
+
+      // Flash aop, abl, xbl, xbl_config, devcfg to both slots
+      for (const name of ['aop', 'abl', 'xbl', 'xbl_config', 'devcfg']) {
+        const image = findImage(name)
+        steps.push([image, `${name}_a`], [image, `${name}_b`])
+      }
+
+      // Flash boot, system to other slot
+      for (const name of ['boot', 'system']) {
+        const image = findImage(name)
+        steps.push([image, `${name}_${otherSlot}`])
+      }
+
+      for (const [[image, partitionName], onProgress] of withProgress(steps, this.setProgress.bind(this), ([image]) => Math.sqrt(image.size))) {
+        const fileHandle = await this.imageWorker.getImage(image)
+        const blob = await fileHandle.getFile()
+        this.setMessage(`Flashing ${partitionName}`)
+        await this.qdl.flashBlob(partitionName, blob, onProgress)
+      }
+
+      console.debug('[QDL] Flashed all partitions')
+      this.setMessage(`Changing slot to ${otherSlot}`)
+      await this.qdl.setActiveSlot(otherSlot)
+
+      this.setStep(Step.ERASING)
+    } catch (err) {
+      console.error('[QDL] Flashing error', err)
+      this.setError(Error.FLASH_FAILED)
     }
-  }, [error])
+  }
 
-  return {
-    step,
-    message,
-    progress,
-    error,
+  async eraseDevice() {
+    this.setProgress(0)
 
-    connected,
-    serial,
+    try {
+      this.setMessage('Erasing userdata')
+      const label = new Uint8Array(28).fill(0)  // sparse header size
+      label.set(new TextEncoder().encode('COMMA_RESET'), 0)
+      await this.qdl.flashBlob('userdata', new Blob([label]))
+      this.setProgress(0.9)
 
-    onContinue,
-    onRetry,
+      this.setMessage('Rebooting')
+      await this.qdl.reset()
+      this.setProgress(1)
+      this.setConnected(false)
+
+      console.debug('[QDL] Erase complete')
+      this.setStep(Step.DONE)
+    } catch (err) {
+      console.error('[QDL] Erase error', err)
+      this.setError(Error.ERASE_FAILED)
+    }
+  }
+
+  async start() {
+    if (this.step !== Step.READY) return
+    await this.connect()
+    if (this.error !== Error.NONE) return
+    await this.downloadImages()
+    if (this.error !== Error.NONE) return
+    await this.unpackImages()
+    if (this.error !== Error.NONE) return
+    await this.flashDevice()
+    if (this.error !== Error.NONE) return
+    await this.eraseDevice()
   }
 }
-
