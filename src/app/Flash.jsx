@@ -1,7 +1,9 @@
-import { useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import { Step, Error, useQdl } from '../utils/flash'
+import { QdlManager, Step, Error } from '../utils/qdl'
+import { useImageWorker } from '../utils/image'
 import { isLinux } from '../utils/platform'
+import config from '../config'
 
 import bolt from '../assets/bolt.svg'
 import cable from '../assets/cable.svg'
@@ -180,26 +182,38 @@ function beforeUnloadListener(event) {
 
 
 export default function Flash() {
-  const {
-    step,
-    message,
-    progress,
-    error,
+  const [step, setStep] = useState(Step.INITIALIZING)
+  const [message, setMessage] = useState('')
+  const [progress, setProgress] = useState(-1)
+  const [error, setError] = useState(Error.NONE)
+  const [connected, setConnected] = useState(false)
+  const [serial, setSerial] = useState(null)
 
-    onContinue,
-    onRetry,
+  const qdlManager = useRef(null)
+  const imageWorker = useImageWorker()
 
-    connected,
-    serial,
-  } = useQdl()
+  useEffect(() => {
+    if (!imageWorker.current) return
 
-  const handleContinue = useCallback(() => {
-    onContinue?.()
-  }, [onContinue])
+    // Create QDL manager with callbacks that update React state
+    qdlManager.current = new QdlManager(config.manifests.release, config.loader.url, {
+      onStepChange: setStep,
+      onMessageChange: setMessage,
+      onProgressChange: setProgress,
+      onErrorChange: setError,
+      onConnectionChange: setConnected,
+      onSerialChange: setSerial
+    })
 
-  const handleRetry = useCallback(() => {
-    onRetry?.()
-  }, [onRetry])
+    // Initialize the manager
+    qdlManager.current.initialize(imageWorker.current)
+  }, [config, imageWorker.current])
+
+  // Handle user clicking the start button
+  const handleStart = () => qdlManager.current?.start()
+
+  // Handle retry on error
+  const handleRetry = () => window.location.reload()
 
   const uiState = steps[step]
   if (error) {
@@ -228,8 +242,8 @@ export default function Flash() {
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
         className={`p-8 rounded-full ${bgColor}`}
-        style={{ cursor: onContinue ? 'pointer' : 'default' }}
-        onClick={handleContinue}
+        style={{ cursor: step === Step.READY ? 'pointer' : 'default' }}
+        onClick={step === Step.READY ? handleStart : null}
       >
         <img
           src={icon}
