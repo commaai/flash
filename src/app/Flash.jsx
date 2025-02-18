@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { QdlManager, Step, Error } from '../utils/flash'
+import { QdlManager, Step, Error } from '../utils/qdl'
 import { useImageWorker } from '../utils/image'
 import { isLinux } from '../utils/platform'
 import config from '../config'
