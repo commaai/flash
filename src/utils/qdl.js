@@ -28,6 +28,11 @@ export const Error = {
   REQUIREMENTS_NOT_MET: 8,
 }
 
+/**
+ * @param {number} slotCount
+ * @param {string[]} partitions
+ * @returns {boolean}
+ */
 function isRecognizedDevice(slotCount, partitions) {
   if (slotCount !== 2) {
     console.error('[QDL] Unrecognised device (slotCount)')
@@ -36,12 +41,12 @@ function isRecognizedDevice(slotCount, partitions) {
 
   // check we have the expected partitions to make sure it's a comma three
   const expectedPartitions = [
-    "ALIGN_TO_128K_1", "ALIGN_TO_128K_2", "ImageFv", "abl", "aop", "apdp", "bluetooth", "boot", "cache",
-    "cdt", "cmnlib", "cmnlib64", "ddr", "devcfg", "devinfo", "dip", "dsp", "fdemeta", "frp", "fsc", "fsg",
-    "hyp", "keymaster", "keystore", "limits", "logdump", "logfs", "mdtp", "mdtpsecapp", "misc", "modem",
-    "modemst1", "modemst2", "msadp", "persist", "qupfw", "rawdump", "sec", "splash", "spunvm", "ssd",
-    "sti", "storsec", "system", "systemrw", "toolsfv", "tz", "userdata", "vm-linux", "vm-system", "xbl",
-    "xbl_config"
+    'ALIGN_TO_128K_1', 'ALIGN_TO_128K_2', 'ImageFv', 'abl', 'aop', 'apdp', 'bluetooth', 'boot', 'cache',
+    'cdt', 'cmnlib', 'cmnlib64', 'ddr', 'devcfg', 'devinfo', 'dip', 'dsp', 'fdemeta', 'frp', 'fsc', 'fsg',
+    'hyp', 'keymaster', 'keystore', 'limits', 'logdump', 'logfs', 'mdtp', 'mdtpsecapp', 'misc', 'modem',
+    'modemst1', 'modemst2', 'msadp', 'persist', 'qupfw', 'rawdump', 'sec', 'splash', 'spunvm', 'ssd',
+    'sti', 'storsec', 'system', 'systemrw', 'toolsfv', 'tz', 'userdata', 'vm-linux', 'vm-system', 'xbl',
+    'xbl_config'
   ]
   if (!partitions.every(partition => expectedPartitions.includes(partition))) {
     console.error('[QDL] Unrecognised device (partitions)', partitions)
@@ -50,19 +55,32 @@ function isRecognizedDevice(slotCount, partitions) {
   return true
 }
 
-export class QdlManager {
-  constructor(manifestUrl, programmerUrl, callbacks = {}) {
-    this.callbacks = {
-      onStepChange: (step) => {},
-      onMessageChange: (message) => {},
-      onProgressChange: (progress) => {},
-      onErrorChange: (error) => {},
-      onConnectionChange: (connected) => {},
-      onSerialChange: (serial) => {},
-      ...callbacks
-    }
+/**
+ * @template T
+ * @callback ChangeCallback
+ * @param {T} value
+ * @returns {void}
+ */
 
+/**
+ * @typedef {object} QdlManagerCallbacks
+ * @property {ChangeCallback<number>} [onStepChange]
+ * @property {ChangeCallback<string>} [onMessageChange]
+ * @property {ChangeCallback<number>} [onProgressChange]
+ * @property {ChangeCallback<number>} [onErrorChange]
+ * @property {ChangeCallback<boolean>} [onConnectionChange]
+ * @property {ChangeCallback<string>} [onSerialChange]
+ */
+
+export class QdlManager {
+  /**
+   * @param {string} manifestUrl
+   * @param {string} programmerUrl
+   * @param {QdlManagerCallbacks} callbacks
+   */
+  constructor(manifestUrl, programmerUrl, callbacks = {}) {
     this.manifestUrl = manifestUrl
+    this.callbacks = callbacks
     this.qdl = new qdlDevice(programmerUrl)
     this.imageWorker = null
     /** @type {ManifestImage[]|null} */
@@ -71,23 +89,40 @@ export class QdlManager {
     this.error = Error.NONE
   }
 
+  /**
+   * @private
+   * @param {number} step
+   * @returns {void}
+   */
   setStep(step) {
     this.step = step
-    this.callbacks.onStepChange(step)
+    this.callbacks.onStepChange?.(step)
   }
 
-  setMessage(message = '') {
+  /**
+   * @private
+   * @param {string} message
+   */
+  setMessage(message) {
     if (message) console.info('[QDL]', message)
-    this.callbacks.onMessageChange(message)
+    this.callbacks.onMessageChange?.(message)
   }
 
+  /**
+   * @private
+   * @param {number} progress
+   */
   setProgress(progress) {
-    this.callbacks.onProgressChange(progress)
+    this.callbacks.onProgressChange?.(progress)
   }
 
+  /**
+   * @private
+   * @param {number} error
+   */
   setError(error) {
     this.error = error
-    this.callbacks.onErrorChange(error)
+    this.callbacks.onErrorChange?.(error)
     this.setProgress(-1)
 
     if (error !== Error.NONE) {
@@ -95,18 +130,30 @@ export class QdlManager {
     }
   }
 
+  /**
+   * @private
+   * @param {boolean} connected
+   */
   setConnected(connected) {
-    this.callbacks.onConnectionChange(connected)
+    this.callbacks.onConnectionChange?.(connected)
   }
 
+  /**
+   * @private
+   * @param {string} serial
+   */
   setSerial(serial) {
-    this.callbacks.onSerialChange(serial)
+    this.callbacks.onSerialChange?.(serial)
   }
 
+  /**
+   * @param {ImageWorker} imageWorker
+   * @returns {Promise<void>}
+   */
   async initialize(imageWorker) {
     this.imageWorker = imageWorker
     this.setProgress(-1)
-    this.setMessage()
+    this.setMessage('')
 
     if (!this.checkRequirements()) {
       return
@@ -128,6 +175,10 @@ export class QdlManager {
     }
   }
 
+  /**
+   * @private
+   * @returns {boolean}
+   */
   checkRequirements() {
     if (typeof navigator.usb === 'undefined') {
       console.error('[QDL] WebUSB not supported')
@@ -150,6 +201,10 @@ export class QdlManager {
     return true
   }
 
+  /**
+   * @private
+   * @returns {Promise<void>}
+   */
   async connect() {
     try {
       await this.qdl.connect()
@@ -176,6 +231,10 @@ export class QdlManager {
     }
   }
 
+  /**
+   * @returns {Promise<void>}
+   * @private
+   */
   async downloadImages() {
     this.setProgress(0)
 
@@ -193,6 +252,10 @@ export class QdlManager {
     }
   }
 
+  /**
+   * @returns {Promise<void>}
+   * @private
+   */
   async unpackImages() {
     this.setProgress(0)
 
@@ -214,6 +277,10 @@ export class QdlManager {
     }
   }
 
+  /**
+   * @private
+   * @returns {Promise<void>}
+   */
   async flashDevice() {
     this.setProgress(0)
 
@@ -257,6 +324,10 @@ export class QdlManager {
     }
   }
 
+  /**
+   * @private
+   * @returns {Promise<void>}
+   */
   async eraseDevice() {
     this.setProgress(0)
 
@@ -280,6 +351,9 @@ export class QdlManager {
     }
   }
 
+  /**
+   * @returns {Promise<void>}
+   */
   async start() {
     if (this.step !== Step.READY) return
     await this.connect()
