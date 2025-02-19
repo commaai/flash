@@ -145,9 +145,7 @@ const imageWorker = {
       await readChunks(reader, imageSize, {
         onChunk: async (chunk) => {
           await writable?.write(chunk)
-          console.time('sha update')
           shaObj.update(chunk)
-          console.timeEnd('sha update')
         },
         onProgress,
       })
