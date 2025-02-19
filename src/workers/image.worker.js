@@ -1,6 +1,6 @@
 import * as Comlink from 'comlink'
 
-import jsSHA from 'jssha'
+import { createSHA256 } from 'hash-wasm'
 import { XzReadableStream } from 'xz-decompress'
 
 /**
@@ -133,7 +133,7 @@ const imageWorker = {
       }
     }
 
-    const shaObj = new jsSHA('SHA-256', 'UINT8ARRAY')
+    const shaObj = await createSHA256()
     let complete
     try {
       let stream = archiveFile.stream()
@@ -168,7 +168,7 @@ const imageWorker = {
       throw `Error closing file handle: ${e}`
     }
 
-    const checksum = shaObj.getHash('HEX')
+    const checksum = shaObj.digest()
     if (checksum !== expectedChecksum) {
       throw `Checksum mismatch: got ${checksum}, expected ${expectedChecksum}`
     }
