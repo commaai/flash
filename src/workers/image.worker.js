@@ -63,10 +63,10 @@ const imageWorker = {
    * SHA-256 checksum.
    *
    * @param {ManifestImage} image
-   * @param {progressCallback} onProgress
+   * @param {progressCallback} [onProgress]
    * @returns {Promise<void>}
    */
-  async downloadImage(image, onProgress) {
+  async downloadImage(image, onProgress = undefined) {
     const { archiveUrl, checksum: expectedChecksum, fileName, size } = image
 
     let writable
@@ -77,7 +77,7 @@ const imageWorker = {
       throw `Error opening file handle: ${e}`
     }
 
-    console.debug('[ImageWorker] Downloading and unpacking', archiveUrl)
+    console.debug(`[ImageWorker] Downloading ${image.name} from ${archiveUrl}`)
     const response = await fetch(archiveUrl, { mode: 'cors' })
     if (!response.ok) {
       throw `Fetch failed: ${response.status} ${response.statusText}`
@@ -98,7 +98,7 @@ const imageWorker = {
         onProgress,
       })
 
-      onProgress(1)
+      onProgress?.(1)
     } catch (e) {
       throw `Error unpacking archive: ${e}`
     }
