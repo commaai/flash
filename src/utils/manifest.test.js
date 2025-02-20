@@ -13,8 +13,8 @@ globalThis.navigator = {
           write: vi.fn(),
           close: vi.fn(),
         })),
-        remove: vi.fn(),
       }),
+      remove: vi.fn(),
     }),
   },
 }
