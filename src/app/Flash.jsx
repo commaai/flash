@@ -105,6 +105,10 @@ const errors = {
     description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
       'supports WebUSB and is up to date.',
   },
+  [Error.STORAGE_SPACE]: {
+    description: 'Your system does not have enough space available to download the system image. Your browser may ' +
+      'be restricting the available space if you are in a private, incognito or guest session.',
+  },
 }
 
 if (isLinux) {
@@ -206,6 +210,7 @@ export default function Flash() {
 
   // Handle user clicking the start button
   const handleStart = () => qdlManager.current?.start()
+  const canStart = step === Step.READY && !error
 
   // Handle retry on error
   const handleRetry = () => window.location.reload()
@@ -222,6 +227,8 @@ export default function Flash() {
     if (progress >= 0) {
       title += ` (${(progress * 100).toFixed(0)}%)`
     }
+  } else if (error === Error.STORAGE_SPACE) {
+    title = message
   } else {
     title = status
   }
@@ -237,8 +244,8 @@ export default function Flash() {
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
         className={`p-8 rounded-full ${bgColor}`}
-        style={{ cursor: step === Step.READY ? 'pointer' : 'default' }}
-        onClick={step === Step.READY ? handleStart : null}
+        style={{ cursor: canStart ? 'pointer' : 'default' }}
+        onClick={canStart ? handleStart : null}
       >
         <img
           src={icon}

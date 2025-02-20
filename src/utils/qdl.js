@@ -25,6 +25,7 @@ export const Error = {
   FLASH_FAILED: 6,
   ERASE_FAILED: 7,
   REQUIREMENTS_NOT_MET: 8,
+  STORAGE_SPACE: 9,
 }
 
 /**
@@ -170,7 +171,12 @@ export class QdlManager {
       this.setStep(Step.READY)
     } catch (err) {
       console.error('[QDL] Initialization error', err)
-      this.setError(Error.UNKNOWN)
+      if (err.startsWith('Not enough storage')) {
+        this.setError(Error.STORAGE_SPACE)
+        this.setMessage(err)
+      } else {
+        this.setError(Error.UNKNOWN)
+      }
     }
   }
 
