@@ -111,11 +111,6 @@ const imageWorker = {
 
     const checksum = shaObj.digest()
     if (checksum !== expectedChecksum) {
-      try {
-        await root.removeEntry(fileName)
-      } catch {
-        // ignored
-      }
       throw `Checksum mismatch: got ${checksum}, expected ${expectedChecksum}`
     }
   },
