@@ -15,8 +15,8 @@ globalThis.navigator = {
         })),
         remove: vi.fn(),
       }),
-    })
-  }
+    }),
+  },
 }
 
 let imageWorker
