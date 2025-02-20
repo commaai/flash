@@ -55,6 +55,7 @@ const imageWorker = {
 
     // TODO: check storage quota and report error if insufficient
     root = await navigator.storage.getDirectory()
+    await root.remove({ recursive: true })
     console.info('[ImageWorker] Initialized')
   },
 

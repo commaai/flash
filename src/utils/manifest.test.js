@@ -5,19 +5,18 @@ import * as Comlink from 'comlink'
 import config from '../config'
 import { getManifest } from './manifest'
 
-const imageWorkerFileHandler = {
-  createWritable: vi.fn().mockImplementation(() => ({
-    write: vi.fn(),
-    close: vi.fn(),
-  })),
-}
-
 globalThis.navigator = {
   storage: {
     getDirectory: () => ({
-      getFileHandle: () => imageWorkerFileHandler,
-    })
-  }
+      getFileHandle: () => ({
+        createWritable: vi.fn().mockImplementation(() => ({
+          write: vi.fn(),
+          close: vi.fn(),
+        })),
+      }),
+      remove: vi.fn(),
+    }),
+  },
 }
 
 let imageWorker
