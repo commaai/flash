@@ -10,6 +10,7 @@ const imageWorkerFileHandler = {
     write: vi.fn(),
     close: vi.fn(),
   })),
+  remove: vi.fn(),
 }
 
 globalThis.navigator = {
