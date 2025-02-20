@@ -2,15 +2,14 @@ import { qdlDevice } from '@commaai/qdl'
 import { usbClass } from '@commaai/qdl/usblib'
 import * as Comlink from 'comlink'
 
-import { getManifest } from '../utils/manifest'
-import { withProgress } from '../utils/progress'
+import { getManifest } from './manifest'
+import { withProgress } from './progress'
 
 export const Step = {
   INITIALIZING: 0,
   READY: 1,
   CONNECTING: 2,
   DOWNLOADING: 3,
-  UNPACKING: 4,
   FLASHING: 6,
   ERASING: 7,
   DONE: 8,
@@ -22,7 +21,6 @@ export const Error = {
   UNRECOGNIZED_DEVICE: 1,
   LOST_CONNECTION: 2,
   DOWNLOAD_FAILED: 3,
-  UNPACK_FAILED: 4,
   CHECKSUM_MISMATCH: 5,
   FLASH_FAILED: 6,
   ERASE_FAILED: 7,
@@ -246,34 +244,13 @@ export class QdlManager {
       }
 
       console.debug('[QDL] Downloaded all images')
-      this.setStep(Step.UNPACKING)
-    } catch (err) {
-      console.error('[QDL] Download error', err)
-      this.setError(Error.DOWNLOAD_FAILED)
-    }
-  }
-
-  /**
-   * @returns {Promise<void>}
-   * @private
-   */
-  async unpackImages() {
-    this.setProgress(0)
-
-    try {
-      for await (const [image, onProgress] of withProgress(this.manifest, this.setProgress.bind(this))) {
-        this.setMessage(`Unpacking ${image.name}`)
-        await this.imageWorker.unpackImage(image, Comlink.proxy(onProgress))
-      }
-
-      console.debug('[QDL] Unpacked all images')
       this.setStep(Step.FLASHING)
     } catch (err) {
-      console.error('[QDL] Unpack error', err)
+      console.error('[QDL] Download error', err)
       if (err.startsWith('Checksum mismatch')) {
         this.setError(Error.CHECKSUM_MISMATCH)
       } else {
-        this.setError(Error.UNPACK_FAILED)
+        this.setError(Error.DOWNLOAD_FAILED)
       }
     }
   }
@@ -360,8 +337,6 @@ export class QdlManager {
     await this.connect()
     if (this.error !== Error.NONE) return
     await this.downloadImages()
-    if (this.error !== Error.NONE) return
-    await this.unpackImages()
     if (this.error !== Error.NONE) return
     await this.flashDevice()
     if (this.error !== Error.NONE) return

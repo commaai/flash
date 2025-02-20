@@ -6,7 +6,6 @@ import config from '../config'
 import { getManifest } from './manifest'
 
 const imageWorkerFileHandler = {
-  getFile: vi.fn(),
   createWritable: vi.fn().mockImplementation(() => ({
     write: vi.fn(),
     close: vi.fn(),
@@ -59,14 +58,8 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           }
         })
 
-        test('image and checksum', async () => {
-          imageWorkerFileHandler.getFile.mockImplementation(async () => {
-            const response = await fetch(image.archiveUrl)
-            expect(response.ok, 'to be uploaded').toBe(true)
-            return response.blob()
-          })
-
-          await imageWorker.unpackImage(image)
+        test('download', async () => {
+          await imageWorker.downloadImage(image)
         }, { skip: image.name === 'system', timeout: 8 * 1000 })
       })
     }

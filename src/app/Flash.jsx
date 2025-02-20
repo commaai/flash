@@ -41,11 +41,6 @@ const steps = {
     bgColor: 'bg-blue-500',
     icon: cloudDownload,
   },
-  [Step.UNPACKING]: {
-    status: 'Unpacking...',
-    bgColor: 'bg-blue-500',
-    icon: cloudDownload,
-  },
   [Step.FLASHING]: {
     status: 'Flashing device...',
     description: 'Do not unplug your device until the process is complete.',
