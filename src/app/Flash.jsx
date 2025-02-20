@@ -105,6 +105,9 @@ const errors = {
     description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
       'supports WebUSB and is up to date.',
   },
+  [Error.STORAGE_SPACE]: {
+    description: 'Your system does not have enough space available to download the system image.',
+  },
 }
 
 if (isLinux) {
@@ -222,6 +225,8 @@ export default function Flash() {
     if (progress >= 0) {
       title += ` (${(progress * 100).toFixed(0)}%)`
     }
+  } else if (error === Error.STORAGE_SPACE) {
+    title = message
   } else {
     title = status
   }

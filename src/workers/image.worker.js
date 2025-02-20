@@ -39,6 +39,8 @@ async function readChunks(reader, total, { onChunk, onProgress = undefined }) {
   }
 }
 
+const MIN_QUOTA_MB = 6000
+
 /** @type {FileSystemDirectoryHandle} */
 let root
 
@@ -56,6 +58,13 @@ const imageWorker = {
     // TODO: check storage quota and report error if insufficient
     root = await navigator.storage.getDirectory()
     await root.remove({ recursive: true })
+
+    const estimate = await navigator.storage.estimate()
+    const quotaMB = (estimate.quota || 0) / 1024 / 1024
+    if (quotaMB < MIN_QUOTA_MB) {
+      throw `Not enough storage: ${quotaMB.toFixed(0)}MB free, need ${MIN_QUOTA_MB.toFixed(0)}MB`
+    }
+
     console.info('[ImageWorker] Initialized')
   },
 
