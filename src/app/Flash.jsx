@@ -209,6 +209,7 @@ export default function Flash() {
 
   // Handle user clicking the start button
   const handleStart = () => qdlManager.current?.start()
+  const canStart = step === Step.READY && !error
 
   // Handle retry on error
   const handleRetry = () => window.location.reload()
@@ -242,8 +243,8 @@ export default function Flash() {
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
         className={`p-8 rounded-full ${bgColor}`}
-        style={{ cursor: step === Step.READY ? 'pointer' : 'default' }}
-        onClick={step === Step.READY ? handleStart : null}
+        style={{ cursor: canStart ? 'pointer' : 'default' }}
+        onClick={canStart ? handleStart : null}
       >
         <img
           src={icon}
