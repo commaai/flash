@@ -7,6 +7,7 @@ import { getManifest } from './manifest'
 
 globalThis.navigator = {
   storage: {
+    estimate: vi.fn().mockImplementation(() => ({ quota: 10 * (1024 ** 3) })),
     getDirectory: () => ({
       getFileHandle: () => ({
         createWritable: vi.fn().mockImplementation(() => ({
