@@ -39,6 +39,7 @@ async function readChunks(reader, total, { onChunk, onProgress = undefined }) {
   }
 }
 
+/** @type {FileSystemDirectoryHandle} */
 let root
 
 /**
@@ -58,39 +59,48 @@ const imageWorker = {
   },
 
   /**
-   * Download an image to persistent storage.
+   * Download and unpack an image, saving it to persistent storage. Verifies that the image matches the expected
+   * SHA-256 checksum.
    *
    * @param {ManifestImage} image
-   * @param {progressCallback} [onProgress]
+   * @param {progressCallback} onProgress
    * @returns {Promise<void>}
    */
-  async downloadImage(image, onProgress = undefined) {
-    const { archiveFileName, archiveUrl } = image
+  async downloadImage(image, onProgress) {
+    const { archiveUrl, checksum: expectedChecksum, fileName, size } = image
 
     let writable
     try {
-      const fileHandle = await root.getFileHandle(archiveFileName, { create: true })
+      const fileHandle = await root.getFileHandle(fileName, { create: true })
       writable = await fileHandle.createWritable()
     } catch (e) {
       throw `Error opening file handle: ${e}`
     }
 
-    console.debug('[ImageWorker] Downloading', archiveUrl)
+    console.debug('[ImageWorker] Downloading and unpacking', archiveUrl)
     const response = await fetch(archiveUrl, { mode: 'cors' })
     if (!response.ok) {
       throw `Fetch failed: ${response.status} ${response.statusText}`
     }
 
+    const shaObj = await createSHA256()
     try {
-      const contentLength = +response.headers.get('Content-Length')
-      const reader = response.body.getReader()
-      await readChunks(reader, contentLength, {
-        onChunk: async (chunk) => await writable.write(chunk),
+      let stream = response.body
+      if (image.compressed) {
+        stream = new XzReadableStream(stream)
+      }
+
+      await readChunks(stream.getReader(), size, {
+        onChunk: async (chunk) => {
+          await writable.write(chunk)
+          shaObj.update(chunk)
+        },
         onProgress,
       })
-      onProgress?.(1)
+
+      onProgress(1)
     } catch (e) {
-      throw `Could not read response body: ${e}`
+      throw `Error unpacking archive: ${e}`
     }
 
     try {
@@ -98,82 +108,21 @@ const imageWorker = {
     } catch (e) {
       throw `Error closing file handle: ${e}`
     }
-  },
-
-  /**
-   * Unpack and verify a downloaded image archive.
-   *
-   * Throws an error if the checksum does not match.
-   *
-   * @param {ManifestImage} image
-   * @param {progressCallback} [onProgress]
-   * @returns {Promise<void>}
-   */
-  async unpackImage(image, onProgress = undefined) {
-    const { archiveFileName, checksum: expectedChecksum, fileName, size: imageSize } = image
-
-    /** @type {File} */
-    let archiveFile
-    try {
-      const archiveFileHandle = await root.getFileHandle(archiveFileName, { create: false })
-      archiveFile = await archiveFileHandle.getFile()
-    } catch (e) {
-      throw `Error opening archive file handle: ${e}`
-    }
-
-    // We don't need to write out the image if it isn't compressed
-    /** @type {FileSystemWritableFileStream|undefined} */
-    let writable = undefined
-    if (archiveFileName !== fileName) {
-      try {
-        const fileHandle = await root.getFileHandle(fileName, { create: true })
-        writable = await fileHandle.createWritable()
-      } catch (e) {
-        throw `Error opening output file handle: ${e}`
-      }
-    }
-
-    const shaObj = await createSHA256()
-    let complete
-    try {
-      let stream = archiveFile.stream()
-      if (image.compressed) {
-        stream = new XzReadableStream(stream)
-      }
-
-      const reader = stream.getReader()
-      await readChunks(reader, imageSize, {
-        onChunk: async (chunk) => {
-          await writable?.write(chunk)
-          shaObj.update(chunk)
-        },
-        onProgress,
-      })
-
-      complete = true
-      onProgress?.(1)
-    } catch (e) {
-      throw `Error unpacking archive: ${e}`
-    }
-
-    if (!complete) {
-      throw 'Decompression error: unexpected end of stream'
-    }
-
-    try {
-      await writable?.close()
-    } catch (e) {
-      throw `Error closing file handle: ${e}`
-    }
 
     const checksum = shaObj.digest()
     if (checksum !== expectedChecksum) {
+      try {
+        await root.removeEntry(fileName)
+      } catch {
+        // ignored
+      }
       throw `Checksum mismatch: got ${checksum}, expected ${expectedChecksum}`
     }
   },
 
   /**
    * Get a file handle for an image.
+   *
    * @param {ManifestImage} image
    * @returns {Promise<FileSystemHandle>}
    */
