@@ -107,7 +107,7 @@ const errors = {
   },
   [Error.STORAGE_SPACE]: {
     description: 'Your system does not have enough space available to download the system image. Your browser may ' +
-    'be restricting the available space if you are in a private, incognito or guest session.',
+      'be restricting the available space if you are in a private, incognito or guest session.',
   },
 }
 
