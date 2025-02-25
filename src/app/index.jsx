@@ -91,11 +91,12 @@ export default function App() {
           <p>Follow these steps to put your device into QDL mode:</p>
           <ol>
             <li>Unplug the device and wait for the LED to switch off.</li>
-            <li>Connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port.</li>
+            <li>Connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port <strong>①</strong>.</li>
+            <li>If the LED blinks red, connect power to <span className="whitespace-nowrap">OBD-C</span> port <strong>②</strong>.</li>
           </ol>
           <img
             src={qdlPorts}
-            alt="image showing comma three and two ports. the upper port is labeled with a cross. the lower port is labeled with a checkmark."
+            alt="image showing comma three and two ports. the lower port is labeled 1. the upper port is labeled 2."
             width={450}
             height={300}
           />
