@@ -92,7 +92,7 @@ export default function App() {
           <ol>
             <li>Unplug the device and wait for the LED to switch off.</li>
             <li>Connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port <strong>①</strong>.</li>
-            <li>If the LED blinks red, connect power to <span className="whitespace-nowrap">OBD-C</span> port <strong>②</strong>.</li>
+            <li>Connect power to the <span className="whitespace-nowrap">OBD-C</span> port <strong>②</strong>.</li>
           </ol>
           <img
             src={qdlPorts}
