@@ -94,8 +94,8 @@ export default function App() {
           <p>Follow these steps to put your device into QDL mode:</p>
           <ol>
             <li>Unplug the device and wait for the LED to switch off.</li>
-            <li>Connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port <strong>①</strong>.</li>
-            <li>Connect power to the <span className="whitespace-nowrap">OBD-C</span> port <strong>②</strong>.</li>
+            <li>First, connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port <strong>(port 1)</strong>.</li>
+            <li>Second, connect power to the <strong>upper</strong> <span className="whitespace-nowrap">OBD-C</span> port <strong>(port 2)</strong>.</li>
           </ol>
           <img
             src={qdlPorts}
