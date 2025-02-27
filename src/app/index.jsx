@@ -52,6 +52,9 @@ export default function App() {
               A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span>
               {" "}is recommended for faster flashing speed.
             </li>
+            <li>
+              Another USB-C cable, to power the device outside your car.
+            </li>
           </ul>
           {isWindows && (<>
             <h3>USB Driver</h3>
