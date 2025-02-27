@@ -52,6 +52,9 @@ export default function App() {
               A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span>
               {" "}is recommended for faster flashing speed.
             </li>
+            <li>
+              Another USB-C cable, to power the device outside your car.
+            </li>
           </ul>
           {isWindows && (<>
             <h3>USB Driver</h3>
@@ -91,11 +94,12 @@ export default function App() {
           <p>Follow these steps to put your device into QDL mode:</p>
           <ol>
             <li>Unplug the device and wait for the LED to switch off.</li>
-            <li>Connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port.</li>
+            <li>First, connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port <strong>(port 1)</strong>.</li>
+            <li>Second, connect power to the <strong>upper</strong> <span className="whitespace-nowrap">OBD-C</span> port <strong>(port 2)</strong>.</li>
           </ol>
           <img
             src={qdlPorts}
-            alt="image showing comma three and two ports. the upper port is labeled with a cross. the lower port is labeled with a checkmark."
+            alt="image showing comma three and two ports. the lower port is labeled 1. the upper port is labeled 2."
             width={450}
             height={300}
           />
