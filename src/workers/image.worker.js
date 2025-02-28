@@ -52,7 +52,7 @@ const imageWorker = {
   async init() {
     if (!root) {
       root = await navigator.storage.getDirectory()
-      await root.remove({ recursive: true })
+      // await root.remove({ recursive: true })
       console.info('[ImageWorker] Initialized')
     }
 
@@ -73,6 +73,14 @@ const imageWorker = {
    */
   async downloadImage(image, onProgress = undefined) {
     const { archiveUrl, checksum: expectedChecksum, fileName, size } = image
+
+    // Skip if already downloaded
+    try {
+      await root.getFileHandle(fileName)
+      return
+    } catch {
+      // ignored
+    }
 
     let writable
     try {
