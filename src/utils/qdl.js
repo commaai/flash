@@ -4,6 +4,7 @@ import * as Comlink from 'comlink'
 
 import { getManifest } from './manifest'
 import { withProgress } from './progress'
+import { Timer } from './timer'
 
 export const Step = {
   INITIALIZING: 0,
@@ -87,6 +88,7 @@ export class QdlManager {
     this.manifest = null
     this.step = Step.INITIALIZING
     this.error = Error.NONE
+    this.timer = new Timer()
   }
 
   /**
@@ -121,6 +123,8 @@ export class QdlManager {
    * @param {number} error
    */
   setError(error) {
+    const errorName = Object.keys(Error).find((key) => Error[key] === error)?.toLowerCase()
+    this.timer.stop(`error:${errorName || error}`)
     this.error = error
     this.callbacks.onErrorChange?.(error)
     this.setProgress(-1)
@@ -135,6 +139,7 @@ export class QdlManager {
    * @param {boolean} connected
    */
   setConnected(connected) {
+    if (connected) this.timer.start()
     this.callbacks.onConnectionChange?.(connected)
   }
 
@@ -247,6 +252,7 @@ export class QdlManager {
       for await (const [image, onProgress] of withProgress(this.manifest, this.setProgress.bind(this))) {
         this.setMessage(`Downloading ${image.name}`)
         await this.imageWorker.downloadImage(image, Comlink.proxy(onProgress))
+        this.timer.mark(`download:${image.name}`)
       }
 
       console.debug('[QDL] Downloaded all images')
@@ -270,10 +276,12 @@ export class QdlManager {
 
     try {
       const currentSlot = await this.qdl.getActiveSlot()
+      this.timer.mark('get-active-slot')
       const otherSlot = currentSlot === 'a' ? 'b' : 'a'
 
       // Erase current xbl partition
       await this.qdl.erase(`xbl_${currentSlot}`)
+      this.timer.mark(`erase-xbl:${currentSlot}`)
 
       const steps = []
       const findImage = (name) => this.manifest.find((it) => it.name === name)
@@ -295,11 +303,13 @@ export class QdlManager {
         const blob = await fileHandle.getFile()
         this.setMessage(`Flashing ${partitionName}`)
         await this.qdl.flashBlob(partitionName, blob, onProgress)
+        this.timer.mark(`flash-blob:${partitionName}`)
       }
 
       console.debug('[QDL] Flashed all partitions')
       this.setMessage(`Changing slot to ${otherSlot}`)
       await this.qdl.setActiveSlot(otherSlot)
+      this.timer.mark(`set-active-slot:${otherSlot}`)
 
       this.setStep(Step.ERASING)
     } catch (err) {
@@ -320,10 +330,12 @@ export class QdlManager {
       const label = new Uint8Array(28).fill(0)  // sparse header size
       label.set(new TextEncoder().encode('COMMA_RESET'), 0)
       await this.qdl.flashBlob('userdata', new Blob([label]))
+      this.timer.mark('flash-blob:userdata')
       this.setProgress(0.9)
 
       this.setMessage('Rebooting')
       await this.qdl.reset()
+      this.timer.mark('reset')
       this.setProgress(1)
       this.setConnected(false)
 
@@ -343,9 +355,13 @@ export class QdlManager {
     await this.connect()
     if (this.error !== Error.NONE) return
     await this.downloadImages()
+    this.timer.mark('step:download-images')
     if (this.error !== Error.NONE) return
     await this.flashDevice()
+    this.timer.mark('step:flash-device')
     if (this.error !== Error.NONE) return
     await this.eraseDevice()
+    this.timer.mark('step:erase-device')
+    this.timer.stop('complete')
   }
 }
