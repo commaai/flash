@@ -2,23 +2,18 @@ export class Timer {
   /** @type {number|null} */
   startTime = null
 
-  /** @type {Object.<string, number>} */
-  stepTimestamps = {}
-
   start() {
-    this.startTime = performance.now()
-    this.stepTimestamps = {}
-    this.mark('start')
+    this.startTime = this.mark('start')
   }
 
   /**
-   * @param {string} step
+   * @param {string} markName
+   * @returns {number}
    */
-  mark(step) {
-    if (!this.startTime) return
-    const now = performance.now()
-    this.stepTimestamps[step] = now
-    console.info(`[Timer] ${step} at ${((now - this.startTime) / 1000).toFixed(2)}s`)
+  mark(markName) {
+    const now = performance.mark(markName).startTime
+    if (this.startTime) console.info(`[Timer] ${markName} at ${((now - this.startTime) / 1000).toFixed(2)}s`)
+    return now
   }
 
   /**
@@ -26,11 +21,13 @@ export class Timer {
    */
   stop(reason) {
     if (!this.startTime) return null
-    this.mark(reason)
-    console.debug({
-      reason,
-      totalDuration: this.stepTimestamps[reason],
-      steps: this.stepTimestamps,
+    const measure = performance.measure('flash', {
+      start: this.startTime,
+      end: this.mark(reason),
+      detail: reason,
     })
+    // TODO: submit results
+    console.log(measure)
+    console.log(performance.getEntriesByType('mark'))
   }
 }
