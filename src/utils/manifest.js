@@ -11,12 +11,12 @@ export class ManifestImage {
   name
 
   /**
-   * SHA-256 checksum of the image, encoded as a hex string
+   * SHA-256 checksum of the unpacked image, encoded as a hex string
    * @type {string}
    */
   checksum
   /**
-   * Size of the unpacked image in bytes
+   * Size of the unpacked and unsparsified image in bytes
    * @type {number}
    */
   size
@@ -54,15 +54,9 @@ export class ManifestImage {
     this.sparse = json.sparse
 
     this.fileName = `${this.name}-${json.hash_raw}.img`
-    if (this.name === 'system' && json.alt) {
-      this.checksum = json.alt.hash
-      this.archiveUrl = json.alt.url
-      this.size = json.alt.size
-    } else {
-      this.checksum = json.hash
-      this.archiveUrl = json.url
-      this.size = json.size
-    }
+    this.checksum = json.hash
+    this.archiveUrl = json.url
+    this.size = json.size
 
     this.archiveFileName = this.archiveUrl.split('/').pop()
     this.compressed = this.archiveFileName.endsWith('.xz')
