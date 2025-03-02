@@ -5,6 +5,8 @@ import * as Comlink from 'comlink'
 import config from '../config'
 import { getManifest } from './manifest'
 
+const MANIFEST_BRANCH = import.meta.env.MANIFEST_BRANCH
+
 globalThis.navigator = {
   storage: {
     estimate: vi.fn().mockImplementation(() => ({ quota: 10 * (1024 ** 3) })),
@@ -32,7 +34,7 @@ vi.resetModules() // this makes the import be reevaluated on each call
 await import('./../workers/image.worker')
 
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
-  describe(`${branch} manifest`, async () => {
+  describe.skipIf(MANIFEST_BRANCH && branch !== MANIFEST_BRANCH)(`${branch} manifest`, async () => {
     const images = await getManifest(manifestUrl)
 
     // Check all images are present
@@ -58,9 +60,9 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           }
         })
 
-        test('download', async () => {
+        test.skipIf(image.name === 'system' && !MANIFEST_BRANCH)('download', async () => {
           await imageWorker.downloadImage(image)
-        }, { skip: image.name === 'system', timeout: 8 * 1000 })
+        }, { timeout: (image.name === 'system' ? 11 * 60 : 8) * 1000 })
       })
     }
   })

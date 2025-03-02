@@ -20,4 +20,17 @@ jobs:
 
       - run: bun install
       - run: bun lint
-      - run: bun vitest
+      - run: bun run test
+
+  manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+
+      - run: bun install
+      - name: test manifest in master
+        run: bun run test "manifest"
+        env:
+          MANIFEST_BRANCH: master
