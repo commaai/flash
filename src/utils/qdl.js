@@ -344,7 +344,9 @@ export class QdlManager {
     if (this.error !== Error.NONE) return
     await this.downloadImages()
     if (this.error !== Error.NONE) return
+    const start = performance.now();
     await this.flashDevice()
+    console.debug(`Flashing took ${((performance.now() - start) / 1000).toFixed(2)}s`)
     if (this.error !== Error.NONE) return
     await this.eraseDevice()
   }
