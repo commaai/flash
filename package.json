@@ -14,7 +14,7 @@
     "node": ">=20.11.0"
   },
   "dependencies": {
-    "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#25bb324",
+    "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#5ff7c296c1ab3c5a0181097d830d2794cf84d238",
     "@fontsource-variable/inter": "^5.0.18",
     "@fontsource-variable/jetbrains-mono": "^5.0.21",
     "comlink": "^4.4.1",
