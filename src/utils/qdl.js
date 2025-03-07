@@ -275,6 +275,7 @@ export class QdlManager {
       // Erase current xbl partition
       await this.qdl.erase(`xbl_${currentSlot}`)
 
+      /** @type {[ManifestImage, string][]} */
       const steps = []
       const findImage = (name) => this.manifest.find((it) => it.name === name)
 
@@ -294,7 +295,7 @@ export class QdlManager {
         const fileHandle = await this.imageWorker.getImage(image)
         const blob = await fileHandle.getFile()
         this.setMessage(`Flashing ${partitionName}`)
-        await this.qdl.flashBlob(partitionName, blob, onProgress)
+        await this.qdl.flashBlob(partitionName, blob, (progress) => onProgress(progress / image.size))
       }
 
       console.debug('[QDL] Flashed all partitions')
