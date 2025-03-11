@@ -286,10 +286,11 @@ export class QdlManager {
       }
 
       for (const [[image, partitionName], onProgress] of withProgress(steps, this.setProgress.bind(this), ([image]) => Math.sqrt(image.size))) {
+        const { size } = image
+        this.setMessage(`Flashing ${partitionName}`)
         const fileHandle = await this.imageWorker.getImage(image)
         const blob = await fileHandle.getFile()
-        this.setMessage(`Flashing ${partitionName}`)
-        await this.qdl.flashBlob(partitionName, blob, onProgress)
+        await this.qdl.flashBlob(partitionName, blob, (progress) => onProgress(progress / size))
       }
 
       console.debug('[QDL] Flashed all partitions')
