@@ -45,9 +45,10 @@ for (const image of manifest) {
 }
 
 // Erase device
+const preserve = ['mbr', 'gpt', 'persist']
 for (const lun of qdl.firehose.luns) {
   console.debug(`Erasing lun ${lun}`)
-  await qdl.eraseLun(lun, ['gpt', 'persist'])
+  await qdl.eraseLun(lun, preserve)
 }
 
 // Flash partitions
