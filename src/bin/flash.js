@@ -61,7 +61,7 @@ for (const image of manifest) {
   console.debug(`Downloading ${image.name}`)
   const compressedResponse = await fetch(image.url)
   const blob = await readableStreamToBlob(new XzReadableStream(compressedResponse.body))
-  const slots = image.has_ab ? ['_a', '_b'] : [''];
+  const slots = image.has_ab ? ['_a', '_b'] : ['']
   for (const slot of slots) {
     const partitionName = `${image.name}${slot}`
     await qdl.flashBlob(partitionName, blob, createProgress(image.size))
