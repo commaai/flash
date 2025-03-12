@@ -31,8 +31,6 @@ console.debug('UFS Serial:', storageInfo.serial_num.toString(16).padStart(8, '0'
 const manifestUrl = 'https://raw.githubusercontent.com/commaai/openpilot/release3-staging/system/hardware/tici/all-partitions.json'
 /** @type {ManifestImage[]} */
 const manifest = await fetch(manifestUrl).then((res) => res.json())
-// console.debug('Loaded manifest:')
-// console.debug(manifest)
 
 // Flash main GPTs
 for (const image of manifest) {
@@ -43,6 +41,10 @@ for (const image of manifest) {
   console.debug(`Flashing ${image.name}`)
   await qdl.firehose.cmdProgram(image.gpt.lun, image.gpt.start_sector, blob, createProgress(image.size))
 }
+
+console.debug('Fix partition tables (resizes userdata)')
+await qdl.fixGpt(0)
+await qdl.fixGpt(5)
 
 // Erase device
 const preserve = ['mbr', 'gpt', 'persist']
@@ -67,5 +69,8 @@ for (const image of manifest) {
     await qdl.flashBlob(partitionName, blob, createProgress(image.size))
   }
 }
+
+// Set bootable lun
+await qdl.setActiveSlot('a')
 
 process.exit(0)
