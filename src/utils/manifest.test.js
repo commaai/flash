@@ -12,9 +12,16 @@ globalThis.navigator = {
     estimate: vi.fn().mockImplementation(() => ({ quota: 10 * (1024 ** 3) })),
     getDirectory: () => ({
       getFileHandle: () => ({
-        createWritable: vi.fn().mockImplementation(() => ({
-          write: vi.fn(),
-          close: vi.fn(),
+        createWritable: vi.fn().mockImplementation(() => new WritableStream({
+          write(_) {
+            // Discard the chunk (do nothing with it)
+          },
+          close() {
+            console.log("Mock writable stream closed");
+          },
+          abort(err) {
+            console.error("Mock writable stream aborted:", err);
+          },
         })),
       }),
       remove: vi.fn(),

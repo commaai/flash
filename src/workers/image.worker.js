@@ -1,15 +1,5 @@
 import * as Comlink from 'comlink'
-
-import { createSHA256 } from 'hash-wasm'
 import { XzReadableStream } from 'xz-decompress'
-
-/**
- * Chunk callback
- *
- * @callback chunkCallback
- * @param {Uint8Array} chunk
- * @returns {Promise<void>}
- */
 
 /**
  * Progress callback
@@ -18,26 +8,6 @@ import { XzReadableStream } from 'xz-decompress'
  * @param {number} progress
  * @returns {void}
  */
-
-/**
- * Read chunks from a readable stream reader while reporting progress
- *
- * @param {ReadableStreamDefaultReader} reader
- * @param {number} total
- * @param {chunkCallback} onChunk
- * @param {progressCallback} [onProgress]
- * @returns {Promise<void>}
- */
-async function readChunks(reader, total, { onChunk, onProgress = undefined }) {
-  let processed = 0
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    await onChunk(value)
-    processed += value.length
-    onProgress?.(processed / total)
-  }
-}
 
 const MIN_QUOTA_MB = 5250
 
@@ -64,16 +34,16 @@ const imageWorker = {
   },
 
   /**
-   * Download and unpack an image, saving it to persistent storage. Verifies that the image matches the expected
-   * SHA-256 checksum.
+   * Download and unpack an image, saving it to persistent storage.
    *
    * @param {ManifestImage} image
    * @param {progressCallback} [onProgress]
    * @returns {Promise<void>}
    */
   async downloadImage(image, onProgress = undefined) {
-    const { archiveUrl, checksum: expectedChecksum, fileName, size } = image
+    const { archiveUrl, fileName } = image
 
+    /** @type {FileSystemWritableFileStream} */
     let writable
     try {
       const fileHandle = await root.getFileHandle(fileName, { create: true })
@@ -88,35 +58,29 @@ const imageWorker = {
       throw `Fetch failed: ${response.status} ${response.statusText}`
     }
 
-    const shaObj = await createSHA256()
+    const contentLength = +response.headers.get('Content-Length')
+    let receivedLength = 0
+    const transform = new TransformStream({
+      transform(chunk, controller) {
+        receivedLength += chunk.byteLength
+        onProgress?.(receivedLength / contentLength)
+        controller.enqueue(chunk)
+      },
+    })
+    console.debug("transform", transform)
+    console.debug("response.body", response.body)
+    let stream = response.body.pipeThrough(transform)
+    console.debug("before stream", stream)
     try {
-      let stream = response.body
       if (image.compressed) {
         stream = new XzReadableStream(stream)
       }
-
-      await readChunks(stream.getReader(), size, {
-        onChunk: async (chunk) => {
-          await writable.write(chunk)
-          shaObj.update(chunk)
-        },
-        onProgress,
-      })
-
+      console.debug("stream", stream)
+      console.debug("writable", writable)
+      await stream.pipeTo(writable)
       onProgress?.(1)
     } catch (e) {
       throw `Error unpacking archive: ${e}`
-    }
-
-    try {
-      await writable.close()
-    } catch (e) {
-      throw `Error closing file handle: ${e}`
-    }
-
-    const checksum = shaObj.digest()
-    if (checksum !== expectedChecksum) {
-      throw `Checksum mismatch: got ${checksum}, expected ${expectedChecksum}`
     }
   },
 
