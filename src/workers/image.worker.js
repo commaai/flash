@@ -67,16 +67,11 @@ const imageWorker = {
         controller.enqueue(chunk)
       },
     })
-    console.debug("transform", transform)
-    console.debug("response.body", response.body)
     let stream = response.body.pipeThrough(transform)
-    console.debug("before stream", stream)
     try {
       if (image.compressed) {
         stream = new XzReadableStream(stream)
       }
-      console.debug("stream", stream)
-      console.debug("writable", writable)
       await stream.pipeTo(writable)
       onProgress?.(1)
     } catch (e) {
