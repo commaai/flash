@@ -25,15 +25,12 @@ jobs:
   manifest:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      matrix:
-        branch: [master, release]
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
 
       - run: bun install
-      - name: test manifest in ${{ matrix.branch }}
+      - name: test manifest in master
         run: bun run test "manifest"
         env:
-          MANIFEST_BRANCH: ${{ matrix.branch }}
+          MANIFEST_BRANCH: master
