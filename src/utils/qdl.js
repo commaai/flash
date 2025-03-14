@@ -21,7 +21,6 @@ export const Error = {
   UNRECOGNIZED_DEVICE: 1,
   LOST_CONNECTION: 2,
   DOWNLOAD_FAILED: 3,
-  CHECKSUM_MISMATCH: 5,
   FLASH_FAILED: 6,
   ERASE_FAILED: 7,
   REQUIREMENTS_NOT_MET: 8,
@@ -253,11 +252,7 @@ export class QdlManager {
       this.setStep(Step.FLASHING)
     } catch (err) {
       console.error('[QDL] Download error', err)
-      if (err.startsWith('Checksum mismatch')) {
-        this.setError(Error.CHECKSUM_MISMATCH)
-      } else {
-        this.setError(Error.DOWNLOAD_FAILED)
-      }
+      this.setError(Error.DOWNLOAD_FAILED)
     }
   }
 

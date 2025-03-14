@@ -14,7 +14,6 @@ import deviceExclamation from '../assets/device_exclamation_c3.svg'
 import deviceQuestion from '../assets/device_question_c3.svg'
 import done from '../assets/done.svg'
 import exclamation from '../assets/exclamation.svg'
-import frameAlert from '../assets/frame_alert.svg'
 import systemUpdate from '../assets/system_update_c3.svg'
 
 
@@ -82,11 +81,6 @@ const errors = {
     status: 'Download failed',
     description: 'The system image could not be downloaded. Check your internet connection and try again.',
     icon: cloudError,
-  },
-  [Error.CHECKSUM_MISMATCH]: {
-    status: 'Download mismatch',
-    description: 'The system image downloaded does not match the expected checksum. Try again.',
-    icon: frameAlert,
   },
   [Error.FLASH_FAILED]: {
     status: 'Flash failed',
