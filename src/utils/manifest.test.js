@@ -16,11 +16,9 @@ globalThis.navigator = {
           write(_) {
             // Discard the chunk (do nothing with it)
           },
-          close() {
-            console.log("Mock writable stream closed");
-          },
+          close() {},
           abort(err) {
-            console.error("Mock writable stream aborted:", err);
+            console.error('Mock writable stream aborted:', err)
           },
         })),
       }),
