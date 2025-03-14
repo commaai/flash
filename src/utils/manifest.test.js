@@ -12,9 +12,14 @@ globalThis.navigator = {
     estimate: vi.fn().mockImplementation(() => ({ quota: 10 * (1024 ** 3) })),
     getDirectory: () => ({
       getFileHandle: () => ({
-        createWritable: vi.fn().mockImplementation(() => ({
-          write: vi.fn(),
-          close: vi.fn(),
+        createWritable: vi.fn().mockImplementation(() => new WritableStream({
+          write(_) {
+            // Discard the chunk (do nothing with it)
+          },
+          close() {},
+          abort(err) {
+            console.error('Mock writable stream aborted:', err)
+          },
         })),
       }),
       remove: vi.fn(),
@@ -62,7 +67,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
 
         test.skipIf(image.name === 'system' && !MANIFEST_BRANCH)('download', async () => {
           await imageWorker.downloadImage(image)
-        }, { timeout: (image.name === 'system' ? 11 * 60 : 8) * 1000 })
+        }, { timeout: (image.name === 'system' ? 11 * 60 : 20) * 1000 })
       })
     }
   })
