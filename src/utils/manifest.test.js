@@ -67,7 +67,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
 
         test.skipIf(image.name === 'system' && !MANIFEST_BRANCH)('download', async () => {
           await imageWorker.downloadImage(image)
-        }, { timeout: (image.name === 'system' ? 11 * 60 : 24) * 1000 })
+        }, { timeout: (image.name === 'system' ? 9 * 60 : 20) * 1000 })
       })
     }
   })
