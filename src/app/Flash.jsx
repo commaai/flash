@@ -188,18 +188,22 @@ export default function Flash() {
   useEffect(() => {
     if (!imageWorker.current) return
 
-    // Create QDL manager with callbacks that update React state
-    qdlManager.current = new QdlManager(config.manifests.release, config.loader.url, {
-      onStepChange: setStep,
-      onMessageChange: setMessage,
-      onProgressChange: setProgress,
-      onErrorChange: setError,
-      onConnectionChange: setConnected,
-      onSerialChange: setSerial
-    })
+    fetch(config.loader.url)
+      .then((res) => res.arrayBuffer())
+      .then((programmer) => {
+        // Create QDL manager with callbacks that update React state
+        qdlManager.current = new QdlManager(config.manifests.release, programmer, {
+          onStepChange: setStep,
+          onMessageChange: setMessage,
+          onProgressChange: setProgress,
+          onErrorChange: setError,
+          onConnectionChange: setConnected,
+          onSerialChange: setSerial
+        })
 
-    // Initialize the manager
-    qdlManager.current.initialize(imageWorker.current)
+        // Initialize the manager
+        qdlManager.current.initialize(imageWorker.current)
+      });
   }, [config, imageWorker.current])
 
   // Handle user clicking the start button

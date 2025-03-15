@@ -74,13 +74,13 @@ function isRecognizedDevice(slotCount, partitions) {
 export class QdlManager {
   /**
    * @param {string} manifestUrl
-   * @param {string} programmerUrl
+   * @param {ArrayBuffer} programmer
    * @param {QdlManagerCallbacks} callbacks
    */
-  constructor(manifestUrl, programmerUrl, callbacks = {}) {
+  constructor(manifestUrl, programmer, callbacks = {}) {
     this.manifestUrl = manifestUrl
     this.callbacks = callbacks
-    this.qdl = new qdlDevice(programmerUrl)
+    this.qdl = new qdlDevice(programmer)
     this.imageWorker = null
     /** @type {ManifestImage[]|null} */
     this.manifest = null
