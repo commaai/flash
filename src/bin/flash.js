@@ -39,12 +39,8 @@ for (const image of manifest) {
   const compressedResponse = await fetch(image.url)
   const blob = await readableStreamToBlob(new XzReadableStream(compressedResponse.body))
   console.debug(`Flashing ${image.name}`)
-  await qdl.firehose.cmdProgram(image.gpt.lun, image.gpt.start_sector, blob, createProgress(image.size))
+  await qdl.repairGpt(image.gpt.lun, blob)
 }
-
-console.debug('Fix partition tables (resizes userdata)')
-await qdl.fixGpt(0)
-await qdl.fixGpt(5)
 
 // Erase device
 const preserve = ['mbr', 'gpt', 'persist']
