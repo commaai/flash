@@ -14,7 +14,6 @@ import deviceExclamation from '../assets/device_exclamation_c3.svg'
 import deviceQuestion from '../assets/device_question_c3.svg'
 import done from '../assets/done.svg'
 import exclamation from '../assets/exclamation.svg'
-import frameAlert from '../assets/frame_alert.svg'
 import systemUpdate from '../assets/system_update_c3.svg'
 
 
@@ -82,11 +81,6 @@ const errors = {
     status: 'Download failed',
     description: 'The system image could not be downloaded. Check your internet connection and try again.',
     icon: cloudError,
-  },
-  [Error.CHECKSUM_MISMATCH]: {
-    status: 'Download mismatch',
-    description: 'The system image downloaded does not match the expected checksum. Try again.',
-    icon: frameAlert,
   },
   [Error.FLASH_FAILED]: {
     status: 'Flash failed',
@@ -194,18 +188,22 @@ export default function Flash() {
   useEffect(() => {
     if (!imageWorker.current) return
 
-    // Create QDL manager with callbacks that update React state
-    qdlManager.current = new QdlManager(config.manifests.release, config.loader.url, {
-      onStepChange: setStep,
-      onMessageChange: setMessage,
-      onProgressChange: setProgress,
-      onErrorChange: setError,
-      onConnectionChange: setConnected,
-      onSerialChange: setSerial
-    })
+    fetch(config.loader.url)
+      .then((res) => res.arrayBuffer())
+      .then((programmer) => {
+        // Create QDL manager with callbacks that update React state
+        qdlManager.current = new QdlManager(config.manifests.release, programmer, {
+          onStepChange: setStep,
+          onMessageChange: setMessage,
+          onProgressChange: setProgress,
+          onErrorChange: setError,
+          onConnectionChange: setConnected,
+          onSerialChange: setSerial
+        })
 
-    // Initialize the manager
-    qdlManager.current.initialize(imageWorker.current)
+        // Initialize the manager
+        qdlManager.current.initialize(imageWorker.current)
+      });
   }, [config, imageWorker.current])
 
   // Handle user clicking the start button
