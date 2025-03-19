@@ -26,6 +26,25 @@ import { XzReadableStream } from 'xz-decompress'
 const qdl = await createQdl()
 const storageInfo = await qdl.getStorageInfo()
 
+async function fetchWithProgress(url) {
+  const response = await fetch(url)
+  const reader = response.body.getReader()
+  const onProgress = createProgress(Number(response.headers.get('content-length')))
+  let received = 0
+  return new ReadableStream({
+    async pull(controller) {
+      const { value, done } = await reader.read()
+      if (done) {
+        controller.close()
+        return
+      }
+      received += value.length
+      onProgress(received)
+      controller.enqueue(value)
+    },
+  })
+}
+
 console.debug('UFS Serial:', storageInfo.serial_num.toString(16).padStart(8, '0'))
 
 const manifestUrl = 'https://raw.githubusercontent.com/commaai/openpilot/release3-staging/system/hardware/tici/all-partitions.json'
@@ -36,8 +55,8 @@ const manifest = await fetch(manifestUrl).then((res) => res.json())
 for (const image of manifest) {
   if (!image.gpt) continue
   console.debug(`Downloading ${image.name}`)
-  const compressedResponse = await fetch(image.url)
-  const blob = await readableStreamToBlob(new XzReadableStream(compressedResponse.body))
+  const compressedStream = await fetchWithProgress(image.url)
+  const blob = await readableStreamToBlob(new XzReadableStream(compressedStream))
   console.debug(`Flashing ${image.name}`)
   await qdl.repairGpt(image.gpt.lun, blob)
 }
@@ -57,8 +76,8 @@ for (const image of manifest) {
     continue
   }
   console.debug(`Downloading ${image.name}`)
-  const compressedResponse = await fetch(image.url)
-  const blob = await readableStreamToBlob(new XzReadableStream(compressedResponse.body))
+  const compressedStream = await fetchWithProgress(image.url)
+  const blob = await readableStreamToBlob(new XzReadableStream(compressedStream))
   const slots = image.has_ab ? ['_a', '_b'] : ['']
   for (const slot of slots) {
     const partitionName = `${image.name}${slot}`
