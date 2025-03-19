@@ -170,7 +170,7 @@ export class QdlManager {
       this.setStep(Step.READY)
     } catch (err) {
       console.error('[QDL] Initialization error', err)
-      if (err.startsWith('Not enough storage')) {
+      if (err instanceof String && err.startsWith('Not enough storage')) {
         this.setError(Error.STORAGE_SPACE)
         this.setMessage(err)
       } else {
