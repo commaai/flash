@@ -115,8 +115,8 @@ for (const lun of qdl.firehose.luns) {
 // Flash partitions
 for (const image of manifest) {
   if (image.gpt) continue
-  if (['persist', 'userdata'].some((name) => image.name.includes(name))) {
-    console.debug(`skipping ${image.name}`)
+  if (image.name === 'persist' || image.name.startsWith('userdata_') && image.name !== userdataImage) {
+    console.debug(`Skipping ${image.name}`)
     continue
   }
   console.debug(`Downloading ${image.name}`)
@@ -124,7 +124,7 @@ for (const image of manifest) {
   const blob = await readableStreamToBlob(new XzReadableStream(compressedStream))
   const slots = image.has_ab ? ['_a', '_b'] : ['']
   for (const slot of slots) {
-    const partitionName = `${image.name}${slot}`
+    const partitionName = image.name.startsWith('userdata_') ? 'userdata' : `${image.name}${slot}`
     await qdl.flashBlob(partitionName, blob, createProgress(image.size))
   }
 }
