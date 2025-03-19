@@ -43,9 +43,10 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
     const images = await getManifest(manifestUrl)
 
     // Check all images are present
-    expect(images.length).toBe(7)
+    expect(images.length).toBe(33)
 
     for (const image of images) {
+      const big = image.name === 'system' || image.name.startsWith('userdata_')
       describe(`${image.name} image`, async () => {
         test('xz archive', () => {
           expect(image.fileName, 'file to be uncompressed').not.toContain('.xz')
@@ -65,9 +66,9 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           }
         })
 
-        test.skipIf(image.name === 'system' && !MANIFEST_BRANCH)('download', async () => {
+        test.skipIf(big && !MANIFEST_BRANCH)('download', async () => {
           await imageWorker.downloadImage(image)
-        }, { timeout: (image.name === 'system' ? 11 * 60 : 20) * 1000 })
+        }, { timeout: (big ? 11 * 60 : 20) * 1000 })
       })
     }
   })
