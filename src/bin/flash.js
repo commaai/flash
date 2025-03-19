@@ -23,8 +23,11 @@ import { XzReadableStream } from 'xz-decompress'
  * @property {(Partition|undefined)} gpt
  */
 
-const qdl = await createQdl()
-const storageInfo = await qdl.getStorageInfo()
+function assert(condition, message = undefined) {
+  if (condition) return
+  if (message) console.error(message)
+  process.exit(1)
+}
 
 async function fetchWithProgress(url) {
   const response = await fetch(url)
@@ -45,7 +48,16 @@ async function fetchWithProgress(url) {
   })
 }
 
+const qdl = await createQdl()
+const storageInfo = await qdl.getStorageInfo()
+
 console.debug('UFS Serial:', storageInfo.serial_num.toString(16).padStart(8, '0'))
+
+// Should be the same for all comma 3/3X
+assert(storageInfo.block_size === 4096)
+assert(storageInfo.page_size === 4096)
+assert(storageInfo.num_physical === 6)
+assert(storageInfo.mem_type === 'UFS')
 
 const manifestUrl = 'https://raw.githubusercontent.com/commaai/openpilot/release3-staging/system/hardware/tici/all-partitions.json'
 /** @type {ManifestImage[]} */
