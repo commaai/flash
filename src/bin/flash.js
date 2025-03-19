@@ -59,22 +59,37 @@ assert(storageInfo.page_size === 4096)
 assert(storageInfo.num_physical === 6)
 assert(storageInfo.mem_type === 'UFS')
 
-// comma three specific?
+let userdataImage = null;
+
+// comma three
 // serial e22af7f8
 // serial 696f4917
 // userdata	start 6159400 size 7986131
-// assert(storageInfo.total_blocks === 14145536)
-// assert(storageInfo.manufacturer_id === 429)
-// assert(storageInfo.fw_version === '205')
-// assert(storageInfo.prod_name === 'H28S7Q302BMR')
+if (storageInfo.prod_name === 'H28S7Q302BMR' && storageInfo.manufacturer_id === 429 &&
+    storageInfo.fw_version === '205' && storageInfo.total_blocks === 14145536) {
+  userdataImage = 'userdata_30'
+}
 
-// comma 3X specific?
+// comma 3X
 // serial 6c65f4e7
 // userdata	start 6159400 size 23446483
-// assert(storageInfo.total_blocks === 29605888)
-// assert(storageInfo.manufacturer_id === 325)
-// assert(storageInfo.fw_version === '308')
-// assert(storageInfo.prod_name === 'SDINDDH4-128G   1308')
+if (storageInfo.prod_name === 'SDINDDH4-128G   1308' && storageInfo.manufacturer_id === 325 &&
+    storageInfo.fw_version === '308' && storageInfo.total_blocks === 29605888) {
+  userdataImage = 'userdata_89'
+}
+// serial cb80a5fa
+if (storageInfo.prod_name === 'SDINDDH4-128G   1272' && storageInfo.manufacturer_id === 325 &&
+    storageInfo.fw_version === '272' && storageInfo.total_blocks === 29775872) {
+  userdataImage = 'userdata_90'
+}
+
+if (!userdataImage) {
+  console.error('Could not identify device by UFS chip')
+  console.debug(storageInfo)
+  process.exit(1)
+}
+
+console.debug('Detected userdata image:', userdataImage)
 
 const manifestUrl = 'https://raw.githubusercontent.com/commaai/openpilot/release3-staging/system/hardware/tici/all-partitions.json'
 /** @type {ManifestImage[]} */
