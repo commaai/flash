@@ -47,7 +47,7 @@ function isRecognizedDevice(slotCount, partitions) {
     'sti', 'storsec', 'system', 'systemrw', 'toolsfv', 'tz', 'userdata', 'vm-linux', 'vm-system', 'xbl',
     'xbl_config'
   ]
-  if (!partitions.every(partition => expectedPartitions.includes(partition))) {
+  if (!partitions.every(partition => expectedPartitions.includes(partition.endsWith('_a') || partition.endsWith('_b') ? partition.slice(0, -2) : partition))) {
     console.error('[QDL] Unrecognised device (partitions)', partitions)
     return false
   }
