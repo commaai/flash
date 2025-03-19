@@ -81,12 +81,11 @@ for (const image of manifest) {
   const slots = image.has_ab ? ['_a', '_b'] : ['']
   for (const slot of slots) {
     const partitionName = `${image.name}${slot}`
-    if (partitionName === 'system_a') continue  // igloo bug
     await qdl.flashBlob(partitionName, blob, createProgress(image.size))
   }
 }
 
 // Set bootable lun
-await qdl.setActiveSlot('b')
+await qdl.setActiveSlot('a')
 
 process.exit(0)
