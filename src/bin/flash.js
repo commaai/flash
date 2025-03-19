@@ -25,12 +25,6 @@ import { checkCompatibleDevice } from '../utils/qdl'
  * @property {(Partition|undefined)} gpt
  */
 
-function assert(condition, message = undefined) {
-  if (condition) return
-  if (message) console.error(message)
-  process.exit(1)
-}
-
 async function fetchWithProgress(url) {
   const response = await fetch(url)
   const reader = response.body.getReader()
