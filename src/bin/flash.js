@@ -59,6 +59,23 @@ assert(storageInfo.page_size === 4096)
 assert(storageInfo.num_physical === 6)
 assert(storageInfo.mem_type === 'UFS')
 
+// comma three specific?
+// serial e22af7f8
+// serial 696f4917
+// userdata	start 6159400 size 7986131
+// assert(storageInfo.total_blocks === 14145536)
+// assert(storageInfo.manufacturer_id === 429)
+// assert(storageInfo.fw_version === '205')
+// assert(storageInfo.prod_name === 'H28S7Q302BMR')
+
+// comma 3X specific?
+// serial 6c65f4e7
+// userdata	start 6159400 size 23446483
+// assert(storageInfo.total_blocks === 29605888)
+// assert(storageInfo.manufacturer_id === 325)
+// assert(storageInfo.fw_version === '308')
+// assert(storageInfo.prod_name === 'SDINDDH4-128G   1308')
+
 const manifestUrl = 'https://raw.githubusercontent.com/commaai/openpilot/release3-staging/system/hardware/tici/all-partitions.json'
 /** @type {ManifestImage[]} */
 const manifest = await fetch(manifestUrl).then((res) => res.json())
