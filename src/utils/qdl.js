@@ -28,30 +28,36 @@ export const Error = {
 }
 
 /**
- * @param {number} slotCount
- * @param {string[]} partitions
- * @returns {boolean}
+ * @param {any} storageInfo
+ * @returns {string|null}
  */
-function isRecognizedDevice(slotCount, partitions) {
-  if (slotCount !== 2) {
-    console.error('[QDL] Unrecognised device (slotCount)')
-    return false
+export function checkCompatibleDevice(storageInfo) {
+  // Should be the same for all comma 3/3X
+  if (storageInfo.block_size !== 4096 || storageInfo.page_size !== 4096 ||
+    storageInfo.num_physical !== 6 || storageInfo.mem_type !== 'UFS') {
+    throw 'UFS chip parameters mismatch'
   }
 
-  // check we have the expected partitions to make sure it's a comma three
-  const expectedPartitions = [
-    'ALIGN_TO_128K_1', 'ALIGN_TO_128K_2', 'ImageFv', 'abl', 'aop', 'apdp', 'bluetooth', 'boot', 'cache',
-    'cdt', 'cmnlib', 'cmnlib64', 'ddr', 'devcfg', 'devinfo', 'dip', 'dsp', 'fdemeta', 'frp', 'fsc', 'fsg',
-    'hyp', 'keymaster', 'keystore', 'limits', 'logdump', 'logfs', 'mdtp', 'mdtpsecapp', 'misc', 'modem',
-    'modemst1', 'modemst2', 'msadp', 'persist', 'qupfw', 'rawdump', 'sec', 'splash', 'spunvm', 'ssd',
-    'sti', 'storsec', 'system', 'systemrw', 'toolsfv', 'tz', 'userdata', 'vm-linux', 'vm-system', 'xbl',
-    'xbl_config'
-  ]
-  if (!partitions.every(partition => expectedPartitions.includes(partition.endsWith('_a') || partition.endsWith('_b') ? partition.slice(0, -2) : partition))) {
-    console.error('[QDL] Unrecognised device (partitions)', partitions)
-    return false
+  // comma three
+  // userdata start 6159400 size 7986131
+  if (storageInfo.prod_name === 'H28S7Q302BMR' && storageInfo.manufacturer_id === 429 &&
+    storageInfo.fw_version === '205' && storageInfo.total_blocks === 14145536) {
+    return 'userdata_30'
   }
-  return true
+
+  // comma 3X
+  // userdata start 6159400 size 23446483
+  if (storageInfo.prod_name === 'SDINDDH4-128G   1308' && storageInfo.manufacturer_id === 325 &&
+    storageInfo.fw_version === '308' && storageInfo.total_blocks === 29605888) {
+    return 'userdata_89'
+  }
+  // unknown userdata sectors
+  if (storageInfo.prod_name === 'SDINDDH4-128G   1272' && storageInfo.manufacturer_id === 325 &&
+    storageInfo.fw_version === '272' && storageInfo.total_blocks === 29775872) {
+    return 'userdata_90'
+  }
+
+  throw 'Could not identify UFS chip'
 }
 
 /**
@@ -72,6 +78,9 @@ function isRecognizedDevice(slotCount, partitions) {
  */
 
 export class QdlManager {
+  /** @type {string} */
+  userdataImage
+
   /**
    * @param {string} manifestUrl
    * @param {ArrayBuffer} programmer
@@ -214,18 +223,20 @@ export class QdlManager {
       await this.qdl.connect(new usbClass())
       console.info('[QDL] Connected')
 
-      const { serial_num } = await this.qdl.getStorageInfo()
-      this.setSerial(Number(serial_num).toString(16).padStart(8, '0'))
-
-      const [slotCount, partitions] = await this.qdl.getDevicePartitionsInfo()
-      const recognized = isRecognizedDevice(slotCount, partitions)
-      console.debug('[QDL] Device info', { slotCount, partitions, recognized })
-
-      if (!recognized) {
+      const storageInfo = await this.qdl.getStorageInfo()
+      try {
+        this.userdataImage = checkCompatibleDevice(storageInfo)
+      } catch (e) {
+        console.error('[QDL] Could not identify device:', e)
+        console.debug(storageInfo)
         this.setError(Error.UNRECOGNIZED_DEVICE)
         return
       }
 
+      const serialNum = Number(storageInfo.serial_num).toString(16).padStart(8, '0')
+      console.debug('[QDL] Device info', { serialNum, userdataImage: this.userdataImage })
+
+      this.setSerial(serialNum)
       this.setConnected(true)
       this.setStep(Step.DOWNLOADING)
     } catch (err) {
