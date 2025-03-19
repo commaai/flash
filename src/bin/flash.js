@@ -62,8 +62,6 @@ assert(storageInfo.mem_type === 'UFS')
 let userdataImage = null;
 
 // comma three
-// serial e22af7f8
-// serial 696f4917
 // userdata	start 6159400 size 7986131
 if (storageInfo.prod_name === 'H28S7Q302BMR' && storageInfo.manufacturer_id === 429 &&
     storageInfo.fw_version === '205' && storageInfo.total_blocks === 14145536) {
@@ -71,13 +69,12 @@ if (storageInfo.prod_name === 'H28S7Q302BMR' && storageInfo.manufacturer_id === 
 }
 
 // comma 3X
-// serial 6c65f4e7
 // userdata	start 6159400 size 23446483
 if (storageInfo.prod_name === 'SDINDDH4-128G   1308' && storageInfo.manufacturer_id === 325 &&
     storageInfo.fw_version === '308' && storageInfo.total_blocks === 29605888) {
   userdataImage = 'userdata_89'
 }
-// serial cb80a5fa
+// unknown userdata sectors
 if (storageInfo.prod_name === 'SDINDDH4-128G   1272' && storageInfo.manufacturer_id === 325 &&
     storageInfo.fw_version === '272' && storageInfo.total_blocks === 29775872) {
   userdataImage = 'userdata_90'
