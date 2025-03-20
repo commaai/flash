@@ -45,8 +45,8 @@ const manifest = await getManifest(manifestUrl)
 for (const image of manifest) {
   if (!image.gpt) continue
   console.debug(`Downloading ${image.name}`)
-  const compressedStream = await fetchWithProgress(image.url)
-  const blob = await readableStreamToBlob(new XzReadableStream(compressedStream))
+  const stream = await fetchWithProgress(image.archiveUrl)
+  const blob = await readableStreamToBlob(image.compressed ? new XzReadableStream(stream) : stream)
   console.debug(`Flashing ${image.name}`)
   await qdl.repairGpt(image.gpt.lun, blob)
 }
@@ -66,11 +66,11 @@ for (const image of manifest) {
     continue
   }
   console.debug(`Downloading ${image.name}`)
-  const compressedStream = await fetchWithProgress(image.url)
-  const blob = await readableStreamToBlob(new XzReadableStream(compressedStream))
-  const slots = image.has_ab ? ['_a', '_b'] : ['']
+  const stream = await fetchWithProgress(image.archiveUrl)
+  const blob = await readableStreamToBlob(image.compressed ? new XzReadableStream(stream) : stream)
+  const slots = image.hasAB ? ['_a', '_b'] : ['']
   for (const slot of slots) {
-    const partitionName = image.name.startsWith('userdata_') ? 'userdata' : `${image.name}${slot}`
+    const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
     await qdl.flashBlob(partitionName, blob, createProgress(image.size))
   }
 }
