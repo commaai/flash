@@ -60,7 +60,7 @@ const manifestUrl = 'https://raw.githubusercontent.com/commaai/openpilot/release
 /** @type {ManifestImage[]} */
 const manifest = await fetch(manifestUrl).then((res) => res.json())
 
-// Flash main GPTs
+// Repair GPTs
 for (const image of manifest) {
   if (!image.gpt) continue
   console.debug(`Downloading ${image.name}`)
