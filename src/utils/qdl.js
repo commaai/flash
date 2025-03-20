@@ -341,7 +341,7 @@ export class QdlManager {
     try {
       /** @param {ManifestImage} image */
       const getStepWeight = (image) => {
-        const downloadWeight = image.sparse ? Math.log10(image.size) : image.size
+        const downloadWeight = (image.sparse ? 0.1 : 1) * image.size
         const flashWeight = (image.hasAB ? 2 : 1) * image.size
         return downloadWeight + flashWeight
       }
