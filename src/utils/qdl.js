@@ -339,7 +339,13 @@ export class QdlManager {
     }
 
     try {
-      for await (const [image, onProgress] of withProgress(systemImages, this.setProgress.bind(this), (image) => image.size)) {
+      /** @param {ManifestImage} image */
+      const getStepWeight = (image) => {
+        const downloadWeight = image.sparse ? Math.log10(image.size) : image.size
+        const flashWeight = (image.hasAB ? 2 : 1) * image.size
+        return downloadWeight * flashWeight
+      }
+      for await (const [image, onProgress] of withProgress(systemImages, this.setProgress.bind(this), getStepWeight)) {
         const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], onProgress)
 
         this.setMessage(`Downloading ${image.name}`)
@@ -354,11 +360,10 @@ export class QdlManager {
           const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
 
           this.setMessage(`Flashing ${partitionName}`)
-          const onFlashProgress = (progress) => onSlotProgress(progress / image.size)
-          if (!await this.qdl.flashBlob(partitionName, blob, onFlashProgress)) {
+          if (!await this.qdl.flashBlob(partitionName, blob, (progress) => onSlotProgress(progress / image.size))) {
             throw `Flashing partition "${partitionName}" failed`
           }
-          onFlashProgress(1.0)
+          onSlotProgress(1.0)
         }
       }
     } catch (err) {
