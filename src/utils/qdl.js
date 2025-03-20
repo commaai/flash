@@ -347,9 +347,9 @@ export class QdlManager {
     this.setStep(Step.FLASH_SYSTEM)
     this.setProgress(0)
 
-    // Exclude GPT images, and pick correct userdata image to flash
+    // Exclude GPT images and persist image, and pick correct userdata image to flash
     const systemImages = this.manifest
-      .filter((image) => !image.gpt)
+      .filter((image) => !image.gpt && image.name !== 'persist')
       .filter((image) => !image.name.startsWith('userdata_') || image.name === this.userdataImage)
 
     if (!systemImages.find((image) => image.name === this.userdataImage)) {
