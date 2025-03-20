@@ -343,7 +343,7 @@ export class QdlManager {
       const getStepWeight = (image) => {
         const downloadWeight = image.sparse ? Math.log10(image.size) : image.size
         const flashWeight = (image.hasAB ? 2 : 1) * image.size
-        return downloadWeight * flashWeight
+        return downloadWeight + flashWeight
       }
       for await (const [image, onProgress] of withProgress(systemImages, this.setProgress.bind(this), getStepWeight)) {
         const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], onProgress)
