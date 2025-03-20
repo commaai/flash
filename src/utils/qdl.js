@@ -301,7 +301,7 @@ export class QdlManager {
    */
   async eraseDevice() {
     this.setStep(Step.ERASE_DEVICE)
-    this.setProgress(0)
+    this.setProgress(-1)
 
     // TODO: use storageInfo.num_physical
     const luns = this.manifest
@@ -311,11 +311,10 @@ export class QdlManager {
     try {
       // Erase each LUN, avoid erasing critical partitions and persist
       const preserve = ['mbr', 'gpt', 'persist']
-      for await (const [lun, onProgress] of withProgress(luns, this.setProgress.bind(this))) {
+      for (const lun of luns) {
         if (!await this.qdl.eraseLun(lun, preserve)) {
           throw `Erasing LUN ${lun} failed`
         }
-        onProgress(1.0)
       }
     } catch (err) {
       console.error('[Flash] An error occurred while erasing device')
@@ -341,7 +340,7 @@ export class QdlManager {
 
     try {
       for await (const [image, onProgress] of withProgress(systemImages, this.setProgress.bind(this))) {
-        const [onDownload, onFlash] = createSteps(image.has_ab ? [0.33, 0.66] : 2, onProgress)
+        const [onDownload, onFlash] = createSteps(image.hasAB ? [0.33, 0.66] : 2, onProgress)
 
         // Download image and get blob
         await this.imageWorker.downloadImage(image, Comlink.proxy(onDownload))
@@ -349,7 +348,7 @@ export class QdlManager {
         onDownload(1.0)
 
         // Flash image blob to each slot
-        const slots = image.has_ab ? ['_a', '_b'] : ['']
+        const slots = image.hasAB ? ['_a', '_b'] : ['']
         for (const [slot, onSlotProgress] of withProgress(slots, onFlash)) {
           // NOTE: userdata image name does not match partition name
           const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
@@ -361,7 +360,7 @@ export class QdlManager {
         }
       }
     } catch (err) {
-      console.error('[Flash] An error occurred while flash system')
+      console.error('[Flash] An error occurred while flashing system')
       console.error(err)
       this.setError(Error.FLASH_SYSTEM_FAILED)
     }
