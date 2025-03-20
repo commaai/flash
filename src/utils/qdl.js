@@ -157,10 +157,9 @@ export class QdlManager {
   }
 
   /**
-   * @private
    * @returns {boolean}
    */
-  checkRequirements() {
+  #checkRequirements() {
     if (typeof navigator.usb === 'undefined') {
       console.error('[QDL] WebUSB not supported')
       this.setError(Error.REQUIREMENTS_NOT_MET)
@@ -188,27 +187,40 @@ export class QdlManager {
     this.setProgress(-1)
     this.setMessage('')
 
-    if (!this.checkRequirements()) {
+    if (!this.#checkRequirements()) {
       return
     }
 
     try {
       await this.imageWorker.init()
-      this.manifest = await getManifest(this.manifestUrl)
-      if (this.manifest.length === 0) {
-        throw 'Manifest is empty'
-      }
-      console.debug('[QDL] Loaded manifest', this.manifest)
-      this.setStep(Step.READY)
     } catch (err) {
-      console.error('[QDL] Initialization error', err)
+      console.error('[QDL] Failed to initialize image worker')
+      console.error(err)
       if (err instanceof String && err.startsWith('Not enough storage')) {
         this.setError(Error.STORAGE_SPACE)
         this.setMessage(err)
       } else {
         this.setError(Error.UNKNOWN)
       }
+      return
     }
+
+    if (!this.manifest?.length) {
+      try {
+        this.manifest = await getManifest(this.manifestUrl)
+        if (this.manifest.length === 0) {
+          throw 'Manifest is empty'
+        }
+      } catch (err) {
+        console.error('[Flash] Failed to fetch manifest')
+        console.error(err)
+        this.setError(Error.UNKNOWN)
+        return
+      }
+      console.debug('[Flash] Loaded manifest', this.manifest)
+    }
+
+    this.setStep(Step.READY)
   }
 
   /**
