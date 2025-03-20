@@ -371,6 +371,7 @@ export class QdlManager {
   async finalize() {
     this.setStep(Step.FINALIZING)
     this.setProgress(-1)
+    this.setMessage('Finalizing...')
 
     // Set bootable LUN and update active partitions
     if (!await this.qdl.setActiveSlot('a')) {
@@ -379,7 +380,9 @@ export class QdlManager {
     }
 
     // Reboot the device
+    this.setMessage('Rebooting')
     await this.qdl.reset()
+    this.setConnected(false)
 
     this.setStep(Step.DONE)
   }
