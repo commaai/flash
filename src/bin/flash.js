@@ -3,27 +3,8 @@ import { readableStreamToBlob } from 'bun'
 import { createProgress, createQdl } from '@commaai/qdl/cli'
 import { XzReadableStream } from 'xz-decompress'
 
+import { getManifest } from '../utils/manifest'
 import { checkCompatibleDevice } from '../utils/qdl'
-
-/**
- * @typedef {Object} Partition
- * @property {number} lun
- * @property {number} start_sector
- * @property {number} num_sectors
- */
-
-/**
- * @typedef {Object} ManifestImage
- * @property {string} name
- * @property {string} url
- * @property {string} hash
- * @property {string} hash_raw
- * @property {number} size
- * @property {boolean} full_check
- * @property {boolean} has_ab
- * @property {string} ondevice_hash
- * @property {(Partition|undefined)} gpt
- */
 
 async function fetchWithProgress(url) {
   const response = await fetch(url)
@@ -58,7 +39,7 @@ console.debug('Detected userdata image:', userdataImage)
 
 const manifestUrl = 'https://raw.githubusercontent.com/commaai/openpilot/release3-staging/system/hardware/tici/all-partitions.json'
 /** @type {ManifestImage[]} */
-const manifest = await fetch(manifestUrl).then((res) => res.json())
+const manifest = await getManifest(manifestUrl)
 
 // Repair GPTs
 for (const image of manifest) {

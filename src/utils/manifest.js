@@ -30,6 +30,11 @@ export class ManifestImage {
    * @type {boolean}
    */
   hasAB
+  /**
+   * LUN and sector information for flashing this image
+   * @type {{ lun: number; start_sector: number; num_sectors: number }|null}
+   */
+  gpt
 
   /**
    * Name of the image file
@@ -60,6 +65,7 @@ export class ManifestImage {
     this.size = json.size
     this.sparse = json.sparse
     this.hasAB = json.has_ab
+    this.gpt = 'gpt' in json ? json.gpt : null
 
     this.fileName = `${this.name}-${json.hash_raw}.img`
     this.archiveUrl = json.url

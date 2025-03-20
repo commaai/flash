@@ -45,7 +45,11 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
     // Check all images are present
     expect(images.length).toBe(33)
 
+    let countGpt = 0
+
     for (const image of images) {
+      if (image.gpt !== null) countGpt++
+
       const big = image.name === 'system' || image.name.startsWith('userdata_')
       describe(`${image.name} image`, async () => {
         test('xz archive', () => {
@@ -71,5 +75,8 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         }, { timeout: (big ? 11 * 60 : 20) * 1000 })
       })
     }
+
+    // There should be one GPT image for each LUN
+    expect(countGpt).toBe(6)
   })
 }
