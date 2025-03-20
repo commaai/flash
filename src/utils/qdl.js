@@ -114,7 +114,7 @@ export class QdlManager {
    * @param {string} message
    */
   setMessage(message) {
-    if (message) console.info('[QDL]', message)
+    if (message) console.info('[Flash]', message)
     this.callbacks.onMessageChange?.(message)
   }
 
@@ -136,7 +136,7 @@ export class QdlManager {
     this.setProgress(-1)
 
     if (error !== Error.NONE) {
-      console.debug('[QDL] error', error)
+      console.debug('[Flash] error', error)
     }
   }
 
@@ -161,17 +161,17 @@ export class QdlManager {
    */
   #checkRequirements() {
     if (typeof navigator.usb === 'undefined') {
-      console.error('[QDL] WebUSB not supported')
+      console.error('[Flash] WebUSB not supported')
       this.setError(Error.REQUIREMENTS_NOT_MET)
       return false
     }
     if (typeof Worker === 'undefined') {
-      console.error('[QDL] Web Workers not supported')
+      console.error('[Flash] Web Workers not supported')
       this.setError(Error.REQUIREMENTS_NOT_MET)
       return false
     }
     if (typeof Storage === 'undefined') {
-      console.error('[QDL] Storage API not supported')
+      console.error('[Flash] Storage API not supported')
       this.setError(Error.REQUIREMENTS_NOT_MET)
       return false
     }
@@ -194,7 +194,7 @@ export class QdlManager {
     try {
       await this.imageWorker.init()
     } catch (err) {
-      console.error('[QDL] Failed to initialize image worker')
+      console.error('[Flash] Failed to initialize image worker')
       console.error(err)
       if (err instanceof String && err.startsWith('Not enough storage')) {
         this.setError(Error.STORAGE_SPACE)
@@ -231,30 +231,50 @@ export class QdlManager {
     this.setStep(Step.CONNECTING)
     this.setProgress(-1)
 
+    let usb
     try {
-      await this.qdl.connect(new usbClass())
-      console.info('[QDL] Connected')
-
-      const storageInfo = await this.qdl.getStorageInfo()
-      try {
-        this.userdataImage = checkCompatibleDevice(storageInfo)
-      } catch (e) {
-        console.error('[QDL] Could not identify device:', e)
-        console.debug(storageInfo)
-        this.setError(Error.UNRECOGNIZED_DEVICE)
-        return
-      }
-
-      const serialNum = Number(storageInfo.serial_num).toString(16).padStart(8, '0')
-      console.debug('[QDL] Device info', { serialNum, storageInfo, userdataImage: this.userdataImage })
-
-      this.setSerial(serialNum)
-      this.setConnected(true)
+      usb = new usbClass()
     } catch (err) {
-      console.error('[QDL] Connection lost', err)
+      console.error('[Flash] Connection lost', err)
+      this.setStep(Step.READY)
+      this.setConnected(false)
+      return
+    }
+
+    try {
+      await this.qdl.connect(usb)
+    } catch (err) {
+      console.error('[Flash] Connection error', err)
       this.setError(Error.LOST_CONNECTION)
       this.setConnected(false)
+      return
     }
+
+    console.info('[Flash] Connected')
+    this.setConnected(true)
+
+    let storageInfo
+    try {
+      storageInfo = await this.qdl.getStorageInfo()
+    } catch (err) {
+      console.error('[Flash] Connection lost', err)
+      this.setError(Error.LOST_CONNECTION)
+      this.setConnected(false)
+      return
+    }
+
+    try {
+      this.userdataImage = checkCompatibleDevice(storageInfo)
+    } catch (e) {
+      console.error('[Flash] Could not identify device:', e)
+      console.debug(storageInfo)
+      this.setError(Error.UNRECOGNIZED_DEVICE)
+      return
+    }
+
+    const serialNum = Number(storageInfo.serial_num).toString(16).padStart(8, '0')
+    console.debug('[Flash] Device info', { serialNum, storageInfo, userdataImage: this.userdataImage })
+    this.setSerial(serialNum)
   }
 
   /**
@@ -339,8 +359,8 @@ export class QdlManager {
     }
 
     try {
-      for await (const [image, onProgress] of withProgress(systemImages, this.setProgress.bind(this), (image) => image.hasAB ? 1.5 : 1)) {
-        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], onProgress)
+      for await (const image of systemImages) {
+        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.setProgress.bind(this))
 
         this.setMessage(`Downloading ${image.name}`)
         await this.imageWorker.downloadImage(image, Comlink.proxy(onDownload))
