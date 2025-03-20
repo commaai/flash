@@ -376,6 +376,9 @@ export class QdlManager {
       this.setError(Error.FINALIZING_FAILED)
     }
 
+    // Reboot the device
+    await this.qdl.reset()
+
     this.setStep(Step.DONE)
   }
 
