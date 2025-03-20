@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { QdlManager, Step, Error } from '../utils/qdl'
+import { FlashManager, Step, Error } from '../utils/manager.js'
 import { useImageWorker } from '../utils/image'
 import { isLinux } from '../utils/platform'
 import config from '../config'
@@ -199,7 +199,7 @@ export default function Flash() {
       .then((res) => res.arrayBuffer())
       .then((programmer) => {
         // Create QDL manager with callbacks that update React state
-        qdlManager.current = new QdlManager(config.manifests.release, programmer, {
+        qdlManager.current = new FlashManager(config.manifests.release, programmer, {
           onStepChange: setStep,
           onMessageChange: setMessage,
           onProgressChange: setProgress,

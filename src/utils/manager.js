@@ -70,7 +70,7 @@ export function checkCompatibleDevice(storageInfo) {
  */
 
 /**
- * @typedef {object} QdlManagerCallbacks
+ * @typedef {object} FlashManagerCallbacks
  * @property {ChangeCallback<number>} [onStepChange]
  * @property {ChangeCallback<string>} [onMessageChange]
  * @property {ChangeCallback<number>} [onProgressChange]
@@ -79,19 +79,19 @@ export function checkCompatibleDevice(storageInfo) {
  * @property {ChangeCallback<string>} [onSerialChange]
  */
 
-export class QdlManager {
+export class FlashManager {
   /** @type {string} */
-  userdataImage
+  #userdataImage
 
   /**
    * @param {string} manifestUrl
    * @param {ArrayBuffer} programmer
-   * @param {QdlManagerCallbacks} callbacks
+   * @param {FlashManagerCallbacks} callbacks
    */
   constructor(manifestUrl, programmer, callbacks = {}) {
     this.manifestUrl = manifestUrl
     this.callbacks = callbacks
-    this.qdl = new qdlDevice(programmer)
+    this.device = new qdlDevice(programmer)
     this.imageWorker = null
     /** @type {ManifestImage[]|null} */
     this.manifest = null
@@ -99,10 +99,7 @@ export class QdlManager {
     this.error = Error.NONE
   }
 
-  /**
-   * @param {number} step
-   * @returns {void}
-   */
+  /** @param {number} step */
   #setStep(step) {
     this.step = step
     this.callbacks.onStepChange?.(step)
@@ -160,10 +157,7 @@ export class QdlManager {
     return true
   }
 
-  /**
-   * @param {ImageWorker} imageWorker
-   * @returns {Promise<void>}
-   */
+  /** @param {ImageWorker} imageWorker */
   async initialize(imageWorker) {
     this.imageWorker = imageWorker
     this.#setProgress(-1)
@@ -205,11 +199,7 @@ export class QdlManager {
     this.#setStep(Step.READY)
   }
 
-  /**
-   * @private
-   * @returns {Promise<void>}
-   */
-  async connect() {
+  async #connect() {
     this.#setStep(Step.CONNECTING)
     this.#setProgress(-1)
 
@@ -224,7 +214,7 @@ export class QdlManager {
     }
 
     try {
-      await this.qdl.connect(usb)
+      await this.device.connect(usb)
     } catch (err) {
       console.error('[Flash] Connection error', err)
       this.#setError(Error.LOST_CONNECTION)
@@ -237,7 +227,7 @@ export class QdlManager {
 
     let storageInfo
     try {
-      storageInfo = await this.qdl.getStorageInfo()
+      storageInfo = await this.device.getStorageInfo()
     } catch (err) {
       console.error('[Flash] Connection lost', err)
       this.#setError(Error.LOST_CONNECTION)
@@ -246,7 +236,7 @@ export class QdlManager {
     }
 
     try {
-      this.userdataImage = checkCompatibleDevice(storageInfo)
+      this.#userdataImage = checkCompatibleDevice(storageInfo)
     } catch (e) {
       console.error('[Flash] Could not identify device:', e)
       console.debug(storageInfo)
@@ -255,15 +245,11 @@ export class QdlManager {
     }
 
     const serialNum = Number(storageInfo.serial_num).toString(16).padStart(8, '0')
-    console.debug('[Flash] Device info', { serialNum, storageInfo, userdataImage: this.userdataImage })
+    console.debug('[Flash] Device info', { serialNum, storageInfo, userdataImage: this.#userdataImage })
     this.#setSerial(serialNum)
   }
 
-  /**
-   * @returns {Promise<void>}
-   * @private
-   */
-  async repairPartitionTables() {
+  async #repairPartitionTables() {
     this.#setStep(Step.REPAIR_PARTITION_TABLES)
     this.#setProgress(0)
 
@@ -285,7 +271,7 @@ export class QdlManager {
         const blob = await this.imageWorker.getImage(image);
 
         // Recreate main and backup GPT for this LUN
-        if (!await this.qdl.repairGpt(image.gpt.lun, blob)) {
+        if (!await this.device.repairGpt(image.gpt.lun, blob)) {
           throw `Repairing LUN ${image.gpt.lun} failed`
         }
         onRepair(1.0)
@@ -297,11 +283,7 @@ export class QdlManager {
     }
   }
 
-  /**
-   * @returns {Promise<void>}
-   * @private
-   */
-  async eraseDevice() {
+  async #eraseDevice() {
     this.#setStep(Step.ERASE_DEVICE)
     this.#setProgress(-1)
 
@@ -314,7 +296,7 @@ export class QdlManager {
       // Erase each LUN, avoid erasing critical partitions and persist
       const preserve = ['mbr', 'gpt', 'persist']
       for (const lun of luns) {
-        if (!await this.qdl.eraseLun(lun, preserve)) {
+        if (!await this.device.eraseLun(lun, preserve)) {
           throw `Erasing LUN ${lun} failed`
         }
       }
@@ -325,17 +307,17 @@ export class QdlManager {
     }
   }
 
-  async flashSystem() {
+  async #flashSystem() {
     this.#setStep(Step.FLASH_SYSTEM)
     this.#setProgress(0)
 
     // Exclude GPT images and persist image, and pick correct userdata image to flash
     const systemImages = this.manifest
       .filter((image) => !image.gpt && image.name !== 'persist')
-      .filter((image) => !image.name.startsWith('userdata_') || image.name === this.userdataImage)
+      .filter((image) => !image.name.startsWith('userdata_') || image.name === this.#userdataImage)
 
-    if (!systemImages.find((image) => image.name === this.userdataImage)) {
-      console.error(`[Flash] Did not find userdata image "${this.userdataImage}"`)
+    if (!systemImages.find((image) => image.name === this.#userdataImage)) {
+      console.error(`[Flash] Did not find userdata image "${this.#userdataImage}"`)
       this.#setError(Error.UNKNOWN)
       return
     }
@@ -356,7 +338,7 @@ export class QdlManager {
           const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
 
           this.#setMessage(`Flashing ${partitionName}`)
-          if (!await this.qdl.flashBlob(partitionName, blob, (progress) => onSlotProgress(progress / image.size))) {
+          if (!await this.device.flashBlob(partitionName, blob, (progress) => onSlotProgress(progress / image.size))) {
             throw `Flashing partition "${partitionName}" failed`
           }
           onSlotProgress(1.0)
@@ -369,46 +351,43 @@ export class QdlManager {
     }
   }
 
-  async finalize() {
+  async #finalize() {
     this.#setStep(Step.FINALIZING)
     this.#setProgress(-1)
     this.#setMessage('Finalizing...')
 
     // Set bootable LUN and update active partitions
-    if (!await this.qdl.setActiveSlot('a')) {
+    if (!await this.device.setActiveSlot('a')) {
       console.error('[Flash] Failed to update slot')
       this.#setError(Error.FINALIZING_FAILED)
     }
 
     // Reboot the device
     this.#setMessage('Rebooting')
-    await this.qdl.reset()
+    await this.device.reset()
     this.#setConnected(false)
 
     this.#setStep(Step.DONE)
   }
 
-  /**
-   * @returns {Promise<void>}
-   */
   async start() {
     if (this.step !== Step.READY) return
-    await this.connect()
+    await this.#connect()
     if (this.error !== Error.NONE) return
     let start = performance.now()
-    await this.repairPartitionTables()
+    await this.#repairPartitionTables()
     console.debug(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
     if (this.error !== Error.NONE) return
     start = performance.now()
-    await this.eraseDevice()
+    await this.#eraseDevice()
     console.debug(`Erased device in ${((performance.now() - start) / 1000).toFixed(2)}s`)
     if (this.error !== Error.NONE) return
     start = performance.now()
-    await this.flashSystem()
+    await this.#flashSystem()
     console.debug(`Flashed system in ${((performance.now() - start) / 1000).toFixed(2)}s`)
     if (this.error !== Error.NONE) return
     start = performance.now()
-    await this.finalize()
+    await this.#finalize()
     console.debug(`Finalized in ${((performance.now() - start) / 1000).toFixed(2)}s`)
   }
 }
