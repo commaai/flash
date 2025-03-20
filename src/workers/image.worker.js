@@ -80,10 +80,10 @@ const imageWorker = {
   },
 
   /**
-   * Get a file handle for an image.
+   * Get a blob for an image.
    *
    * @param {ManifestImage} image
-   * @returns {Promise<FileSystemHandle>}
+   * @returns {Promise<Blob>}
    */
   async getImage(image) {
     const { fileName } = image
@@ -95,7 +95,7 @@ const imageWorker = {
       throw `Error getting file handle: ${e}`
     }
 
-    return fileHandle
+    return fileHandle.getFile()
   },
 }
 

@@ -5,16 +5,16 @@
  */
 export class ManifestImage {
   /**
-   * Partition name
+   * Image name
    * @type {string}
    */
   name
-
   /**
-   * SHA-256 checksum of the unpacked image, encoded as a hex string
+   * Partition name
    * @type {string}
    */
-  checksum
+  partitionName
+
   /**
    * Size of the unpacked and unsparsified image in bytes
    * @type {number}
@@ -25,13 +25,22 @@ export class ManifestImage {
    * @type {boolean}
    */
   sparse
+  /**
+   * Whether there are multiple slots for this partition
+   * @type {boolean}
+   */
+  hasAB
+  /**
+   * LUN and sector information for flashing this image
+   * @type {{ lun: number; start_sector: number; num_sectors: number }|null}
+   */
+  gpt
 
   /**
    * Name of the image file
    * @type {string}
    */
   fileName
-
   /**
    * Name of the image archive file
    * @type {string}
@@ -51,37 +60,19 @@ export class ManifestImage {
 
   constructor(json) {
     this.name = json.name
+    this.partitionName = json.name.startsWith('userdata_') ? 'userdata' : json.name
+
+    this.size = json.size
     this.sparse = json.sparse
+    this.hasAB = json.has_ab
+    this.gpt = 'gpt' in json ? json.gpt : null
 
     this.fileName = `${this.name}-${json.hash_raw}.img`
-    this.checksum = json.hash
     this.archiveUrl = json.url
-    this.size = json.size
-
     this.archiveFileName = this.archiveUrl.split('/').pop()
+
     this.compressed = this.archiveFileName.endsWith('.xz')
   }
-}
-
-/**
- * @param {string} text
- * @returns {ManifestImage[]}
- */
-export function createManifest(text) {
-  const expectedPartitions = ['aop', 'devcfg', 'xbl', 'xbl_config', 'abl', 'boot', 'system']
-  const partitions = JSON.parse(text).map((image) => new ManifestImage(image))
-
-  // Sort into consistent order
-  partitions.sort((a, b) => expectedPartitions.indexOf(a.name) - expectedPartitions.indexOf(b.name))
-
-  // Check that all partitions are present
-  // TODO: should we prevent flashing if there are extra partitions?
-  const missingPartitions = expectedPartitions.filter((name) => !partitions.some((image) => image.name === name))
-  if (missingPartitions.length > 0) {
-    throw new Error(`Manifest is missing partitions: ${missingPartitions.join(', ')}`)
-  }
-
-  return partitions
 }
 
 /**
@@ -91,5 +82,5 @@ export function createManifest(text) {
 export function getManifest(url) {
   return fetch(url)
     .then((response) => response.text())
-    .then(createManifest)
+    .then((text) => JSON.parse(text).map((image) => new ManifestImage(image)))
 }

@@ -53,7 +53,7 @@ export default function App() {
               {" "}is recommended for faster flashing speed.
             </li>
             <li>
-              Another USB-C cable, to power the device outside your car.
+              Another USB-C cable and a charger, to power the device outside your car.
             </li>
           </ul>
           {isWindows && (<>
@@ -141,8 +141,6 @@ export default function App() {
             You may have followed outdated instructions for flashing. Please read the instructions above for putting
             your device into QDL mode.
           </p>
-          <h3>After flashing, device says unable to mount data partition</h3>
-          <p>This is expected after the filesystem is erased. Press confirm to finish resetting your device.</p>
           <h3>General Tips</h3>
           <ul>
             <li>Try another computer or OS</li>

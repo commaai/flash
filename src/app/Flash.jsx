@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { QdlManager, Step, Error } from '../utils/qdl'
+import { FlashManager, Step, Error } from '../utils/manager'
 import { useImageWorker } from '../utils/image'
 import { isLinux } from '../utils/platform'
 import config from '../config'
 
 import bolt from '../assets/bolt.svg'
 import cable from '../assets/cable.svg'
-import cloud from '../assets/cloud.svg'
-import cloudDownload from '../assets/cloud_download.svg'
-import cloudError from '../assets/cloud_error.svg'
 import deviceExclamation from '../assets/device_exclamation_c3.svg'
 import deviceQuestion from '../assets/device_question_c3.svg'
 import done from '../assets/done.svg'
@@ -21,7 +18,7 @@ const steps = {
   [Step.INITIALIZING]: {
     status: 'Initializing...',
     bgColor: 'bg-gray-400 dark:bg-gray-700',
-    icon: cloud,
+    icon: bolt,
   },
   [Step.READY]: {
     status: 'Tap to start',
@@ -35,25 +32,33 @@ const steps = {
     bgColor: 'bg-yellow-500',
     icon: cable,
   },
-  [Step.DOWNLOADING]: {
-    status: 'Downloading...',
-    bgColor: 'bg-blue-500',
-    icon: cloudDownload,
-  },
-  [Step.FLASHING]: {
-    status: 'Flashing device...',
-    description: 'Do not unplug your device until the process is complete.',
+  [Step.REPAIR_PARTITION_TABLES]: {
+    status: 'Repairing partition tables...',
+    description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
     icon: systemUpdate,
   },
-  [Step.ERASING]: {
+  [Step.ERASE_DEVICE]: {
     status: 'Erasing device...',
+    description: 'Do not unplug your device until the process is complete',
+    bgColor: 'bg-lime-400',
+    icon: systemUpdate,
+  },
+  [Step.FLASH_SYSTEM]: {
+    status: 'Flashing device...',
+    description: 'Do not unplug your device until the process is complete',
+    bgColor: 'bg-lime-400',
+    icon: systemUpdate,
+  },
+  [Step.FINALIZING]: {
+    status: 'Finalizing...',
+    description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
     icon: systemUpdate,
   },
   [Step.DONE]: {
     status: 'Done',
-    description: 'Your device was flashed successfully. You can now unplug the USB cable.',
+    description: 'Your device was flashed successfully. It should now boot into the openpilot setup.',
     bgColor: 'bg-green-500',
     icon: done,
   },
@@ -66,9 +71,19 @@ const errors = {
     bgColor: 'bg-red-500',
     icon: exclamation,
   },
+  [Error.REQUIREMENTS_NOT_MET]: {
+    status: 'Requirements not met',
+    description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
+      'supports WebUSB and is up to date.',
+  },
+  [Error.STORAGE_SPACE]: {
+    description: 'Your system does not have enough space available to download the system image. Your browser may ' +
+      'be restricting the available space if you are in a private, incognito or guest session.',
+  },
   [Error.UNRECOGNIZED_DEVICE]: {
     status: 'Unrecognized device',
-    description: 'The device connected to your computer is not supported.',
+    description: 'The device connected to your computer is not supported. Try using a different cable, USB port, or ' +
+      'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
     bgColor: 'bg-yellow-500',
     icon: deviceQuestion,
   },
@@ -77,14 +92,9 @@ const errors = {
     description: 'The connection to your device was lost. Unplug your device and try again.',
     icon: cable,
   },
-  [Error.DOWNLOAD_FAILED]: {
-    status: 'Download failed',
-    description: 'The system image could not be downloaded. Check your internet connection and try again.',
-    icon: cloudError,
-  },
-  [Error.FLASH_FAILED]: {
-    status: 'Flash failed',
-    description: 'The system image could not be flashed to your device. Try using a different cable, USB port, or ' +
+  [Error.REPAIR_PARTITION_TABLES_FAILED]: {
+    status: 'Repairing partition tables failed',
+    description: 'Your device\'s partition tables could not be repaired. Try using a different cable, USB port, or ' +
       'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
@@ -94,14 +104,11 @@ const errors = {
       'persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
-  [Error.REQUIREMENTS_NOT_MET]: {
-    status: 'Requirements not met',
-    description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
-      'supports WebUSB and is up to date.',
-  },
-  [Error.STORAGE_SPACE]: {
-    description: 'Your system does not have enough space available to download the system image. Your browser may ' +
-      'be restricting the available space if you are in a private, incognito or guest session.',
+  [Error.FLASH_SYSTEM_FAILED]: {
+    status: 'Flash failed',
+    description: 'The system image could not be flashed to your device. Try using a different cable, USB port, or ' +
+      'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
+    icon: deviceExclamation,
   },
 }
 
@@ -192,7 +199,7 @@ export default function Flash() {
       .then((res) => res.arrayBuffer())
       .then((programmer) => {
         // Create QDL manager with callbacks that update React state
-        qdlManager.current = new QdlManager(config.manifests.release, programmer, {
+        qdlManager.current = new FlashManager(config.manifests.release, programmer, {
           onStepChange: setStep,
           onMessageChange: setMessage,
           onProgressChange: setProgress,
@@ -232,7 +239,7 @@ export default function Flash() {
   }
 
   // warn the user if they try to leave the page while flashing
-  if (Step.DOWNLOADING <= step && step <= Step.ERASING) {
+  if (step >= Step.FLASH_GPT && step <= Step.FLASH_SYSTEM) {
     window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
   } else {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
