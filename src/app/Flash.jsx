@@ -58,7 +58,7 @@ const steps = {
   },
   [Step.DONE]: {
     status: 'Done',
-    description: 'Your device was flashed successfully. You can now unplug the USB cable.',
+    description: 'Your device was flashed successfully. It should now boot into the openpilot setup.',
     bgColor: 'bg-green-500',
     icon: done,
   },
