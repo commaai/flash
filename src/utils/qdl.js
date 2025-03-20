@@ -276,7 +276,7 @@ export class QdlManager {
     try {
       for await (const [image, onProgress] of withProgress(gptImages, this.setProgress.bind(this))) {
         // TODO: track repair progress
-        const [onDownload, onRepair] = createSteps([0.66, 0.33], onProgress)
+        const [onDownload, onRepair] = createSteps([2, 1], onProgress)
 
         // Download GPT image
         await this.imageWorker.downloadImage(image, Comlink.proxy(onDownload))
@@ -340,7 +340,7 @@ export class QdlManager {
 
     try {
       for await (const [image, onProgress] of withProgress(systemImages, this.setProgress.bind(this))) {
-        const [onDownload, onFlash] = createSteps(image.hasAB ? [0.33, 0.66] : 2, onProgress)
+        const [onDownload, onFlash] = createSteps(image.hasAB ? [1, 2] : 2, onProgress)
 
         // Download image and get blob
         await this.imageWorker.downloadImage(image, Comlink.proxy(onDownload))

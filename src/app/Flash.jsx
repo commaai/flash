@@ -50,6 +50,12 @@ const steps = {
     bgColor: 'bg-lime-400',
     icon: systemUpdate,
   },
+  [Step.FINALIZING]: {
+    status: 'Finalizing...',
+    description: 'Do not unplug your device until the process is complete',
+    bgColor: 'bg-lime-400',
+    icon: systemUpdate,
+  },
   [Step.DONE]: {
     status: 'Done',
     description: 'Your device was flashed successfully. You can now unplug the USB cable.',
