@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { FlashManager, Step, Error } from '../utils/manager.js'
+import { FlashManager, Step, Error } from '../utils/manager'
 import { useImageWorker } from '../utils/image'
 import { isLinux } from '../utils/platform'
 import config from '../config'
