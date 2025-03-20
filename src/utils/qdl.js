@@ -339,24 +339,26 @@ export class QdlManager {
     }
 
     try {
-      for await (const [image, onProgress] of withProgress(systemImages, this.setProgress.bind(this))) {
-        const [onDownload, onFlash] = createSteps(image.hasAB ? [1, 2] : 2, onProgress)
+      for await (const [image, onProgress] of withProgress(systemImages, this.setProgress.bind(this), (image) => image.size)) {
+        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], onProgress)
 
-        // Download image and get blob
+        this.setMessage(`Downloading ${image.name}`)
         await this.imageWorker.downloadImage(image, Comlink.proxy(onDownload))
         const blob = await this.imageWorker.getImage(image)
         onDownload(1.0)
 
-        // Flash image blob to each slot
+        // Flash image to each slot
         const slots = image.hasAB ? ['_a', '_b'] : ['']
         for (const [slot, onSlotProgress] of withProgress(slots, onFlash)) {
           // NOTE: userdata image name does not match partition name
           const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
 
-          if (!await this.qdl.flashBlob(partitionName, blob, onSlotProgress)) {
+          this.setMessage(`Flashing ${partitionName}`)
+          const onFlashProgress = (progress) => onSlotProgress(progress / image.size)
+          if (!await this.qdl.flashBlob(partitionName, blob, onFlashProgress)) {
             throw `Flashing partition "${partitionName}" failed`
           }
-          onSlotProgress(1.0)
+          onFlashProgress(1.0)
         }
       }
     } catch (err) {
