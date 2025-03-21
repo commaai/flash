@@ -193,7 +193,7 @@ export class FlashManager {
         this.#setError(Error.UNKNOWN)
         return
       }
-      console.debug('[Flash] Loaded manifest', this.manifest)
+      console.info('[Flash] Loaded manifest', this.manifest)
     }
 
     this.#setStep(Step.READY)
@@ -239,13 +239,13 @@ export class FlashManager {
       this.#userdataImage = checkCompatibleDevice(storageInfo)
     } catch (e) {
       console.error('[Flash] Could not identify device:', e)
-      console.debug(storageInfo)
+      console.error(storageInfo)
       this.#setError(Error.UNRECOGNIZED_DEVICE)
       return
     }
 
     const serialNum = Number(storageInfo.serial_num).toString(16).padStart(8, '0')
-    console.debug('[Flash] Device info', { serialNum, storageInfo, userdataImage: this.#userdataImage })
+    console.info('[Flash] Device info', { serialNum, storageInfo, userdataImage: this.#userdataImage })
     this.#setSerial(serialNum)
   }
 
@@ -376,18 +376,18 @@ export class FlashManager {
     if (this.error !== Error.NONE) return
     let start = performance.now()
     await this.#repairPartitionTables()
-    console.debug(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+    console.info(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
     if (this.error !== Error.NONE) return
     start = performance.now()
     await this.#eraseDevice()
-    console.debug(`Erased device in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+    console.info(`Erased device in ${((performance.now() - start) / 1000).toFixed(2)}s`)
     if (this.error !== Error.NONE) return
     start = performance.now()
     await this.#flashSystem()
-    console.debug(`Flashed system in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+    console.info(`Flashed system in ${((performance.now() - start) / 1000).toFixed(2)}s`)
     if (this.error !== Error.NONE) return
     start = performance.now()
     await this.#finalize()
-    console.debug(`Finalized in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+    console.info(`Finalized in ${((performance.now() - start) / 1000).toFixed(2)}s`)
   }
 }
