@@ -296,9 +296,14 @@ export class FlashManager {
       .filter((image) => !!image.gpt)
       .map((image) => image.gpt.lun)
 
-    const [found, persistLun] = await this.device.detectPartition('persist')
+    const [found, persistLun, partition] = await this.device.detectPartition('persist')
     if (!found || luns.indexOf(persistLun) < 0) {
-      console.error('[Flash] Could not find "persist" partition', { found, persistLun })
+      console.error('[Flash] Could not find "persist" partition', { found, persistLun, partition })
+      this.#setError(Error.ERASE_FAILED)
+      return
+    }
+    if (partition.start !== 8n || partition.sectors !== 8192n) {
+      console.error('[Flash] Partition "persist" does not have expected properties', { found, persistLun, partition })
       this.#setError(Error.ERASE_FAILED)
       return
     }
