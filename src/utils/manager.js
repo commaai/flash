@@ -292,9 +292,7 @@ export class FlashManager {
     this.#setProgress(-1)
 
     // TODO: use storageInfo.num_physical
-    const luns = this.manifest
-      .filter((image) => !!image.gpt)
-      .map((image) => image.gpt.lun)
+    const luns = Array.from({ length: 6 }).map((_, i) => i)
 
     const [found, persistLun, partition] = await this.device.detectPartition('persist')
     if (!found || luns.indexOf(persistLun) < 0) {
@@ -302,7 +300,7 @@ export class FlashManager {
       this.#setError(Error.ERASE_FAILED)
       return
     }
-    if (partition.start !== 8n || partition.sectors !== 8192n) {
+    if (persistLun !== 0 || partition.start !== 8n || partition.sectors !== 8192n) {
       console.error('[Flash] Partition "persist" does not have expected properties', { found, persistLun, partition })
       this.#setError(Error.ERASE_FAILED)
       return
