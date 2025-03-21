@@ -38,12 +38,6 @@ const steps = {
     bgColor: 'bg-lime-400',
     icon: systemUpdate,
   },
-  [Step.ERASE_DEVICE]: {
-    status: 'Erasing device...',
-    description: 'Do not unplug your device until the process is complete',
-    bgColor: 'bg-lime-400',
-    icon: systemUpdate,
-  },
   [Step.FLASH_SYSTEM]: {
     status: 'Flashing device...',
     description: 'Do not unplug your device until the process is complete',
@@ -96,12 +90,6 @@ const errors = {
     status: 'Repairing partition tables failed',
     description: 'Your device\'s partition tables could not be repaired. Try using a different cable, USB port, or ' +
       'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
-  },
-  [Error.ERASE_FAILED]: {
-    status: 'Erase failed',
-    description: 'The device could not be erased. Try using a different cable, USB port, or computer. If the problem ' +
-      'persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
   [Error.FLASH_SYSTEM_FAILED]: {

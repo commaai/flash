@@ -10,10 +10,9 @@ export const Step = {
   READY: 1,
   CONNECTING: 2,
   REPAIR_PARTITION_TABLES: 3,
-  ERASE_DEVICE: 4,
-  FLASH_SYSTEM: 5,
-  FINALIZING: 6,
-  DONE: 7,
+  FLASH_SYSTEM: 4,
+  FINALIZING: 5,
+  DONE: 6,
 }
 
 export const Error = {
@@ -24,9 +23,8 @@ export const Error = {
   UNRECOGNIZED_DEVICE: 3,
   LOST_CONNECTION: 4,
   REPAIR_PARTITION_TABLES_FAILED: 5,
-  ERASE_FAILED: 6,
-  FLASH_SYSTEM_FAILED: 7,
-  FINALIZING_FAILED: 8,
+  FLASH_SYSTEM_FAILED: 6,
+  FINALIZING_FAILED: 7,
 }
 
 /**
@@ -287,30 +285,6 @@ export class FlashManager {
     }
   }
 
-  async #eraseDevice() {
-    this.#setStep(Step.ERASE_DEVICE)
-    this.#setProgress(-1)
-
-    // TODO: use storageInfo.num_physical
-    const luns = this.manifest
-      .filter((image) => !!image.gpt)
-      .map((image) => image.gpt.lun)
-
-    try {
-      // Erase each LUN, avoid erasing critical partitions and persist
-      const preserve = ['mbr', 'gpt', 'persist']
-      for (const lun of luns) {
-        if (!await this.device.eraseLun(lun, preserve)) {
-          throw `Erasing LUN ${lun} failed`
-        }
-      }
-    } catch (err) {
-      console.error('[Flash] An error occurred while erasing device')
-      console.error(err)
-      this.#setError(Error.ERASE_FAILED)
-    }
-  }
-
   async #flashSystem() {
     this.#setStep(Step.FLASH_SYSTEM)
     this.#setProgress(0)
@@ -381,10 +355,6 @@ export class FlashManager {
     let start = performance.now()
     await this.#repairPartitionTables()
     console.info(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
-    if (this.error !== Error.NONE) return
-    start = performance.now()
-    await this.#eraseDevice()
-    console.info(`Erased device in ${((performance.now() - start) / 1000).toFixed(2)}s`)
     if (this.error !== Error.NONE) return
     start = performance.now()
     await this.#flashSystem()
