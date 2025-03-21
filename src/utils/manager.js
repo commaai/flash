@@ -296,10 +296,21 @@ export class FlashManager {
       .filter((image) => !!image.gpt)
       .map((image) => image.gpt.lun)
 
+    const [found, persistLun] = await this.device.detectPartition('persist')
+    if (!found || luns.indexOf(persistLun) < 0) {
+      console.error('[Flash] Could not find "persist" partition', { found, persistLun })
+      this.#setError(Error.ERASE_FAILED)
+      return
+    }
+    console.info(`[Flash] "persist" partition located in LUN ${persistLun}`)
+
     try {
       // Erase each LUN, avoid erasing critical partitions and persist
-      const preserve = ['mbr', 'gpt', 'persist']
+      const critical = ['mbr', 'gpt']
       for (const lun of luns) {
+        const preserve = [...critical]
+        if (lun === persistLun) preserve.push('persist')
+        console.info(`[Flash] Erasing LUN ${lun} while preserving ${preserve.map((part) => `"${part}"`).join(', ')} partitions`)
         if (!await this.device.eraseLun(lun, preserve)) {
           throw `Erasing LUN ${lun} failed`
         }
