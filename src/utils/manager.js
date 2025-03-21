@@ -292,14 +292,28 @@ export class FlashManager {
     this.#setProgress(-1)
 
     // TODO: use storageInfo.num_physical
-    const luns = this.manifest
-      .filter((image) => !!image.gpt)
-      .map((image) => image.gpt.lun)
+    const luns = Array.from({ length: 6 }).map((_, i) => i)
+
+    const [found, persistLun, partition] = await this.device.detectPartition('persist')
+    if (!found || luns.indexOf(persistLun) < 0) {
+      console.error('[Flash] Could not find "persist" partition', { found, persistLun, partition })
+      this.#setError(Error.ERASE_FAILED)
+      return
+    }
+    if (persistLun !== 0 || partition.start !== 8n || partition.sectors !== 8192n) {
+      console.error('[Flash] Partition "persist" does not have expected properties', { found, persistLun, partition })
+      this.#setError(Error.ERASE_FAILED)
+      return
+    }
+    console.info(`[Flash] "persist" partition located in LUN ${persistLun}`)
 
     try {
       // Erase each LUN, avoid erasing critical partitions and persist
-      const preserve = ['mbr', 'gpt', 'persist']
+      const critical = ['mbr', 'gpt']
       for (const lun of luns) {
+        const preserve = [...critical]
+        if (lun === persistLun) preserve.push('persist')
+        console.info(`[Flash] Erasing LUN ${lun} while preserving ${preserve.map((part) => `"${part}"`).join(', ')} partitions`)
         if (!await this.device.eraseLun(lun, preserve)) {
           throw `Erasing LUN ${lun} failed`
         }
