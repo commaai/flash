@@ -46,6 +46,10 @@ export function checkCompatibleDevice(storageInfo) {
     storageInfo.total_blocks === 14145536) {
     return 'userdata_30'
   }
+  if (storageInfo.prod_name === 'H28U74301AMR' && storageInfo.manufacturer_id === 429 &&
+    storageInfo.total_blocks === 14145536) {
+    return 'userdata_30'
+  }
 
   // comma 3X
   // userdata start 6159400 size 23446483
