@@ -43,19 +43,19 @@ export function checkCompatibleDevice(storageInfo) {
   // comma three
   // userdata start 6159400 size 7986131
   if (storageInfo.prod_name === 'H28S7Q302BMR' && storageInfo.manufacturer_id === 429 &&
-    storageInfo.fw_version === '205' && storageInfo.total_blocks === 14145536) {
+    storageInfo.total_blocks === 14145536) {
     return 'userdata_30'
   }
 
   // comma 3X
   // userdata start 6159400 size 23446483
   if (storageInfo.prod_name === 'SDINDDH4-128G   1308' && storageInfo.manufacturer_id === 325 &&
-    storageInfo.fw_version === '308' && storageInfo.total_blocks === 29605888) {
+    storageInfo.total_blocks === 29605888) {
     return 'userdata_89'
   }
   // unknown userdata sectors
   if (storageInfo.prod_name === 'SDINDDH4-128G   1272' && storageInfo.manufacturer_id === 325 &&
-    storageInfo.fw_version === '272' && storageInfo.total_blocks === 29775872) {
+    storageInfo.total_blocks === 29775872) {
     return 'userdata_90'
   }
 
