@@ -145,7 +145,7 @@ export default function App() {
           <ul>
             <li>Try another computer or OS</li>
             <li>Try different USB ports on your computer</li>
-            <li>Try different USB-C cables, including the OBD-C cable that came with the device</li>
+            <li>Try different USB-C cables; low quality cables are often the source of problems. Note that the included OBD-C cable will not work.</li>
           </ul>
           <h3>Other questions</h3>
           <p>
