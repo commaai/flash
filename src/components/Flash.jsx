@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "preact/compat";
 import { FlashManager, Step, Error } from "../utils/manager";
 import { useImageWorker } from "../utils/image";
 import { isLinux } from "../utils/platform";
-import config from "../config";
+import config from "../utils/config";
 
 import bolt from "../assets/bolt.svg";
 import cable from "../assets/cable.svg";

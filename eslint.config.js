@@ -4,7 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import react from "eslint-plugin-react";
 import tseslint from "typescript-eslint";
 
-/** @type {import('eslint').Linter.FlatConfig[]} */
+/** @type {import('eslint').Linter.Config} */
 export default [
   // Base configurations
   eslint.configs.recommended,

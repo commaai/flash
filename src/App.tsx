@@ -1,14 +1,14 @@
-import comma from "../assets/comma.svg";
-import qdlPorts from "../assets/qdl-ports.svg";
-import zadigCreateNewDevice from "../assets/zadig_create_new_device.png";
-import zadigForm from "../assets/zadig_form.png";
+import comma from "./assets/comma.svg";
+import qdlPorts from "./assets/qdl-ports.svg";
+import zadigCreateNewDevice from "./assets/zadig_create_new_device.png";
+import zadigForm from "./assets/zadig_form.png";
 
-import { IntroSection } from "../components/sections/IntroSection";
-import { RequirementsSection } from "../components/sections/Requirements";
-import { FlashingSection } from "../components/sections/FlashingSection";
-import { TroubleshootingSection } from "../components/sections/TroubleshootingSection";
-import { DETACH_SCRIPT, PRODUCT_ID, VENDOR_ID } from "../utils/constants";
-import Flash from "./Flash";
+import { IntroSection } from "./components/sections/IntroSection";
+import { RequirementsSection } from "./components/sections/Requirements";
+import { FlashingSection } from "./components/sections/FlashingSection";
+import { TroubleshootingSection } from "./components/sections/TroubleshootingSection";
+import { DETACH_SCRIPT, PRODUCT_ID, VENDOR_ID } from "./utils/constants";
+import Flash from "./components/Flash";
 
 export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || "dev";
