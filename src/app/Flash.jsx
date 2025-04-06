@@ -77,8 +77,8 @@ const errors = {
       'supports WebUSB and is up to date.',
   },
   [Error.STORAGE_SPACE]: {
-    description: 'Your system does not have enough space available to download the system image. Your browser may ' +
-      'be restricting the available space if you are in a private, incognito or guest session.',
+    description: 'Your system does not have enough space available to download AGNOS. Your browser may be restricting' +
+      ' the available space if you are in a private, incognito or guest session.',
   },
   [Error.UNRECOGNIZED_DEVICE]: {
     status: 'Unrecognized device',
@@ -106,8 +106,8 @@ const errors = {
   },
   [Error.FLASH_SYSTEM_FAILED]: {
     status: 'Flash failed',
-    description: 'The system image could not be flashed to your device. Try using a different cable, USB port, or ' +
-      'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
+    description: 'AGNOS could not be flashed to your device. Try using a different cable, USB port, or computer. If ' +
+      'the problem persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
 }
