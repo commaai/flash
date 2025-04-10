@@ -1,6 +1,8 @@
 import * as Comlink from 'comlink'
 import { XzReadableStream } from 'xz-decompress'
 
+import { fetchStream } from '../utils/stream'
+
 /**
  * Progress callback
  *
@@ -29,7 +31,7 @@ const imageWorker = {
     const estimate = await navigator.storage.estimate()
     const quotaMB = (estimate.quota || 0) / (1024 ** 2)
     if (quotaMB < MIN_QUOTA_MB) {
-      throw `Not enough storage: ${quotaMB.toFixed(0)}MB free, need ${MIN_QUOTA_MB.toFixed(0)}MB`
+      throw new Error(`Not enough storage: ${quotaMB.toFixed(0)}MB free, need ${MIN_QUOTA_MB.toFixed(0)}MB`)
     }
   },
 
@@ -49,25 +51,11 @@ const imageWorker = {
       const fileHandle = await root.getFileHandle(fileName, { create: true })
       writable = await fileHandle.createWritable()
     } catch (e) {
-      throw `Error opening file handle: ${e}`
+      throw new Error(`Error opening file handle: ${e}`)
     }
 
     console.debug(`[ImageWorker] Downloading ${image.name} from ${archiveUrl}`)
-    const response = await fetch(archiveUrl, { mode: 'cors' })
-    if (!response.ok) {
-      throw `Fetch failed: ${response.status} ${response.statusText}`
-    }
-
-    const contentLength = +response.headers.get('Content-Length')
-    let receivedLength = 0
-    const transform = new TransformStream({
-      transform(chunk, controller) {
-        receivedLength += chunk.byteLength
-        onProgress?.(receivedLength / contentLength)
-        controller.enqueue(chunk)
-      },
-    })
-    let stream = response.body.pipeThrough(transform)
+    let stream = await fetchStream(archiveUrl, { mode: 'cors' }, { onProgress })
     try {
       if (image.compressed) {
         stream = new XzReadableStream(stream)
@@ -92,7 +80,7 @@ const imageWorker = {
     try {
       fileHandle = await root.getFileHandle(fileName, { create: false })
     } catch (e) {
-      throw `Error getting file handle: ${e}`
+      throw new Error(`Error getting file handle: ${e}`)
     }
 
     return fileHandle.getFile()
