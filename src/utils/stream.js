@@ -9,6 +9,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
       this.abortController = new AbortController()
       this.reader = null
     },
+
     async pull(streamController) {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
@@ -63,6 +64,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
         }
       }
     },
+
     cancel(reason) {
       console.warn('Stream canceled:', reason)
       this.abortController.abort()
