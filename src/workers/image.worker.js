@@ -49,7 +49,7 @@ const imageWorker = {
       const fileHandle = await root.getFileHandle(fileName, { create: true })
       writable = await fileHandle.createWritable()
     } catch (e) {
-      throw new Error(`Error opening file handle: ${e}`)
+      throw new Error(`Error opening file handle: ${e}`, { cause: e })
     }
 
     console.debug(`[ImageWorker] Downloading ${image.name} from ${archiveUrl}`)
@@ -75,7 +75,7 @@ const imageWorker = {
       await stream.pipeTo(writable)
       onProgress?.(1)
     } catch (e) {
-      throw new Error(`Error unpacking archive: ${e}`)
+      throw new Error(`Error unpacking archive: ${e}`, { cause: e })
     }
   },
 
@@ -92,7 +92,7 @@ const imageWorker = {
     try {
       fileHandle = await root.getFileHandle(fileName, { create: false })
     } catch (e) {
-      throw new Error(`Error getting file handle: ${e}`)
+      throw new Error(`Error getting file handle: ${e}`, { cause: e })
     }
 
     return fileHandle.getFile()
