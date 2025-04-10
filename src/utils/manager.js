@@ -37,7 +37,7 @@ export function checkCompatibleDevice(storageInfo) {
   // Should be the same for all comma 3/3X
   if (storageInfo.block_size !== 4096 || storageInfo.page_size !== 4096 ||
     storageInfo.num_physical !== 6 || storageInfo.mem_type !== 'UFS') {
-    throw 'UFS chip parameters mismatch'
+    throw new Error('UFS chip parameters mismatch')
   }
 
   // comma three
@@ -63,7 +63,7 @@ export function checkCompatibleDevice(storageInfo) {
     return 'userdata_90'
   }
 
-  throw 'Could not identify UFS chip'
+  throw new Error('Could not identify UFS chip')
 }
 
 /**
@@ -189,7 +189,7 @@ export class FlashManager {
       try {
         this.manifest = await getManifest(this.manifestUrl)
         if (this.manifest.length === 0) {
-          throw 'Manifest is empty'
+          throw new Error('Manifest is empty')
         }
       } catch (err) {
         console.error('[Flash] Failed to fetch manifest')
@@ -276,7 +276,7 @@ export class FlashManager {
 
         // Recreate main and backup GPT for this LUN
         if (!await this.device.repairGpt(image.gpt.lun, blob)) {
-          throw `Repairing LUN ${image.gpt.lun} failed`
+          throw new Error(`Repairing LUN ${image.gpt.lun} failed`)
         }
         onRepair(1.0)
       }
@@ -315,7 +315,7 @@ export class FlashManager {
         if (lun === persistLun) preserve.push('persist')
         console.info(`[Flash] Erasing LUN ${lun} while preserving ${preserve.map((part) => `"${part}"`).join(', ')} partitions`)
         if (!await this.device.eraseLun(lun, preserve)) {
-          throw `Erasing LUN ${lun} failed`
+          throw new Error(`Erasing LUN ${lun} failed`)
         }
       }
     } catch (err) {
@@ -357,7 +357,7 @@ export class FlashManager {
 
           this.#setMessage(`Flashing ${partitionName}`)
           if (!await this.device.flashBlob(partitionName, blob, (progress) => onSlotProgress(progress / image.size))) {
-            throw `Flashing partition "${partitionName}" failed`
+            throw new Error(`Flashing partition "${partitionName}" failed`)
           }
           onSlotProgress(1.0)
         }
