@@ -54,7 +54,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
         } catch (err) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
           if (attempt === maxRetries) {
-            controllerStream.error(new Error('Max retries reached.'))
+            controllerStream.error(new Error('Max retries reached'))
             return
           }
           await new Promise((res) => setTimeout(res, retryDelay))

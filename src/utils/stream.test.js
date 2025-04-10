@@ -107,6 +107,6 @@ describe('fetchStream', () => {
     })
     const reader = stream.getReader()
 
-    await expect(reader.read()).rejects.toThrow('Max retries reached.')
+    await expect(reader.read()).rejects.toThrow('Max retries reached')
   })
 })
