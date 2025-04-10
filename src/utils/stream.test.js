@@ -39,7 +39,7 @@ describe('fetchStream', () => {
     fetchMock.mockResolvedValueOnce(
       createMockResponse({
         bodyChunks,
-        headers: {'content-length': '11'},
+        headers: { 'content-length': '11' },
       })
     )
 
