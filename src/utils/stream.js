@@ -13,7 +13,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
         console.debug(`Attempt ${attempt + 1} to fetch ${url} from byte ${startByte}`)
         try {
           const headers = requestOptions.headers || {}
-          // if (startByte > 0) headers['range'] = `bytes=${startByte}-`
+          if (startByte > 0) headers['range'] = `bytes=${0}-`
 
           const response = await fetch(url, {
             ...requestOptions,
