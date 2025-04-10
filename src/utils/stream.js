@@ -10,7 +10,6 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
   return new ReadableStream({
     async pull(streamController) {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        console.debug(`Attempt ${attempt + 1} to fetch ${url} from byte ${startByte}`)
         try {
           const headers = requestOptions.headers || {}
           if (startByte > 0) headers['range'] = `bytes=${startByte}-`
