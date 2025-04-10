@@ -1,9 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fetchStream } from './stream'
 
-function createMockResponse({ bodyChunks, headers = {}, status = 200 }) {
-  const encoder = new TextEncoder()
-  const chunks = bodyChunks.map(chunk => encoder.encode(chunk))
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
+
+function mockResponse({
+  body = [],
+  headers = {},
+  status = 200,
+  failAfter = -1,
+}) {
+  const chunks = body.map(chunk => encoder.encode(chunk))
   return {
     ok: status >= 200 && status < 300,
     status,
@@ -12,71 +19,66 @@ function createMockResponse({ bodyChunks, headers = {}, status = 200 }) {
     },
     body: {
       getReader() {
-        let index = 0
+        let readCount = 0
         return {
           read() {
-            if (index < chunks.length) {
-              return Promise.resolve({ done: false, value: chunks[index++] })
+            if (failAfter >= 0 && readCount > failAfter) {
+              return Promise.reject(new Error('Network error'))
             }
-            return Promise.resolve({ done: true, value: undefined })
-          }
+            if (readCount < chunks.length) {
+              return Promise.resolve({ done: false, value: chunks[readCount++] })
+            }
+            return Promise.resolve({ done: true })
+          },
         }
-      }
+      },
     }
   }
 }
 
+async function readText(stream) {
+  const reader = stream.getReader()
+  const chunks = []
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    chunks.push(decoder.decode(value))
+  }
+  return chunks.join('')
+}
+
 describe('fetchStream', () => {
-  let fetchMock
-
   beforeEach(() => {
-    fetchMock = vi.fn()
-    global.fetch = fetchMock
+    global.fetch = vi.fn()
   })
 
-  it('downloads content successfully and calls onProgress', async () => {
-    const bodyChunks = ['Hello ', 'World']
-    fetchMock.mockResolvedValueOnce(
-      createMockResponse({
-        bodyChunks,
-        headers: { 'content-length': '11' },
-      })
-    )
+  it('downloads content and tracks progress', async () => {
+    global.fetch.mockResolvedValueOnce(mockResponse({
+      body: ['Hello ', 'World'],
+      headers: { 'content-length': '11' },
+    }))
 
-    const progressCalls = []
-    const stream = await fetchStream('https://test.com/file.txt', {}, {
-      onProgress: progressCalls.push.bind(progressCalls),
+    const progress = []
+    const stream = await fetchStream('https://example.com', {}, {
+      onProgress: progress.push.bind(progress),
     })
-    const reader = stream.getReader()
-    const received = []
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      received.push(new TextDecoder().decode(value))
-    }
 
-    expect(received.join('')).toBe('Hello World')
-    expect(progressCalls.length).toBeGreaterThan(0)
-    expect(progressCalls[progressCalls.length - 1]).toBe(1)
+    expect(await readText(stream)).toBe('Hello World')
+    expect(progress[progress.length - 1]).toBe(1)
   })
 
-  it('retries on failure and resumes with Range header', async () => {
-    const bodyChunks1 = ['partial'] // will fail
-    const bodyChunks2 = [' data']
-
-    fetchMock
+  it('retries and uses Range header after failure', async () => {
+    global.fetch
       .mockResolvedValueOnce(
-        createMockResponse({
-          bodyChunks: bodyChunks1,
-          headers: {
-            'content-length': '12',
-          },
-          status: 500, // force failure
+        mockResponse({
+          body: ['partial'],
+          headers: { 'content-length': '12' },
+          status: 500,
         })
       )
       .mockResolvedValueOnce(
-        createMockResponse({
-          bodyChunks: bodyChunks2,
+        mockResponse({
+          body: [' data'],
           headers: {
             'content-length': '12',
             'content-range': 'bytes 7-11/12',
@@ -84,80 +86,44 @@ describe('fetchStream', () => {
         })
       )
 
-    const stream = await fetchStream('https://test.com/file.txt', {}, {
-      maxRetries: 1,
-    })
-    const reader = stream.getReader()
-    const received = []
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      received.push(new TextDecoder().decode(value))
-    }
+    const stream = await fetchStream('https://example.com', {}, { maxRetries: 1, retryDelay: 10 })
 
-    expect(received.join('')).toBe(' data')
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(await readText(stream)).toBe(' data')
+    expect(global.fetch).toHaveBeenCalledTimes(2)
   })
 
-  it('resumes from correct byte position when reader fails mid-stream', async () => {
-    const firstResponse = createMockResponse({
-      bodyChunks: ['First part'],
-      headers: { 'content-length': '22' },
-    })
+  it('resumes download when reader fails mid-stream', async () => {
+    global.fetch
+      .mockResolvedValueOnce(
+        mockResponse({
+          body: ['First part'],
+          headers: { 'content-length': '22' },
+          failAfter: 0,
+        })
+      )
+      .mockResolvedValueOnce(
+        mockResponse({
+          body: [' second part'],
+          headers: {
+            'content-length': '12',
+            'content-range': 'bytes 10-21/22',
+          },
+        })
+      )
 
-    // Override the read method to fail after the first chunk
-    const originalReader = firstResponse.body.getReader()
-    const originalRead = originalReader.read
-    firstResponse.body.getReader = () => {
-      let readCount = 0
-      return {
-        read() {
-          if (readCount++ === 0) {
-            return originalRead.call(originalReader)
-          }
-          return Promise.reject(new Error('Network error'))
-        }
-      }
-    }
+    const stream = await fetchStream('https://example.com', {}, { maxRetries: 1, retryDelay: 10 })
 
-    fetchMock
-      .mockResolvedValueOnce(firstResponse)
-      .mockResolvedValueOnce(createMockResponse({
-        bodyChunks: [' second part'],
-        headers: {
-          'content-length': '12',
-          'content-range': 'bytes 10-21/22',
-        },
-      }))
-
-    const stream = await fetchStream('https://test.com/file.txt', {}, {
-      maxRetries: 1,
-      retryDelay: 10,
-    })
-
-    const reader = stream.getReader()
-    const received = []
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      received.push(new TextDecoder().decode(value))
-    }
-    expect(received.join('')).toBe('First part second part')
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-
-    const { headers } = fetchMock.mock.calls[1][1]
+    expect(await readText(stream)).toBe('First part second part')
+    const { headers } = global.fetch.mock.calls[1][1]
     expect(headers['range']).toBe('bytes=10-')
   })
 
   it('throws after max retries', async () => {
-    fetchMock.mockRejectedValue(new Error('network error'))
+    global.fetch.mockRejectedValue(new Error('network error'))
 
-    const stream = await fetchStream('https://test.com/file.txt', {}, {
-      maxRetries: 2,
-    })
-    const reader = stream.getReader()
+    const stream = await fetchStream('https://example.com', {}, { maxRetries: 2, retryDelay: 10 })
 
-    await expect(reader.read()).rejects.toThrow('Max retries reached')
+    await expect(stream.getReader().read()).rejects.toThrow('Max retries reached')
+    expect(global.fetch).toHaveBeenCalledTimes(3)
   })
 })
