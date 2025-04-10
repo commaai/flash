@@ -11,7 +11,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
     async pull(streamController) {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const headers = requestOptions.headers || {}
+          const headers = { ...(requestOptions.headers || {}) }
           if (startByte > 0) headers['range'] = `bytes=${startByte}-`
 
           const response = await fetch(url, {
