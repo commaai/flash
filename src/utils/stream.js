@@ -2,59 +2,60 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
   const maxRetries = options.maxRetries || 3
   const retryDelay = options.retryDelay || 1000
 
-  let startByte = 0
-  let contentLength = null
-  let abortController = new AbortController()
-  let reader
-
   return new ReadableStream({
+    start() {
+      this.startByte = 0
+      this.contentLength = null
+      this.abortController = new AbortController()
+      this.reader = null
+    },
     async pull(streamController) {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           const headers = { ...(requestOptions.headers || {}) }
-          if (startByte > 0) headers['range'] = `bytes=${startByte}-`
+          if (this.startByte > 0) headers['range'] = `bytes=${this.startByte}-`
 
           const response = await fetch(url, {
             ...requestOptions,
             headers,
-            signal: abortController.signal
+            signal: this.abortController.signal
           })
 
           if (!response.ok && response.status !== 206 && response.status !== 200) {
             throw new Error(`Fetch error: ${response.status}`)
           }
 
-          if (!contentLength) {
+          if (!this.contentLength) {
             const total = response.headers.get('Content-Length')
             const range = response.headers.get('Content-Range')
             if (range) {
               const match = range.match(/\/(\d+)$/)
-              if (match) contentLength = parseInt(match[1], 10)
+              if (match) this.contentLength = parseInt(match[1], 10)
             } else if (total) {
-              contentLength = parseInt(total, 10)
+              this.contentLength = parseInt(total, 10)
             }
-            if (!contentLength) {
+            if (!this.contentLength) {
               throw new Error('Content-Length not found in response headers')
             }
           }
 
-          reader = response.body.getReader()
+          this.reader = response.body.getReader()
 
           while (true) {
-            const { done, value } = await reader.read()
+            const { done, value } = await this.reader.read()
             if (done) {
               streamController.close()
               return
             }
 
-            startByte += value.length
+            this.startByte += value.length
             streamController.enqueue(value)
-            options.onProgress?.(startByte / contentLength)
+            options.onProgress?.(this.startByte / this.contentLength)
           }
         } catch (err) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
           if (attempt === maxRetries) {
-            abortController.abort()
+            this.abortController.abort()
             streamController.error(new Error('Max retries reached'))
             return
           }
@@ -64,7 +65,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
     },
     cancel(reason) {
       console.warn('Stream canceled:', reason)
-      abortController.abort()
+      this.abortController.abort()
     }
   })
 }
