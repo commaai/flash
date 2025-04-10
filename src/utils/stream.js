@@ -4,7 +4,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
 
   let startByte = 0
   let contentLength = null
-  let controller = new AbortController()
+  let abortController = new AbortController()
   let reader
 
   return new ReadableStream({
@@ -18,7 +18,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
           const response = await fetch(url, {
             ...requestOptions,
             headers,
-            signal: controller.signal
+            signal: abortController.signal
           })
 
           if (!response.ok && response.status !== 206 && response.status !== 200) {
@@ -55,6 +55,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
         } catch (err) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
           if (attempt === maxRetries) {
+            abortController.abort()
             streamController.error(new Error('Max retries reached'))
             return
           }
@@ -64,7 +65,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
     },
     cancel(reason) {
       console.log('Stream canceled:', reason)
-      controller.abort()
+      abortController.abort()
     }
   })
 }
