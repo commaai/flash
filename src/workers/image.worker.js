@@ -63,7 +63,7 @@ const imageWorker = {
       await stream.pipeTo(writable)
       onProgress?.(1)
     } catch (e) {
-      throw `Error unpacking archive: ${e}`
+      throw new Error(`Error unpacking archive: ${e}`)
     }
   },
 
