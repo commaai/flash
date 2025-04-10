@@ -68,6 +68,6 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
     cancel(reason) {
       console.warn('Stream canceled:', reason)
       this.abortController.abort()
-    }
+    },
   })
 }
