@@ -13,7 +13,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
         console.debug(`Attempt ${attempt + 1} to fetch ${url} from byte ${startByte}`)
         try {
           const headers = requestOptions.headers || {}
-          if (startByte > 0) headers['range'] = `bytes=${0}-`
+          if (startByte > 0) headers['range'] = `bytes=${startByte}-`
 
           const response = await fetch(url, {
             ...requestOptions,
@@ -54,7 +54,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
           }
         } catch (err) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
-          if (attempt === maxRetries) {
+          if (attempt === maxRetries - 1) {
             controllerStream.error(new Error('Max retries reached'))
             return
           }
