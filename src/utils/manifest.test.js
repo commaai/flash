@@ -5,6 +5,7 @@ import * as Comlink from 'comlink'
 import config from '../config'
 import { getManifest } from './manifest'
 
+const CI = import.meta.env.CI
 const MANIFEST_BRANCH = import.meta.env.MANIFEST_BRANCH
 
 globalThis.navigator = {
@@ -72,7 +73,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
 
         test.skipIf(big && !MANIFEST_BRANCH)('download', async () => {
           await imageWorker.downloadImage(image)
-        }, { timeout: (big ? 11 * 60 : 20) * 1000 })
+        }, { timeout: (big ? 11 * 60 : 20) * 1000, repeats: CI && !MANIFEST_BRANCH ? 3 : 1 })
       })
     }
 
