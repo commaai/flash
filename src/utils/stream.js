@@ -48,9 +48,9 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
               return
             }
 
+            startByte += value.length
             controllerStream.enqueue(value)
             options.onProgress?.(startByte / contentLength)
-            startByte += value.length
           }
         } catch (err) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
