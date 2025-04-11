@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { FlashManager, Step, Error } from '../utils/manager'
-import { useImageWorker } from '../utils/image'
+import { useImageManager } from '../utils/image'
 import { isLinux } from '../utils/platform'
 import config from '../config'
 
@@ -190,10 +190,10 @@ export default function Flash() {
   const [serial, setSerial] = useState(null)
 
   const qdlManager = useRef(null)
-  const imageWorker = useImageWorker()
+  const imageManager = useImageManager()
 
   useEffect(() => {
-    if (!imageWorker.current) return
+    if (!imageManager.current) return
 
     fetch(config.loader.url)
       .then((res) => res.arrayBuffer())
@@ -209,9 +209,9 @@ export default function Flash() {
         })
 
         // Initialize the manager
-        qdlManager.current.initialize(imageWorker.current)
+        qdlManager.current.initialize(imageManager.current)
       });
-  }, [config, imageWorker.current])
+  }, [config, imageManager.current])
 
   // Handle user clicking the start button
   const handleStart = () => qdlManager.current?.start()
