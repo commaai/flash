@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest'
 
 import config from '../config'
-import { ImageWorker } from '../workers/image.worker'
+import { ImageManager } from './image'
 import { getManifest } from './manifest'
 
 const MANIFEST_BRANCH = import.meta.env.MANIFEST_BRANCH
 
-const imageWorker = new ImageWorker()
+const imageManager = new ImageManager()
 
 beforeAll(async () => {
   globalThis.navigator = {
@@ -18,7 +18,7 @@ beforeAll(async () => {
             write(_) {
               // Discard the chunk (do nothing with it)
             },
-            close() {},
+            close() { },
             abort(err) {
               console.error('Mock writable stream aborted:', err)
             },
@@ -29,7 +29,7 @@ beforeAll(async () => {
     },
   }
 
-  await imageWorker.init()
+  await imageManager.init()
 })
 
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
@@ -65,7 +65,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
         })
 
         test.skipIf(big && !MANIFEST_BRANCH)('download', async () => {
-          await imageWorker.downloadImage(image)
+          await imageManager.downloadImage(image)
         }, { timeout: (big ? 11 * 60 : 20) * 1000 })
       })
     }

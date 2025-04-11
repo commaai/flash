@@ -95,7 +95,8 @@ export class FlashManager {
     this.manifestUrl = manifestUrl
     this.callbacks = callbacks
     this.device = new qdlDevice(programmer)
-    this.imageWorker = null
+    /** @type {import('./image').ImageManager|null} */
+    this.imageManager = null
     /** @type {ManifestImage[]|null} */
     this.manifest = null
     this.step = Step.INITIALIZING
@@ -160,9 +161,9 @@ export class FlashManager {
     return true
   }
 
-  /** @param {ImageWorker} imageWorker */
-  async initialize(imageWorker) {
-    this.imageWorker = imageWorker
+  /** @param {import('./image').ImageManager} imageManager */
+  async initialize(imageManager) {
+    this.imageManager = imageManager
     this.#setProgress(-1)
     this.#setMessage('')
 
@@ -171,7 +172,7 @@ export class FlashManager {
     }
 
     try {
-      await this.imageWorker.init()
+      await this.imageManager.init()
     } catch (err) {
       console.error('[Flash] Failed to initialize image worker')
       console.error(err)
@@ -270,8 +271,8 @@ export class FlashManager {
         const [onDownload, onRepair] = createSteps([2, 1], onProgress)
 
         // Download GPT image
-        await this.imageWorker.downloadImage(image, onDownload)
-        const blob = await this.imageWorker.getImage(image);
+        await this.imageManager.downloadImage(image, onDownload)
+        const blob = await this.imageManager.getImage(image);
 
         // Recreate main and backup GPT for this LUN
         if (!await this.device.repairGpt(image.gpt.lun, blob)) {
@@ -344,8 +345,8 @@ export class FlashManager {
         const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
 
         this.#setMessage(`Downloading ${image.name}`)
-        await this.imageWorker.downloadImage(image, onDownload)
-        const blob = await this.imageWorker.getImage(image)
+        await this.imageManager.downloadImage(image, onDownload)
+        const blob = await this.imageManager.getImage(image)
         onDownload(1.0)
 
         // Flash image to each slot
