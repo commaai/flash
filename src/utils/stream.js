@@ -37,7 +37,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
       headers,
       signal
     })
-    if (!response.ok && response.status !== 206 && response.status !== 200) {
+    if (!response.ok || (response.status !== 206 && response.status !== 200)) {
       throw new Error(`Fetch error: ${response.status}`)
     }
     return response
