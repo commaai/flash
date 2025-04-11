@@ -17,7 +17,6 @@
     "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#13a64c79aa8c57494c01bdd93774ed58e34b6450",
     "@fontsource-variable/inter": "^5.0.18",
     "@fontsource-variable/jetbrains-mono": "^5.0.21",
-    "comlink": "^4.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "xz-decompress": "^0.2.1"

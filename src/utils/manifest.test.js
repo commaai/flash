@@ -1,42 +1,36 @@
-import { describe, expect, test, vi } from 'vitest'
-
-import * as Comlink from 'comlink'
+import { beforeAll, describe, expect, test, vi } from 'vitest'
 
 import config from '../config'
+import { ImageWorker } from '../workers/image.worker'
 import { getManifest } from './manifest'
 
 const MANIFEST_BRANCH = import.meta.env.MANIFEST_BRANCH
 
-globalThis.navigator = {
-  storage: {
-    estimate: vi.fn().mockImplementation(() => ({ quota: 10 * (1024 ** 3) })),
-    getDirectory: () => ({
-      getFileHandle: () => ({
-        createWritable: vi.fn().mockImplementation(() => new WritableStream({
-          write(_) {
-            // Discard the chunk (do nothing with it)
-          },
-          close() {},
-          abort(err) {
-            console.error('Mock writable stream aborted:', err)
-          },
-        })),
+const imageWorker = new ImageWorker()
+
+beforeAll(async () => {
+  globalThis.navigator = {
+    storage: {
+      estimate: vi.fn().mockImplementation(() => ({ quota: 10 * (1024 ** 3) })),
+      getDirectory: () => ({
+        getFileHandle: () => ({
+          createWritable: vi.fn().mockImplementation(() => new WritableStream({
+            write(_) {
+              // Discard the chunk (do nothing with it)
+            },
+            close() {},
+            abort(err) {
+              console.error('Mock writable stream aborted:', err)
+            },
+          })),
+        }),
+        remove: vi.fn(),
       }),
-      remove: vi.fn(),
-    }),
-  },
-}
+    },
+  }
 
-let imageWorker
-
-vi.mock('comlink')
-vi.mocked(Comlink.expose).mockImplementation(worker => {
-  imageWorker = worker
-  imageWorker.init()
+  await imageWorker.init()
 })
-
-vi.resetModules() // this makes the import be reevaluated on each call
-await import('./../workers/image.worker')
 
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
   describe.skipIf(MANIFEST_BRANCH && branch !== MANIFEST_BRANCH)(`${branch} manifest`, async () => {

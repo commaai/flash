@@ -1,6 +1,5 @@
 import { qdlDevice } from '@commaai/qdl'
 import { usbClass } from '@commaai/qdl/usblib'
-import * as Comlink from 'comlink'
 
 import { getManifest } from './manifest'
 import { createSteps, withProgress } from './progress'
@@ -271,7 +270,7 @@ export class FlashManager {
         const [onDownload, onRepair] = createSteps([2, 1], onProgress)
 
         // Download GPT image
-        await this.imageWorker.downloadImage(image, Comlink.proxy(onDownload))
+        await this.imageWorker.downloadImage(image, onDownload)
         const blob = await this.imageWorker.getImage(image);
 
         // Recreate main and backup GPT for this LUN
@@ -345,7 +344,7 @@ export class FlashManager {
         const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
 
         this.#setMessage(`Downloading ${image.name}`)
-        await this.imageWorker.downloadImage(image, Comlink.proxy(onDownload))
+        await this.imageWorker.downloadImage(image, onDownload)
         const blob = await this.imageWorker.getImage(image)
         onDownload(1.0)
 
