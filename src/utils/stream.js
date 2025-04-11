@@ -1,3 +1,10 @@
+/**
+ * @param {string|URL} url
+ * @param {RequestInit} [requestOptions]
+ * @param {object} [options]
+ * @param {number} options.maxRetries
+ * @param {number} options.retryDelay
+ */
 export async function fetchStream(url, requestOptions = {}, options = {}) {
   const maxRetries = options.maxRetries || 3
   const retryDelay = options.retryDelay || 1000
