@@ -43,38 +43,36 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
     return response
   }
 
-  return new ReadableStream({
-    start() {
-      this.startByte = 0
-      this.contentLength = null
-      this.abortController = new AbortController()
-    },
+  const abortController = new AbortController()
+  let startByte = 0
+  let contentLength = null
 
-    async pull(streamController) {
+  return new ReadableStream({
+    async pull(stream) {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const response = await fetchRange(this.startByte, this.abortController.signal)
-          if (this.contentLength === null) {
-            this.contentLength = getContentLength(response)
+          const response = await fetchRange(startByte, abortController.signal)
+          if (contentLength === null) {
+            contentLength = getContentLength(response)
           }
 
           const reader = response.body.getReader()
           while (true) {
             const { done, value } = await reader.read()
             if (done) {
-              streamController.close()
+              stream.close()
               return
             }
 
-            this.startByte += value.byteLength
-            streamController.enqueue(value)
-            options.onProgress?.(this.startByte / this.contentLength)
+            startByte += value.byteLength
+            stream.enqueue(value)
+            options.onProgress?.(startByte / contentLength)
           }
         } catch (err) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
           if (attempt === maxRetries) {
-            this.abortController.abort()
-            streamController.error(new Error('Max retries reached', { cause: err }))
+            abortController.abort()
+            stream.error(new Error('Max retries reached', { cause: err }))
             return
           }
           await new Promise((res) => setTimeout(res, retryDelay))
@@ -84,7 +82,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
 
     cancel(reason) {
       console.warn('Stream canceled:', reason)
-      this.abortController.abort()
+      abortController.abort()
     },
   })
 }
