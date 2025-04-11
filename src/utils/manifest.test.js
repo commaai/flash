@@ -64,9 +64,9 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           }
         })
 
-        test.skipIf(big && !MANIFEST_BRANCH)('download', async () => {
+        test.skipIf(big && !MANIFEST_BRANCH)('download', { timeout: (big ? 11 * 60 : 20) * 1000 }, async () => {
           await imageManager.downloadImage(image)
-        }, { timeout: (big ? 11 * 60 : 20) * 1000 })
+        })
       })
     }
 
