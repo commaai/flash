@@ -1,4 +1,3 @@
-import * as Comlink from 'comlink'
 import { XzReadableStream } from 'xz-decompress'
 
 /**
@@ -11,18 +10,14 @@ import { XzReadableStream } from 'xz-decompress'
 
 const MIN_QUOTA_MB = 5250
 
-/** @type {FileSystemDirectoryHandle} */
-let root
+export class ImageWorker {
+  /** @type {FileSystemDirectoryHandle} */
+  root
 
-/**
- * @typedef {imageWorker} ImageWorker
- */
-
-const imageWorker = {
   async init() {
-    if (!root) {
-      root = await navigator.storage.getDirectory()
-      await root.remove({ recursive: true })
+    if (!this.root) {
+      this.root = await navigator.storage.getDirectory()
+      await this.root.remove({ recursive: true })
       console.info('[ImageWorker] Initialized')
     }
 
@@ -31,7 +26,7 @@ const imageWorker = {
     if (quotaMB < MIN_QUOTA_MB) {
       throw new Error(`Not enough storage: ${quotaMB.toFixed(0)}MB free, need ${MIN_QUOTA_MB.toFixed(0)}MB`)
     }
-  },
+  }
 
   /**
    * Download and unpack an image, saving it to persistent storage.
@@ -46,7 +41,7 @@ const imageWorker = {
     /** @type {FileSystemWritableFileStream} */
     let writable
     try {
-      const fileHandle = await root.getFileHandle(fileName, { create: true })
+      const fileHandle = await this.root.getFileHandle(fileName, { create: true })
       writable = await fileHandle.createWritable()
     } catch (e) {
       throw new Error(`Error opening file handle: ${e}`, { cause: e })
@@ -77,7 +72,7 @@ const imageWorker = {
     } catch (e) {
       throw new Error(`Error unpacking archive: ${e}`, { cause: e })
     }
-  },
+  }
 
   /**
    * Get a blob for an image.
@@ -90,13 +85,11 @@ const imageWorker = {
 
     let fileHandle
     try {
-      fileHandle = await root.getFileHandle(fileName, { create: false })
+      fileHandle = await this.root.getFileHandle(fileName, { create: false })
     } catch (e) {
       throw new Error(`Error getting file handle: ${e}`, { cause: e })
     }
 
     return fileHandle.getFile()
-  },
+  }
 }
-
-Comlink.expose(imageWorker)
