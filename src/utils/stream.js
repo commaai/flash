@@ -2,8 +2,9 @@
  * @param {string|URL} url
  * @param {RequestInit} [requestOptions]
  * @param {object} [options]
- * @param {number} options.maxRetries
- * @param {number} options.retryDelay
+ * @param {number} [options.maxRetries]
+ * @param {number} [options.retryDelay]
+ * @param {progressCallback} [options.onProgress]
  */
 export async function fetchStream(url, requestOptions = {}, options = {}) {
   const maxRetries = options.maxRetries || 3
