@@ -65,7 +65,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
               return
             }
 
-            this.startByte += value.length
+            this.startByte += value.byteLength
             streamController.enqueue(value)
             options.onProgress?.(this.startByte / this.contentLength)
           }
