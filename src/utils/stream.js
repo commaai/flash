@@ -2,48 +2,57 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
   const maxRetries = options.maxRetries || 3
   const retryDelay = options.retryDelay || 1000
 
+  /** @param {Response} response */
+  const getContentLength = (response) => {
+    const total = response.headers.get('Content-Length')
+    const range = response.headers.get('Content-Range')
+    if (range) {
+      const match = range.match(/\/(\d+)$/)
+      if (match) return parseInt(match[1], 10)
+    }
+    if (total) return parseInt(total, 10)
+    throw new Error('Content-Length not found in response headers')
+  }
+
+  /**
+   * @param {number} startByte
+   * @param {AbortSignal} signal
+   */
+  const fetchRange = async (startByte, signal) => {
+    const headers = { ...(requestOptions.headers || {}) }
+    if (startByte > 0) {
+      headers['range'] = `bytes=${startByte}-`
+    }
+
+    const response = await fetch(url, {
+      ...requestOptions,
+      headers,
+      signal
+    })
+    if (!response.ok && response.status !== 206 && response.status !== 200) {
+      throw new Error(`Fetch error: ${response.status}`)
+    }
+    return response
+  }
+
   return new ReadableStream({
     start() {
       this.startByte = 0
       this.contentLength = null
       this.abortController = new AbortController()
-      this.reader = null
     },
 
     async pull(streamController) {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const headers = { ...(requestOptions.headers || {}) }
-          if (this.startByte > 0) headers['range'] = `bytes=${this.startByte}-`
-
-          const response = await fetch(url, {
-            ...requestOptions,
-            headers,
-            signal: this.abortController.signal
-          })
-
-          if (!response.ok && response.status !== 206 && response.status !== 200) {
-            throw new Error(`Fetch error: ${response.status}`)
+          const response = await fetchRange(this.startByte, this.abortController.signal)
+          if (this.contentLength === null) {
+            this.contentLength = getContentLength(response)
           }
 
-          if (!this.contentLength) {
-            const total = response.headers.get('Content-Length')
-            const range = response.headers.get('Content-Range')
-            if (range) {
-              const match = range.match(/\/(\d+)$/)
-              if (match) this.contentLength = parseInt(match[1], 10)
-            } else if (total) {
-              this.contentLength = parseInt(total, 10)
-            }
-            if (!this.contentLength) {
-              throw new Error('Content-Length not found in response headers')
-            }
-          }
-
-          this.reader = response.body.getReader()
-
+          const reader = response.body.getReader()
           while (true) {
-            const { done, value } = await this.reader.read()
+            const { done, value } = await reader.read()
             if (done) {
               streamController.close()
               return
@@ -57,7 +66,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
           if (attempt === maxRetries) {
             this.abortController.abort()
-            streamController.error(new Error('Max retries reached'))
+            streamController.error(new Error('Max retries reached', { cause: err }))
             return
           }
           await new Promise((res) => setTimeout(res, retryDelay))
