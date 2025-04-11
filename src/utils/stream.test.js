@@ -48,6 +48,8 @@ async function readText(stream) {
 }
 
 describe('fetchStream', () => {
+  const retryDelay = 1
+
   beforeEach(() => {
     global.fetch = vi.fn()
   })
@@ -86,7 +88,7 @@ describe('fetchStream', () => {
         })
       )
 
-    const stream = await fetchStream('https://example.com', {}, { maxRetries: 1, retryDelay: 10 })
+    const stream = await fetchStream('https://example.com', {}, { maxRetries: 1, retryDelay })
 
     expect(await readText(stream)).toBe(' data')
     expect(global.fetch).toHaveBeenCalledTimes(2)
@@ -111,7 +113,7 @@ describe('fetchStream', () => {
         })
       )
 
-    const stream = await fetchStream('https://example.com', {}, { maxRetries: 1, retryDelay: 10 })
+    const stream = await fetchStream('https://example.com', {}, { maxRetries: 1, retryDelay })
 
     expect(await readText(stream)).toBe('First part second part')
     const { headers } = global.fetch.mock.calls[1][1]
@@ -121,7 +123,7 @@ describe('fetchStream', () => {
   it('throws after max retries', async () => {
     global.fetch.mockRejectedValue(new Error('network error'))
 
-    const stream = await fetchStream('https://example.com', {}, { maxRetries: 2, retryDelay: 10 })
+    const stream = await fetchStream('https://example.com', {}, { maxRetries: 2, retryDelay })
 
     await expect(stream.getReader().read()).rejects.toThrow('Max retries reached')
     expect(global.fetch).toHaveBeenCalledTimes(3)
