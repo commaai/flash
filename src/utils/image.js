@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { XzReadableStream } from 'xz-decompress'
 
+import { fetchStream } from './stream'
+
 /**
  * Progress callback
  *
@@ -49,21 +51,7 @@ export class ImageManager {
     }
 
     console.debug(`[ImageManager] Downloading ${image.name} from ${archiveUrl}`)
-    const response = await fetch(archiveUrl, { mode: 'cors' })
-    if (!response.ok) {
-      throw new Error(`Fetch failed: ${response.status} ${response.statusText}`)
-    }
-
-    const contentLength = +response.headers.get('Content-Length')
-    let receivedLength = 0
-    const transform = new TransformStream({
-      transform(chunk, controller) {
-        receivedLength += chunk.byteLength
-        onProgress?.(receivedLength / contentLength)
-        controller.enqueue(chunk)
-      },
-    })
-    let stream = response.body.pipeThrough(transform)
+    let stream = await fetchStream(archiveUrl, { mode: 'cors' }, { onProgress })
     try {
       if (image.compressed) {
         stream = new XzReadableStream(stream)
