@@ -48,7 +48,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
   let contentLength = null
 
   return new ReadableStream({
-    async pull(controller) {
+    async pull(stream) {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           const response = await fetchRange(startByte, abortController.signal)
@@ -60,19 +60,19 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
           while (true) {
             const { done, value } = await reader.read()
             if (done) {
-              controller.close()
+              stream.close()
               return
             }
 
             startByte += value.byteLength
-            controller.enqueue(value)
+            stream.enqueue(value)
             options.onProgress?.(startByte / contentLength)
           }
         } catch (err) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
           if (attempt === maxRetries) {
             abortController.abort()
-            controller.error(new Error('Max retries reached', { cause: err }))
+            stream.error(new Error('Max retries reached', { cause: err }))
             return
           }
           await new Promise((res) => setTimeout(res, retryDelay))
