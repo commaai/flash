@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { FlashManager, Step, Error } from '../utils/manager'
+import { FlashManager, StepCode, ErrorCode } from '../utils/manager'
 import { useImageManager } from '../utils/image'
 import { isLinux } from '../utils/platform'
 import config from '../config'
@@ -15,48 +15,48 @@ import systemUpdate from '../assets/system_update_c3.svg'
 
 
 const steps = {
-  [Step.INITIALIZING]: {
+  [StepCode.INITIALIZING]: {
     status: 'Initializing...',
     bgColor: 'bg-gray-400 dark:bg-gray-700',
     icon: bolt,
   },
-  [Step.READY]: {
+  [StepCode.READY]: {
     status: 'Tap to start',
     bgColor: 'bg-[#51ff00]',
     icon: bolt,
     iconStyle: '',
   },
-  [Step.CONNECTING]: {
+  [StepCode.CONNECTING]: {
     status: 'Waiting for connection',
     description: 'Follow the instructions to connect your device to your computer',
     bgColor: 'bg-yellow-500',
     icon: cable,
   },
-  [Step.REPAIR_PARTITION_TABLES]: {
+  [StepCode.REPAIR_PARTITION_TABLES]: {
     status: 'Repairing partition tables...',
     description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
     icon: systemUpdate,
   },
-  [Step.ERASE_DEVICE]: {
+  [StepCode.ERASE_DEVICE]: {
     status: 'Erasing device...',
     description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
     icon: systemUpdate,
   },
-  [Step.FLASH_SYSTEM]: {
+  [StepCode.FLASH_SYSTEM]: {
     status: 'Flashing device...',
     description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
     icon: systemUpdate,
   },
-  [Step.FINALIZING]: {
+  [StepCode.FINALIZING]: {
     status: 'Finalizing...',
     description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
     icon: systemUpdate,
   },
-  [Step.DONE]: {
+  [StepCode.DONE]: {
     status: 'Done',
     description: 'Your device was flashed successfully. It should now boot into the openpilot setup.',
     bgColor: 'bg-green-500',
@@ -65,46 +65,46 @@ const steps = {
 }
 
 const errors = {
-  [Error.UNKNOWN]: {
+  [ErrorCode.UNKNOWN]: {
     status: 'Unknown error',
     description: 'An unknown error has occurred. Unplug your device, restart your browser and try again.',
     bgColor: 'bg-red-500',
     icon: exclamation,
   },
-  [Error.REQUIREMENTS_NOT_MET]: {
+  [ErrorCode.REQUIREMENTS_NOT_MET]: {
     status: 'Requirements not met',
     description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
       'supports WebUSB and is up to date.',
   },
-  [Error.STORAGE_SPACE]: {
+  [ErrorCode.STORAGE_SPACE]: {
     description: 'Your system does not have enough space available to download AGNOS. Your browser may be restricting' +
       ' the available space if you are in a private, incognito or guest session.',
   },
-  [Error.UNRECOGNIZED_DEVICE]: {
+  [ErrorCode.UNRECOGNIZED_DEVICE]: {
     status: 'Unrecognized device',
     description: 'The device connected to your computer is not supported. Try using a different cable, USB port, or ' +
       'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
     bgColor: 'bg-yellow-500',
     icon: deviceQuestion,
   },
-  [Error.LOST_CONNECTION]: {
+  [ErrorCode.LOST_CONNECTION]: {
     status: 'Lost connection',
     description: 'The connection to your device was lost. Unplug your device and try again.',
     icon: cable,
   },
-  [Error.REPAIR_PARTITION_TABLES_FAILED]: {
+  [ErrorCode.REPAIR_PARTITION_TABLES_FAILED]: {
     status: 'Repairing partition tables failed',
     description: 'Your device\'s partition tables could not be repaired. Try using a different cable, USB port, or ' +
       'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
-  [Error.ERASE_FAILED]: {
+  [ErrorCode.ERASE_FAILED]: {
     status: 'Erase failed',
     description: 'The device could not be erased. Try using a different cable, USB port, or computer. If the problem ' +
       'persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
-  [Error.FLASH_SYSTEM_FAILED]: {
+  [ErrorCode.FLASH_SYSTEM_FAILED]: {
     status: 'Flash failed',
     description: 'AGNOS could not be flashed to your device. Try using a different cable, USB port, or computer. If ' +
       'the problem persists, join the #hw-three-3x channel on Discord for help.',
@@ -113,8 +113,8 @@ const errors = {
 }
 
 if (isLinux) {
-  // this is likely in Step.CONNECTING
-  errors[Error.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?'
+  // this is likely in StepCode.CONNECTING
+  errors[ErrorCode.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?'
 }
 
 
@@ -182,10 +182,10 @@ function beforeUnloadListener(event) {
 
 
 export default function Flash() {
-  const [step, setStep] = useState(Step.INITIALIZING)
+  const [step, setStep] = useState(StepCode.INITIALIZING)
   const [message, setMessage] = useState('')
   const [progress, setProgress] = useState(-1)
-  const [error, setError] = useState(Error.NONE)
+  const [error, setError] = useState(ErrorCode.NONE)
   const [connected, setConnected] = useState(false)
   const [serial, setSerial] = useState(null)
 
@@ -215,14 +215,14 @@ export default function Flash() {
 
   // Handle user clicking the start button
   const handleStart = () => qdlManager.current?.start()
-  const canStart = step === Step.READY && !error
+  const canStart = step === StepCode.READY && !error
 
   // Handle retry on error
   const handleRetry = () => window.location.reload()
 
   const uiState = steps[step]
   if (error) {
-    Object.assign(uiState, errors[Error.UNKNOWN], errors[error])
+    Object.assign(uiState, errors[ErrorCode.UNKNOWN], errors[error])
   }
   const { status, description, bgColor, icon, iconStyle = 'invert' } = uiState
 
@@ -232,14 +232,14 @@ export default function Flash() {
     if (progress >= 0) {
       title += ` (${(progress * 100).toFixed(0)}%)`
     }
-  } else if (error === Error.STORAGE_SPACE) {
+  } else if (error === ErrorCode.STORAGE_SPACE) {
     title = message
   } else {
     title = status
   }
 
   // warn the user if they try to leave the page while flashing
-  if (step >= Step.FLASH_GPT && step <= Step.FLASH_SYSTEM) {
+  if (step >= StepCode.FLASH_GPT && step <= StepCode.FLASH_SYSTEM) {
     window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
   } else {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
@@ -257,7 +257,7 @@ export default function Flash() {
           alt="cable"
           width={128}
           height={128}
-          className={`${iconStyle} ${!error && step !== Step.DONE ? 'animate-pulse' : ''}`}
+          className={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
         />
       </div>
       <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
