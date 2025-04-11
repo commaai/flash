@@ -1,3 +1,10 @@
+/** @param {Response} response */
+const getContentLength = (response) => {
+  const total = response.headers.get('Content-Length')
+  if (total) return parseInt(total, 10)
+  throw new Error('Content-Length not found in response headers')
+}
+
 /**
  * @param {string|URL} url
  * @param {RequestInit} [requestOptions]
@@ -9,18 +16,6 @@
 export async function fetchStream(url, requestOptions = {}, options = {}) {
   const maxRetries = options.maxRetries || 3
   const retryDelay = options.retryDelay || 1000
-
-  /** @param {Response} response */
-  const getContentLength = (response) => {
-    const total = response.headers.get('Content-Length')
-    const range = response.headers.get('Content-Range')
-    if (range) {
-      const match = range.match(/\/(\d+)$/)
-      if (match) return parseInt(match[1], 10)
-    }
-    if (total) return parseInt(total, 10)
-    throw new Error('Content-Length not found in response headers')
-  }
 
   /**
    * @param {number} startByte
