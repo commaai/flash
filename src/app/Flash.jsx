@@ -209,8 +209,12 @@ export default function Flash() {
         })
 
         // Initialize the manager
-        qdlManager.current.initialize(imageManager.current)
-      });
+        return qdlManager.current.initialize(imageManager.current)
+      })
+      .catch((err) => {
+        console.error('Error initializing QDL manager:', err)
+        setError(ErrorCode.UNKNOWN)
+      })
   }, [config, imageManager.current])
 
   // Handle user clicking the start button
