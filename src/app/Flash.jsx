@@ -239,7 +239,7 @@ export default function Flash() {
   }
 
   // warn the user if they try to leave the page while flashing
-  if (step >= StepCode.FLASH_GPT && step <= StepCode.FLASH_SYSTEM) {
+  if (step >= StepCode.REPAIR_PARTITION_TABLES && step <= StepCode.FINALIZING) {
     window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
   } else {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
