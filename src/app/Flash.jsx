@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { FlashManager, StepCode, ErrorCode } from '../utils/manager'
+import { FlashManager, StepCode } from '../utils/manager'
 import { useImageManager } from '../utils/image'
-import { isLinux } from '../utils/platform'
+import { parseError } from '../utils/errors'
 import config from '../config'
 
 import bolt from '../assets/bolt.svg'
@@ -13,6 +13,16 @@ import done from '../assets/done.svg'
 import exclamation from '../assets/exclamation.svg'
 import systemUpdate from '../assets/system_update_c3.svg'
 
+// Icons mapped by name for error handling
+const icons = {
+  bolt,
+  cable,
+  deviceExclamation,
+  deviceQuestion,
+  done,
+  exclamation,
+  systemUpdate
+}
 
 const steps = {
   [StepCode.INITIALIZING]: {
@@ -64,60 +74,6 @@ const steps = {
   },
 }
 
-const errors = {
-  [ErrorCode.UNKNOWN]: {
-    status: 'Unknown error',
-    description: 'An unknown error has occurred. Unplug your device, restart your browser and try again.',
-    bgColor: 'bg-red-500',
-    icon: exclamation,
-  },
-  [ErrorCode.REQUIREMENTS_NOT_MET]: {
-    status: 'Requirements not met',
-    description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
-      'supports WebUSB and is up to date.',
-  },
-  [ErrorCode.STORAGE_SPACE]: {
-    description: 'Your system does not have enough space available to download AGNOS. Your browser may be restricting' +
-      ' the available space if you are in a private, incognito or guest session.',
-  },
-  [ErrorCode.UNRECOGNIZED_DEVICE]: {
-    status: 'Unrecognized device',
-    description: 'The device connected to your computer is not supported. Try using a different cable, USB port, or ' +
-      'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
-    bgColor: 'bg-yellow-500',
-    icon: deviceQuestion,
-  },
-  [ErrorCode.LOST_CONNECTION]: {
-    status: 'Lost connection',
-    description: 'The connection to your device was lost. Unplug your device and try again.',
-    icon: cable,
-  },
-  [ErrorCode.REPAIR_PARTITION_TABLES_FAILED]: {
-    status: 'Repairing partition tables failed',
-    description: 'Your device\'s partition tables could not be repaired. Try using a different cable, USB port, or ' +
-      'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
-  },
-  [ErrorCode.ERASE_FAILED]: {
-    status: 'Erase failed',
-    description: 'The device could not be erased. Try using a different cable, USB port, or computer. If the problem ' +
-      'persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
-  },
-  [ErrorCode.FLASH_SYSTEM_FAILED]: {
-    status: 'Flash failed',
-    description: 'AGNOS could not be flashed to your device. Try using a different cable, USB port, or computer. If ' +
-      'the problem persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
-  },
-}
-
-if (isLinux) {
-  // this is likely in StepCode.CONNECTING
-  errors[ErrorCode.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?'
-}
-
-
 function LinearProgress({ value, barColor }) {
   if (value === -1 || value > 100) value = 100
   return (
@@ -129,7 +85,6 @@ function LinearProgress({ value, barColor }) {
     </div>
   )
 }
-
 
 function USBIndicator() {
   return <div className="flex flex-row gap-2">
@@ -149,7 +104,6 @@ function USBIndicator() {
   </div>
 }
 
-
 function SerialIndicator({ serial }) {
   return <div className="flex flex-row gap-2">
     <span>
@@ -158,7 +112,6 @@ function SerialIndicator({ serial }) {
     </span>
   </div>
 }
-
 
 function DeviceState({ serial }) {
   return (
@@ -173,19 +126,17 @@ function DeviceState({ serial }) {
   )
 }
 
-
 function beforeUnloadListener(event) {
   // NOTE: not all browsers will show this message
   event.preventDefault()
   return (event.returnValue = "Flash in progress. Are you sure you want to leave?")
 }
 
-
 export default function Flash() {
   const [step, setStep] = useState(StepCode.INITIALIZING)
   const [message, setMessage] = useState('')
   const [progress, setProgress] = useState(-1)
-  const [error, setError] = useState(ErrorCode.NONE)
+  const [error, setError] = useState(null)
   const [connected, setConnected] = useState(false)
   const [serial, setSerial] = useState(null)
 
@@ -210,36 +161,59 @@ export default function Flash() {
 
         // Initialize the manager
         qdlManager.current.initialize(imageManager.current)
-      });
+          .catch(err => setError(err))
+      })
+      .catch(err => setError(err))
   }, [config, imageManager.current])
 
   // Handle user clicking the start button
-  const handleStart = () => qdlManager.current?.start()
+  const handleStart = async () => {
+    if (!qdlManager.current) return
+    
+    try {
+      await qdlManager.current.start()
+    } catch (err) {
+      // Error is already set via onErrorChange callback
+      console.error('Flash failed:', err)
+    }
+  }
+  
   const canStart = step === StepCode.READY && !error
 
   // Handle retry on error
   const handleRetry = () => window.location.reload()
 
+  // Get the UI state based on current step or error
   const uiState = steps[step]
+  let errorState = {}
+  
   if (error) {
-    Object.assign(uiState, errors[ErrorCode.UNKNOWN], errors[error])
+    errorState = parseError(error)
+    // Map icon name to actual icon
+    if (errorState.icon && icons[errorState.icon]) {
+      errorState.icon = icons[errorState.icon]
+    } else {
+      errorState.icon = exclamation
+    }
   }
-  const { status, description, bgColor, icon, iconStyle = 'invert' } = uiState
 
+  // Combine step state with error state if there's an error
+  const { status, description, bgColor, icon, iconStyle = 'invert' } = 
+    error ? { ...uiState, ...errorState } : uiState
+
+  // Determine the title to display
   let title
   if (message && !error) {
     title = message + '...'
     if (progress >= 0) {
       title += ` (${(progress * 100).toFixed(0)}%)`
     }
-  } else if (error === ErrorCode.STORAGE_SPACE) {
-    title = message
   } else {
     title = status
   }
 
   // warn the user if they try to leave the page while flashing
-  if (step >= StepCode.FLASH_GPT && step <= StepCode.FLASH_SYSTEM) {
+  if (step >= StepCode.REPAIR_PARTITION_TABLES && step <= StepCode.FINALIZING) {
     window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
   } else {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
@@ -254,7 +228,7 @@ export default function Flash() {
       >
         <img
           src={icon}
-          alt="cable"
+          alt="status icon"
           width={128}
           height={128}
           className={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
@@ -264,7 +238,7 @@ export default function Flash() {
         <LinearProgress value={progress * 100} barColor={bgColor} />
       </div>
       <span className="text-3xl dark:text-white font-mono font-light">{title}</span>
-      <span className="text-xl dark:text-white px-8 max-w-xl">{description}</span>
+      <span className="text-xl dark:text-white px-8 max-w-xl text-center">{description}</span>
       {error && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
@@ -272,7 +246,7 @@ export default function Flash() {
         >
           Retry
         </button>
-      ) || false}
+      )}
       {connected && <DeviceState connected={connected} serial={serial} />}
     </div>
   )
