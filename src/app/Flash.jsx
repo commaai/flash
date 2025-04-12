@@ -212,7 +212,7 @@ export default function Flash() {
         return qdlManager.current.initialize(imageManager.current)
       })
       .catch((err) => {
-        console.error('Error initializing QDL manager:', err)
+        console.error('Error initializing Flash manager:', err)
         setError(ErrorCode.UNKNOWN)
       })
   }, [config, imageManager.current])
