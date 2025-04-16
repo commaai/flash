@@ -4,7 +4,6 @@
 # IDEs
 .idea
 *.iml
-.vscode
 
 # dependencies
 /node_modules

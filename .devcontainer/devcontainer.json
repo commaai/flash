@@ -4,5 +4,17 @@
   "features": {
     "ghcr.io/shyim/devcontainers-features/bun:0": {}
   },
-  "postCreateCommand": "bun install"
+  "postCreateCommand": "bun install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bradlc.vscode-tailwindcss",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "formulahendry.auto-rename-tag",
+        "PKief.material-icon-theme",
+        "streetsidesoftware.code-spell-checker"
+      ]
+    }
+  }
 }
