@@ -1,5 +1,6 @@
 {
   "recommendations": [
+    "aaron-bond.better-comments",
     "bradlc.vscode-tailwindcss",
     "eamodio.gitlens",
     "esbenp.prettier-vscode",
