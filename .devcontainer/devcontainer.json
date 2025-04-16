@@ -15,7 +15,10 @@
         "ms-vscode-remote.remote-containers",
         "PKief.material-icon-theme",
         "streetsidesoftware.code-spell-checker"
-      ]
+      ],
+      "settings": {
+        "workbench.iconTheme": "material-icon-theme"
+      }
     }
   }
 }
