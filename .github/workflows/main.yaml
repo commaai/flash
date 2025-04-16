@@ -13,6 +13,8 @@ concurrency:
 
 jobs:
   test:
+    if: github.event.pull_request.draft == false
+    name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
@@ -23,6 +25,8 @@ jobs:
       - run: bun run test
 
   manifest:
+    if: github.event.pull_request.draft == false
+    name: Test Manifest
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
