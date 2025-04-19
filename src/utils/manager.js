@@ -356,7 +356,7 @@ export class FlashManager {
           const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
 
           this.#setMessage(`Flashing ${partitionName}`)
-          if (!await this.device.flashBlob(partitionName, blob, (progress) => onSlotProgress(progress / image.size))) {
+          if (!await this.device.flashBlob(partitionName, blob, (progress) => onSlotProgress(progress / image.size), false)) {
             throw new Error(`Flashing partition "${partitionName}" failed`)
           }
           onSlotProgress(1.0)
