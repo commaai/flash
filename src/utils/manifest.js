@@ -84,3 +84,16 @@ export function getManifest(url) {
     .then((response) => response.text())
     .then((text) => JSON.parse(text).map((image) => new ManifestImage(image)))
 }
+
+/**
+ * @param {Record<string, string>} manifests
+ * @param {string} defaultKey
+ * @returns {string}
+ */
+export function getManifestUrl(manifests, defaultKey) {
+  const params = new URLSearchParams(window.location.search)
+  const manifest = params.get('manifest')
+  if (!manifest) return manifests[defaultKey]
+  if (manifests[manifest]) return manifests[manifest]
+  return manifest
+}

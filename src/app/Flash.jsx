@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { FlashManager, StepCode, ErrorCode } from '../utils/manager'
 import { useImageManager } from '../utils/image'
+import { getManifestUrl } from '../utils/manifest'
 import { isLinux } from '../utils/platform'
 import config from '../config'
 
@@ -188,8 +189,10 @@ export default function Flash() {
     fetch(config.loader.url)
       .then((res) => res.arrayBuffer())
       .then((programmer) => {
+        const manifestUrl = getManifestUrl(config.manifests, 'release')
+
         // Create QDL manager with callbacks that update React state
-        qdlManager.current = new FlashManager(config.manifests.release, programmer, {
+        qdlManager.current = new FlashManager(manifestUrl, programmer, {
           onStepChange: setStep,
           onMessageChange: setMessage,
           onProgressChange: setProgress,
