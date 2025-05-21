@@ -49,6 +49,10 @@ export function checkCompatibleDevice(storageInfo) {
     storageInfo.total_blocks === 14145536) {
     return 'userdata_30'
   }
+  if (/64GB-UFS-MT( +)8QSP/.test(storageInfo.prod_name) && storageInfo.manufacturer_id === 300 &&
+    storageInfo.total_blocks === 14143488) {
+    return 'userdata_30'
+  }
 
   // comma 3X
   // userdata start 6159400 size 23446483
