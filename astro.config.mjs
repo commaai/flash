@@ -6,6 +6,21 @@ import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   integrations: [preact(), tailwind()],
+  vite: {
+    build: {
+      minify: true,
+      sourcemap: false,
+      cssCodeSplit: false,
+      rollupOptions: {
+        output: {
+          manualChunks: () => 'app',
+          entryFileNames: 'assets/app.[hash].js',
+          chunkFileNames: 'assets/app.[hash].js',
+          assetFileNames: 'assets/app.[hash].[ext]',
+        },
+      },
+    },
+  },
   experimental: {
     fonts: [{
       provider: fontProviders.fontsource(),
