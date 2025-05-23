@@ -29,15 +29,6 @@ export default defineConfig({
       styles: ["normal"],
       subsets: ["latin"],
       display: "swap"
-    },
-    {
-      provider: fontProviders.fontsource(),
-      name: "JetBrains Mono",
-      cssVariable: "--font-jetbrains-mono",
-      weights: ["100 900"],
-      styles: ["normal"],
-      subsets: ["latin"],
-      display: "swap"
     }]
   },
 });

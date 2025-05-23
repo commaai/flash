@@ -12,7 +12,6 @@ export default {
       },
       fontFamily: {
         sans: ['var(--font-inter)'],
-        monospace: ['var(--font-jetbrains-mono)'],
       },
     },
   },
