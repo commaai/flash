@@ -1,8 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    './index.html',
-    './src/**/*.{js,jsx}',
+    './src/**/*.{astro,js,jsx,ts,tsx}',
   ],
   theme: {
     extend: {
@@ -12,8 +11,7 @@ export default {
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       fontFamily: {
-        sans: ['Inter Variable', 'sans-serif'],
-        monospace: ['JetBrains Mono Variable', 'monospace'],
+        sans: ['var(--font-inter)'],
       },
     },
   },

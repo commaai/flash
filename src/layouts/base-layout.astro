@@ -1,22 +1,28 @@
+---
+import "../index.css";
+
+import { Font } from "astro:assets";
+---
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./src/app/icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
       content="Update your comma device to the latest software"
     />
     <title>flash.comma.ai</title>
+
+    <Font cssVariable="--font-inter" preload />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="./src/main.jsx"></script>
+    <slot />
     <script
       defer
       data-domain="flash.comma.ai"
-      src="https://plausible.io/js/script.outbound-links.js"
-    ></script>
+      src="https://plausible.io/js/script.outbound-links.js"></script>
   </body>
 </html>

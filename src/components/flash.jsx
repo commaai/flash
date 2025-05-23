@@ -1,66 +1,57 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'preact/hooks'
 
 import { FlashManager, StepCode, ErrorCode } from '../utils/manager'
 import { useImageManager } from '../utils/image'
 import { isLinux } from '../utils/platform'
 import config from '../config'
 
-import bolt from '../assets/bolt.svg'
-import cable from '../assets/cable.svg'
-import deviceExclamation from '../assets/device_exclamation_c3.svg'
-import deviceQuestion from '../assets/device_question_c3.svg'
-import done from '../assets/done.svg'
-import exclamation from '../assets/exclamation.svg'
-import systemUpdate from '../assets/system_update_c3.svg'
-
-
 const steps = {
   [StepCode.INITIALIZING]: {
     status: 'Initializing...',
     bgColor: 'bg-gray-400 dark:bg-gray-700',
-    icon: bolt,
+    icon: 'bolt',
   },
   [StepCode.READY]: {
     status: 'Tap to start',
     bgColor: 'bg-[#51ff00]',
-    icon: bolt,
+    icon: 'bolt',
     iconStyle: '',
   },
   [StepCode.CONNECTING]: {
     status: 'Waiting for connection',
     description: 'Follow the instructions to connect your device to your computer',
     bgColor: 'bg-yellow-500',
-    icon: cable,
+    icon: 'cable',
   },
   [StepCode.REPAIR_PARTITION_TABLES]: {
     status: 'Repairing partition tables...',
     description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
-    icon: systemUpdate,
+    icon: 'systemUpdate',
   },
   [StepCode.ERASE_DEVICE]: {
     status: 'Erasing device...',
     description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
-    icon: systemUpdate,
+    icon: 'systemUpdate',
   },
   [StepCode.FLASH_SYSTEM]: {
     status: 'Flashing device...',
     description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
-    icon: systemUpdate,
+    icon: 'systemUpdate',
   },
   [StepCode.FINALIZING]: {
     status: 'Finalizing...',
     description: 'Do not unplug your device until the process is complete',
     bgColor: 'bg-lime-400',
-    icon: systemUpdate,
+    icon: 'systemUpdate',
   },
   [StepCode.DONE]: {
     status: 'Done',
     description: 'Your device was flashed successfully. It should now boot into the openpilot setup.',
     bgColor: 'bg-green-500',
-    icon: done,
+    icon: 'done',
   },
 }
 
@@ -69,7 +60,7 @@ const errors = {
     status: 'Unknown error',
     description: 'An unknown error has occurred. Unplug your device, restart your browser and try again.',
     bgColor: 'bg-red-500',
-    icon: exclamation,
+    icon: 'exclamation',
   },
   [ErrorCode.REQUIREMENTS_NOT_MET]: {
     status: 'Requirements not met',
@@ -85,30 +76,30 @@ const errors = {
     description: 'The device connected to your computer is not supported. Try using a different cable, USB port, or ' +
       'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
     bgColor: 'bg-yellow-500',
-    icon: deviceQuestion,
+    icon: 'deviceQuestion',
   },
   [ErrorCode.LOST_CONNECTION]: {
     status: 'Lost connection',
     description: 'The connection to your device was lost. Unplug your device and try again.',
-    icon: cable,
+    icon: 'cable',
   },
   [ErrorCode.REPAIR_PARTITION_TABLES_FAILED]: {
     status: 'Repairing partition tables failed',
     description: 'Your device\'s partition tables could not be repaired. Try using a different cable, USB port, or ' +
       'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
+    icon: 'deviceExclamation',
   },
   [ErrorCode.ERASE_FAILED]: {
     status: 'Erase failed',
     description: 'The device could not be erased. Try using a different cable, USB port, or computer. If the problem ' +
       'persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
+    icon: 'deviceExclamation',
   },
   [ErrorCode.FLASH_SYSTEM_FAILED]: {
     status: 'Flash failed',
     description: 'AGNOS could not be flashed to your device. Try using a different cable, USB port, or computer. If ' +
       'the problem persists, join the #hw-three-3x channel on Discord for help.',
-    icon: deviceExclamation,
+    icon: 'deviceExclamation',
   },
 }
 
@@ -171,7 +162,7 @@ function beforeUnloadListener(event) {
 }
 
 
-export default function Flash() {
+export default function Flash () {
   const [step, setStep] = useState(StepCode.INITIALIZING)
   const [message, setMessage] = useState('')
   const [progress, setProgress] = useState(-1)
@@ -183,7 +174,7 @@ export default function Flash() {
   const imageManager = useImageManager()
 
   useEffect(() => {
-    if (!imageManager.current) return
+    if (!imageManager.current || imageManager.current.root) return
 
     fetch(config.loader.url)
       .then((res) => res.arrayBuffer())
@@ -246,13 +237,12 @@ export default function Flash() {
         style={{ cursor: canStart ? 'pointer' : 'default' }}
         onClick={canStart ? handleStart : null}
       >
-        <img
-          src={icon}
-          alt="cable"
+        <svg
           width={128}
           height={128}
-          className={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
-        />
+          className={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}>
+          <use href={`#${icon}`} width={128} height={128} />
+        </svg>
       </div>
       <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
         <LinearProgress value={progress * 100} barColor={bgColor} />
