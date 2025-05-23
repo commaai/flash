@@ -16,7 +16,6 @@ export default defineConfig({
           manualChunks: () => 'app',
           entryFileNames: 'assets/app.[hash].js',
           chunkFileNames: 'assets/app.[hash].js',
-          assetFileNames: 'assets/app.[hash].[ext]',
         },
       },
     },
