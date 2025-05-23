@@ -11,6 +11,6 @@ bun install
 bun dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) with your browser to see the result.
+Open [http://localhost:4321](http://localhost:4321) with your browser to see the result.
 
-You can start editing the page by modifying `src/app/index.jsx`. The page auto-updates as you edit the file.
+You can start editing the page by modifying `src/pages/index.astro`. The page auto-updates as you edit the file.
