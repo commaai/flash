@@ -26,7 +26,7 @@ jobs:
       - run: bun install
       - run: bun run build
         env:
-          VITE_PUBLIC_GIT_SHA: ${{ steps.vars.outputs.sha_short }}
+          ASTRO_PUBLIC_GIT_SHA: ${{ steps.vars.outputs.sha_short }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
