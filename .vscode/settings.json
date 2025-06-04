@@ -1,0 +1,14 @@
+{
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false,
+  "postcss.validate": false,
+  "stylelint.validate": ["css", "postcss", "scss"],
+  "css.customData": [".vscode/css_custom_data.json"],
+  "emmet.includeLanguages": {
+    "svelte": "html"
+  },
+  "files.associations": {
+    "*.css": "css"
+  }
+}

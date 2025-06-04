@@ -1,0 +1,32 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import "tailwindcss";
+
+@plugin "@tailwindcss/typography";
+
+/* Global styles */
+html {
+  font-family: 'Inter Variable', sans-serif;
+}
+
+code, pre {
+  font-family: 'JetBrains Mono Variable', monospace;
+}
+
+/* Ensure full height layout */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#svelte {
+  height: 100%;
+}
+
+/* Dark mode improvements */
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}

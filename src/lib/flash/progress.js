@@ -1,4 +1,12 @@
 /**
+ * Progress callback
+ *
+ * @callback progressCallback
+ * @param {number} progress
+ * @returns {void}
+ */
+
+/**
  * Create a set of callbacks that can be used to track progress of a multistep process.
  *
  * @param {(number[]|number)} steps

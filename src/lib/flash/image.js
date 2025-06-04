@@ -1,7 +1,5 @@
-import { useEffect, useRef } from 'react'
 import { XzReadableStream } from 'xz-decompress'
-
-import { fetchStream } from './stream'
+import { fetchStream } from './stream.js'
 
 /**
  * Progress callback
@@ -81,16 +79,4 @@ export class ImageManager {
 
     return fileHandle.getFile()
   }
-}
-
-/** @returns {React.MutableRefObject<ImageManager>} */
-export function useImageManager() {
-  const apiRef = useRef()
-
-  useEffect(() => {
-    const worker = new ImageManager()
-    apiRef.current = worker
-  }, [])
-
-  return apiRef
 }
