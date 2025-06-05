@@ -6,6 +6,31 @@ const getContentLength = (response) => {
 }
 
 /**
+ * Determines if an error should be retried
+ * @param {Error} error 
+ * @returns {boolean}
+ */
+const isRetriableError = (error) => {
+  // Don't retry missing Content-Length headers
+  if (error.message.includes('Content-Length not found')) {
+    return false
+  }
+  
+  // Don't retry client errors (4xx)
+  if (error.message.includes('Fetch error: 4')) {
+    return false
+  }
+  
+  // Don't retry abort errors
+  if (error.name === 'AbortError' || error.message.includes('aborted')) {
+    return false
+  }
+  
+  // Retry server errors (5xx) and network errors
+  return true
+}
+
+/**
  * @param {string|URL} url
  * @param {RequestInit} [requestOptions]
  * @param {object} [options]
@@ -20,10 +45,13 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
   /**
    * @param {number} startByte
    * @param {AbortSignal} signal
+   * @param {boolean} isRetry
    */
-  const fetchRange = async (startByte, signal) => {
+  const fetchRange = async (startByte, signal, isRetry = false) => {
     const headers = { ...(requestOptions.headers || {}) }
-    if (startByte > 0) {
+    
+    // Always set Range header on retries, even if starting from 0
+    if (isRetry || startByte > 0) {
       headers['range'] = `bytes=${startByte}-`
     }
 
@@ -32,27 +60,48 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
       headers,
       signal
     })
+    
     if (!response.ok || (response.status !== 206 && response.status !== 200)) {
       throw new Error(`Fetch error: ${response.status}`)
     }
     return response
   }
 
-  const abortController = new AbortController()
+  // Use provided signal or create new one
+  const abortController = requestOptions.signal ? 
+    { signal: requestOptions.signal, abort: () => {} } : 
+    new AbortController()
+    
   let startByte = 0
   let contentLength = null
+  let isFirstRequest = true
 
   return new ReadableStream({
     async pull(stream) {
+      // Check if already aborted
+      if (abortController.signal.aborted) {
+        stream.error(new Error('Aborted'))
+        return
+      }
+
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const response = await fetchRange(startByte, abortController.signal)
+          const response = await fetchRange(startByte, abortController.signal, !isFirstRequest)
+          
+          // Only get content length on first successful request
           if (contentLength === null) {
             contentLength = getContentLength(response)
           }
 
           const reader = response.body.getReader()
           while (true) {
+            // Check for abort before each read
+            if (abortController.signal.aborted) {
+              reader.releaseLock()
+              stream.error(new Error('Aborted'))
+              return
+            }
+
             const { done, value } = await reader.read()
             if (done) {
               stream.close()
@@ -65,11 +114,23 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
           }
         } catch (err) {
           console.warn(`Attempt ${attempt + 1} failed:`, err)
-          if (attempt === maxRetries) {
-            abortController.abort()
-            stream.error(new Error('Max retries reached', { cause: err }))
+          
+          // Check if this error should be retried
+          if (!isRetriableError(err) || attempt === maxRetries) {
+            if (abortController.abort) {
+              abortController.abort()
+            }
+            
+            // If it's a non-retriable error, throw the original error
+            if (!isRetriableError(err)) {
+              stream.error(err)
+            } else {
+              stream.error(new Error('Max retries reached', { cause: err }))
+            }
             return
           }
+          
+          isFirstRequest = false
           await new Promise((res) => setTimeout(res, retryDelay))
         }
       }
@@ -77,7 +138,9 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
 
     cancel(reason) {
       console.warn('Stream canceled:', reason)
-      abortController.abort()
+      if (abortController.abort) {
+        abortController.abort()
+      }
     },
   })
 }
