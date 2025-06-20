@@ -4,7 +4,10 @@ export function createProgressTracker(onProgress) {
   let total = 0
   
   return {
-    setTotal: (n) => { total = n },
+    setTotal: (n) => { 
+      total = n
+      onProgress(total > 0 ? completed / total : 0)
+    },
     increment: () => {
       completed++
       onProgress(total > 0 ? completed / total : 0)
@@ -12,6 +15,11 @@ export function createProgressTracker(onProgress) {
     setProgress: (n) => {
       completed = n
       onProgress(total > 0 ? completed / total : 0)
+    },
+    reset: () => {
+      completed = 0
+      total = 0
+      onProgress(0)
     }
   }
 }
@@ -23,11 +31,11 @@ export function createStepProgress(stepWeights, onProgress) {
   
   const update = () => {
     const weighted = stepWeights.reduce((sum, weight, i) => sum + steps[i] * weight, 0)
-    onProgress(weighted / total)
+    onProgress(total > 0 ? weighted / total : 0)
   }
   
   return stepWeights.map((_, index) => (progress) => {
-    steps[index] = progress
+    steps[index] = Math.max(0, Math.min(1, progress)) // Clamp between 0-1
     update()
   })
 }
