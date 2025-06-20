@@ -2,6 +2,7 @@
 import { createSignal, createEffect, onCleanup } from 'solid-js'
 import { FlashManager, StepCode, ErrorCode } from './utils/manager.js'
 import { ProgressBar, DeviceState } from './components/FlashComponents.jsx'
+import { createImageManager } from './utils/image.js'
 import { isLinux } from './utils/platform.js'
 import config from './config.js'
 
@@ -50,22 +51,23 @@ const errors = {
   [ErrorCode.REQUIREMENTS_NOT_MET]: {
     status: 'Requirements not met',
     description: 'Your browser does not support WebUSB',
+    bgColor: 'bg-red-500',
+    icon: exclamation,
   },
   [ErrorCode.DEVICE_ERROR]: {
     status: 'Device error',
     description: 'Try a different cable or USB port',
+    bgColor: 'bg-yellow-500',
     icon: deviceQuestion,
   },
   [ErrorCode.FLASH_FAILED]: {
     status: 'Flash failed',
-    description: 'Try again with a different cable or computer',
+    description: isLinux 
+      ? 'Try again with a different cable. Did you unbind from qcserial?'
+      : 'Try again with a different cable or computer',
+    bgColor: 'bg-red-500',
     icon: deviceExclamation,
   },
-}
-
-function beforeUnloadListener(event) {
-  event.preventDefault()
-  return (event.returnValue = "Flash in progress. Are you sure you want to leave?")
 }
 
 export function Flash() {
@@ -78,10 +80,12 @@ export function Flash() {
   const [serial, setSerial] = createSignal(null)
   
   let flashManager = null
+  const imageManager = createImageManager()
 
-  // Initialize flash manager - minimal effect
+  // Single initialization effect - minimal and focused
   createEffect(async () => {
     try {
+      await imageManager.init()
       const response = await fetch(config.loader.url)
       const programmer = await response.arrayBuffer()
       
@@ -94,6 +98,7 @@ export function Flash() {
         onSerialChange: setSerial
       })
 
+      await flashManager.initialize(imageManager)
       setStep(StepCode.READY)
     } catch (err) {
       console.error('Flash manager init error:', err)
@@ -101,18 +106,23 @@ export function Flash() {
     }
   })
 
-  // Handle beforeunload warning - direct effect
+  // Minimal beforeunload effect - only when actively flashing
   createEffect(() => {
-    if (step() === StepCode.FLASHING) {
-      window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    const currentStep = step()
+    if (currentStep === StepCode.FLASHING) {
+      const handler = (event) => {
+        event.preventDefault()
+        return (event.returnValue = "Flash in progress. Are you sure you want to leave?")
+      }
+      window.addEventListener("beforeunload", handler, { capture: true })
       onCleanup(() => {
-        window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
+        window.removeEventListener("beforeunload", handler, { capture: true })
       })
     }
   })
 
   // Event handlers - direct and simple
-  const handleStart = () => flashManager?.connect()
+  const handleStart = () => flashManager?.start()
   const handleRetry = () => window.location.reload()
 
   // Computed UI state - inline
@@ -158,7 +168,7 @@ export function Flash() {
         class="w-full max-w-3xl px-8 transition-opacity duration-300" 
         style={{ opacity: progress() === -1 ? 0 : 1 }}
       >
-        <ProgressBar value={progress() * 100} bgColor={ui.bgColor} />
+        <ProgressBar value={progress} bgColor={() => ui.bgColor} />
       </div>
       
       <span class="text-3xl dark:text-white font-mono font-light">{title()}</span>
