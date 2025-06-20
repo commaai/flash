@@ -5,7 +5,9 @@ import { createSignal } from 'solid-js'
 
 describe('FlashComponents', () => {
   test('ProgressBar renders correctly', () => {
-    const { container } = render(() => <ProgressBar value={50} bgColor="bg-blue-500" />)
+    const [progress] = createSignal(0.5)
+    const [bgColor] = createSignal('bg-blue-500')
+    const { container } = render(() => <ProgressBar value={progress} bgColor={bgColor} />)
     expect(container.querySelector('.relative')).toBeInTheDocument()
   })
 
