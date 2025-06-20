@@ -1,4 +1,6 @@
 // Simple progress bar component - direct reactivity
+import { SimpleErrorBoundary } from './ErrorBoundary.jsx'
+
 export function ProgressBar({ value, bgColor }) {
   // Direct computed value - no unnecessary effects
   const progress = () => {
@@ -7,22 +9,25 @@ export function ProgressBar({ value, bgColor }) {
   }
   
   return (
-    <div class="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-      <div
-        class={`absolute top-0 bottom-0 left-0 w-full transition-all ${bgColor()}`}
-        style={{ transform: `translateX(${progress() - 100}%)` }}
-      />
-    </div>
+    <SimpleErrorBoundary>
+      <div class="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          class={`absolute top-0 bottom-0 left-0 w-full transition-all ${bgColor()}`}
+          style={{ transform: `translateX(${progress() - 100}%)` }}
+        />
+      </div>
+    </SimpleErrorBoundary>
   )
 }
 
 // Simple device state component  
 export function DeviceState({ serial }) {
   return (
-    <div
-      class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
-      style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
-    >
+    <SimpleErrorBoundary>
+      <div
+        class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
+        style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
+      >
       <div class="flex flex-row gap-2">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -45,6 +50,7 @@ export function DeviceState({ serial }) {
           <span class="ml-2 font-mono">{serial() || 'unknown'}</span>
         </span>
       </div>
-    </div>
+      </div>
+    </SimpleErrorBoundary>
   )
 }

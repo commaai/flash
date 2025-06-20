@@ -78,6 +78,7 @@ export function Flash() {
   const [error, setError] = createSignal(ErrorCode.NONE)
   const [connected, setConnected] = createSignal(false)
   const [serial, setSerial] = createSignal(null)
+  const [initError, setInitError] = createSignal(null) // Track initialization errors
   
   let flashManager = null
   const imageManager = createImageManager()
@@ -87,6 +88,11 @@ export function Flash() {
     try {
       await imageManager.init()
       const response = await fetch(config.loader.url)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load programmer: ${response.status}`)
+      }
+      
       const programmer = await response.arrayBuffer()
       
       flashManager = new FlashManager(config.manifests.release, programmer, {
@@ -100,8 +106,10 @@ export function Flash() {
 
       await flashManager.initialize(imageManager)
       setStep(StepCode.READY)
+      setInitError(null) // Clear any previous init errors
     } catch (err) {
-      console.error('Flash manager init error:', err)
+      console.error('Flash manager initialization failed:', err)
+      setInitError(err.message)
       setError(ErrorCode.DEVICE_ERROR)
     }
   })
@@ -122,7 +130,15 @@ export function Flash() {
   })
 
   // Event handlers - direct and simple
-  const handleStart = () => flashManager?.start()
+  const handleStart = async () => {
+    try {
+      await flashManager?.start()
+    } catch (err) {
+      console.error('Flash start failed:', err)
+      setError(ErrorCode.FLASH_FAILED)
+    }
+  }
+  
   const handleRetry = () => window.location.reload()
 
   // Computed UI state - inline
@@ -173,6 +189,13 @@ export function Flash() {
       
       <span class="text-3xl dark:text-white font-mono font-light">{title()}</span>
       <span class="text-xl dark:text-white px-8 max-w-xl">{ui.description}</span>
+      
+      {/* Show initialization error if present */}
+      {initError() && (
+        <div class="text-red-500 dark:text-red-400 text-sm px-8 max-w-xl text-center">
+          Initialization failed: {initError()}
+        </div>
+      )}
       
       {error() !== ErrorCode.NONE && (
         <button

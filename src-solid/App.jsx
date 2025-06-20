@@ -5,6 +5,7 @@ import zadigCreateNewDevice from '../src/assets/zadig_create_new_device.png'
 import zadigForm from '../src/assets/zadig_form.png'
 import { isLinux, isWindows } from './utils/platform.js'
 import { Flash } from './Flash.jsx'
+import { SimpleErrorBoundary } from './components/ErrorBoundary.jsx'
 
 const VENDOR_ID = '05C6'
 const PRODUCT_ID = '9008'
@@ -166,7 +167,9 @@ export default function App() {
       </main>
 
       <div class="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
-        <Flash />
+        <SimpleErrorBoundary>
+          <Flash />
+        </SimpleErrorBoundary>
       </div>
 
       <div class="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
