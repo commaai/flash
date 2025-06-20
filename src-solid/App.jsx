@@ -1,11 +1,8 @@
 // Simplified SolidJS App component - direct and minimal
-import comma from '../src/assets/comma.svg'
-import qdlPorts from '../src/assets/qdl-ports.svg'
-import zadigCreateNewDevice from '../src/assets/zadig_create_new_device.png'
-import zadigForm from '../src/assets/zadig_form.png'
 import { isLinux, isWindows } from './utils/platform.js'
 import { Flash } from './Flash.jsx'
 import { SimpleErrorBoundary } from './components/ErrorBoundary.jsx'
+import { assets } from './utils/assets.js'
 
 const VENDOR_ID = '05C6'
 const PRODUCT_ID = '9008'
@@ -34,7 +31,7 @@ export default function App() {
     <div class="flex flex-col lg:flex-row flex-wrap">
       <main class="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
         <section>
-          <img src={comma} alt="comma" width={128} height={128} class="dark:invert" />
+          <img src={assets.comma} alt="comma" width={128} height={128} class="dark:invert" />
           <h1>flash.comma.ai</h1>
           <p>
             This tool allows you to flash AGNOS onto your comma device. AGNOS is the Ubuntu-based operating system for
@@ -69,7 +66,7 @@ export default function App() {
                 <li>
                   Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
                   <img
-                    src={zadigCreateNewDevice}
+                    src={assets.zadigCreateNewDevice}
                     alt="Zadig Create New Device"
                     width={575}
                     height={254}
@@ -80,7 +77,7 @@ export default function App() {
                   fields are very important. Fill them in with <code>{VENDOR_ID}</code> and <code>{PRODUCT_ID}</code>
                   respectively. Press &quot;Install Driver&quot; and give it a few minutes to install.
                   <img
-                    src={zadigForm}
+                    src={assets.zadigForm}
                     alt="Zadig Form"
                     width={575}
                     height={254}
@@ -102,7 +99,7 @@ export default function App() {
             <li>Second, connect power to the <strong>upper</strong> <span class="whitespace-nowrap">OBD-C</span> port <strong>(port 2)</strong>.</li>
           </ol>
           <img
-            src={qdlPorts}
+            src={assets.qdlPorts}
             alt="image showing comma three and two ports. the lower port is labeled 1. the upper port is labeled 2."
             width={450}
             height={300}

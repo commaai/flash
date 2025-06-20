@@ -4,46 +4,38 @@ import { FlashManager, StepCode, ErrorCode } from './utils/manager.js'
 import { ProgressBar, DeviceState } from './components/FlashComponents.jsx'
 import { createImageManager } from './utils/image.js'
 import { isLinux } from './utils/platform.js'
+import { assets } from './utils/assets.js'
 import config from './config.js'
-
-// Assets - simplified imports
-import bolt from '../src/assets/bolt.svg'
-import cable from '../src/assets/cable.svg'
-import deviceExclamation from '../src/assets/device_exclamation_c3.svg'
-import deviceQuestion from '../src/assets/device_question_c3.svg'
-import done from '../src/assets/done.svg'
-import exclamation from '../src/assets/exclamation.svg'
-import systemUpdate from '../src/assets/system_update_c3.svg'
 
 // Step configurations - static data
 const steps = {
   [StepCode.INITIALIZING]: {
     status: 'Initializing...',
     bgColor: 'bg-gray-400 dark:bg-gray-700',
-    icon: bolt,
+    icon: assets.bolt,
   },
   [StepCode.READY]: {
     status: 'Tap to start',
     bgColor: 'bg-[#51ff00]',
-    icon: bolt,
+    icon: assets.bolt,
   },
   [StepCode.CONNECTING]: {
     status: 'Waiting for connection',
     description: 'Follow the instructions to connect your device',
     bgColor: 'bg-yellow-500',
-    icon: cable,
+    icon: assets.cable,
   },
   [StepCode.FLASHING]: {
     status: 'Flashing device...',
     description: 'Do not unplug your device until complete',
     bgColor: 'bg-lime-400',
-    icon: systemUpdate,
+    icon: assets.systemUpdate,
   },
   [StepCode.DONE]: {
     status: 'Done',
     description: 'Your device was flashed successfully',
     bgColor: 'bg-green-500',
-    icon: done,
+    icon: assets.done,
   },
 }
 
@@ -52,13 +44,13 @@ const errors = {
     status: 'Requirements not met',
     description: 'Your browser does not support WebUSB',
     bgColor: 'bg-red-500',
-    icon: exclamation,
+    icon: assets.exclamation,
   },
   [ErrorCode.DEVICE_ERROR]: {
     status: 'Device error',
     description: 'Try a different cable or USB port',
     bgColor: 'bg-yellow-500',
-    icon: deviceQuestion,
+    icon: assets.deviceQuestion,
   },
   [ErrorCode.FLASH_FAILED]: {
     status: 'Flash failed',
@@ -66,7 +58,7 @@ const errors = {
       ? 'Try again with a different cable. Did you unbind from qcserial?'
       : 'Try again with a different cable or computer',
     bgColor: 'bg-red-500',
-    icon: deviceExclamation,
+    icon: assets.deviceExclamation,
   },
 }
 
