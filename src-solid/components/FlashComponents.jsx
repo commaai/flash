@@ -1,11 +1,16 @@
-// Simple progress bar component
+// Simple progress bar component - direct reactivity
 export function ProgressBar({ value, bgColor }) {
-  const progress = value === -1 || value > 100 ? 100 : value
+  // Direct computed value - no unnecessary effects
+  const progress = () => {
+    const val = value()
+    return val === -1 || val > 1 ? 100 : val * 100
+  }
+  
   return (
     <div class="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
       <div
-        class={`absolute top-0 bottom-0 left-0 w-full transition-all ${bgColor}`}
-        style={{ transform: `translateX(${progress - 100}%)` }}
+        class={`absolute top-0 bottom-0 left-0 w-full transition-all ${bgColor()}`}
+        style={{ transform: `translateX(${progress() - 100}%)` }}
       />
     </div>
   )
