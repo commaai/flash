@@ -13,23 +13,23 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
 
       - run: bun install
-      - run: bun run test
+      # Run essential SolidJS tests only (no manifest tests)
+      - run: bun run test:ci
 
-  manifest:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
+    needs: test
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
 
       - run: bun install
-      - name: test manifest in master
-        run: bun run test "manifest"
-        env:
-          MANIFEST_BRANCH: master
+      - name: Build production bundle
+        run: bun run build

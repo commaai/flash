@@ -21,13 +21,14 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+    
+    - uses: oven-sh/setup-bun@v1
     
     - name: Install dependencies
-      run: npm ci
+      run: bun install
     
     - name: Run essential tests (CI)
-      run: npm run test:ci
+      run: bun run test:ci
     
     - name: Build production bundle
-      run: npm run build
+      run: bun run build
