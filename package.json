@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "start": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test:ci": "vitest run --exclude='**/ErrorBoundary.test.jsx'",
+    "test:all": "vitest run"
   },
   "engines": {
     "node": ">=20.11.0"
