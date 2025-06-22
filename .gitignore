@@ -61,8 +61,3 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
-
-.taskmaster
-AGENTS.md
-.github/instructions/
-/tasks
