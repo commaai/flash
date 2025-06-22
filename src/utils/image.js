@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { onMount } from 'solid-js'
 import { XzReadableStream } from 'xz-decompress'
 
 import { fetchStream } from './stream'
@@ -83,14 +83,14 @@ export class ImageManager {
   }
 }
 
-/** @returns {React.MutableRefObject<ImageManager>} */
+/** @returns {{current: ImageManager}} */
 export function useImageManager() {
-  const apiRef = useRef()
+  const apiRef = { current: null }
 
-  useEffect(() => {
+  onMount(() => {
     const worker = new ImageManager()
     apiRef.current = worker
-  }, [])
+  })
 
   return apiRef
 }
