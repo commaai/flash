@@ -81,6 +81,24 @@ export class ManifestImage {
  */
 export function getManifest(url) {
   return fetch(url)
-    .then((response) => response.text())
-    .then((text) => JSON.parse(text).map((image) => new ManifestImage(image)))
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.text()
+    })
+    .then((text) => {
+      try {
+        const data = JSON.parse(text)
+        if (!Array.isArray(data)) {
+          throw new Error('Manifest data is not an array')
+        }
+        return data.map((image) => new ManifestImage(image))
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          throw new Error(`Invalid JSON response: ${text.substring(0, 100)}...`)
+        }
+        throw error
+      }
+    })
 }
