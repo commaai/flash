@@ -69,3 +69,4 @@ node_modules/
 *.vscode
 .roomodes
 AGENTS.md
+package-lock.json
