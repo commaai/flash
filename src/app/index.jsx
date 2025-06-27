@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { lazy, Suspense } from 'solid-js'
 
 import comma from '../assets/comma.svg'
 import qdlPorts from '../assets/qdl-ports.svg'
