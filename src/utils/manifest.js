@@ -80,6 +80,7 @@ export class ManifestImage {
  * @returns {Promise<ManifestImage[]>}
  */
 export function getManifest(url) {
+  console.log(url);
   return fetch(url)
     .then((response) => response.text())
     .then((text) => JSON.parse(text).map((image) => new ManifestImage(image)))
