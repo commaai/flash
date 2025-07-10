@@ -5,6 +5,7 @@ import { ImageManager } from '../../utils/image.js';
 import { isLinux } from '../../utils/platform.js';
 import config from '../../config.js';
 
+// Import SVG assets
 import bolt from '../../assets/bolt.svg';
 import cable from '../../assets/cable.svg';
 import deviceExclamation from '../../assets/device_exclamation_c3.svg';
@@ -112,10 +113,12 @@ const errors = {
 };
 
 if (isLinux) {
+  // this is likely in StepCode.CONNECTING
   errors[ErrorCode.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?';
 }
 
 function beforeUnloadListener(event) {
+  // NOTE: not all browsers will show this message
   event.preventDefault();
   return (event.returnValue = "Flash in progress. Are you sure you want to leave?");
 }
@@ -137,7 +140,6 @@ export class FlashComponent extends Component {
       serial: null,
       loading: true
     };
-
     this.initialize();
   }
 
@@ -206,7 +208,6 @@ export class FlashComponent extends Component {
 
   renderDeviceState(serial) {
     if (!this.state.connected) return '';
-
     return `
       <div
         class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
@@ -240,7 +241,7 @@ export class FlashComponent extends Component {
 
   render() {
     if (this.state.loading) {
-      return `
+      return `  
         <div class="flex items-center justify-center h-full">
           <p class="text-black dark:text-white">Loading...</p>
         </div>
@@ -327,7 +328,6 @@ export class FlashComponent extends Component {
 
   updateBeforeUnloadListener() {
     const { step } = this.state;
-
     if (step >= StepCode.REPAIR_PARTITION_TABLES && step <= StepCode.FINALIZING) {
       window.addEventListener("beforeunload", beforeUnloadListener, { capture: true });
     } else {
@@ -363,7 +363,6 @@ export class FlashComponent extends Component {
     if (this.qdlManager) {
       this.qdlManager.cleanup && this.qdlManager.cleanup();
     }
-
     if (this.imageManager) {
       this.imageManager.cleanup && this.imageManager.cleanup();
     }
