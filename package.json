@@ -3,11 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.js",
+  "homepage": "./",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "start": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "electron": "cross-env NODE_ENV=development electron .",
+    "electron-dev": "concurrently \"bun run dev\" \"wait-on http://localhost:5173 && bun run electron\"",
+    "electron-build": "bun run build && electron-builder",
+    "electron-build-win": "bun run build && electron-builder --win",
+    "electron-build-mac": "bun run build && electron-builder --mac",
+    "electron-build-linux": "bun run build && electron-builder --linux",
+    "electron-build-all": "bun run build && electron-builder --mac --win --linux",
+    "dist": "bun run build && electron-builder --publish=never"
   },
   "engines": {
     "node": ">=20.11.0"
@@ -16,6 +26,7 @@
     "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#52021f0b1ace58673ebca1fae740f6900ebff707",
     "@fontsource-variable/inter": "^5.2.5",
     "@fontsource-variable/jetbrains-mono": "^5.2.5",
+    "electron-updater": "^6.6.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "xz-decompress": "^0.2.2"
@@ -28,16 +39,80 @@
     "@types/react-dom": "^18.3.6",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "10.4.21",
+    "concurrently": "^9.2.0",
+    "cross-env": "^7.0.3",
+    "electron": "^37.2.1",
+    "electron-builder": "^26.0.12",
+    "electron-squirrel-startup": "^1.0.1",
     "jsdom": "^26.0.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "vite": "^6.2.6",
     "vite-svg-loader": "^5.1.0",
-    "vitest": "^3.1.1"
+    "vitest": "^3.1.1",
+    "wait-on": "^8.0.3"
   },
   "trustedDependencies": [
     "@commaai/qdl",
     "esbuild",
     "usb"
-  ]
+  ],
+  "build": {
+    "appId": "ai.comma.flash",
+    "productName": "flash.comma.ai",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "src/assets",
+        "to": "assets"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "src/app/icon.svg"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "src/app/icon.svg"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Utility",
+      "icon": "src/app/icon.svg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
 }
