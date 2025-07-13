@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest'
 
-import config from '../config'
+import config from '../config.js'
 import { ImageManager } from './image'
 import { getManifest } from './manifest'
 
