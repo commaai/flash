@@ -221,6 +221,7 @@ button,select {
 
 button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]) {
    -webkit-appearance: button;
+   appearance: button;
    background-color: transparent;
    background-image: none
 }
@@ -243,6 +244,7 @@ progress {
 
 [type=search] {
    -webkit-appearance: textfield;
+   appearance: textfield;
    outline-offset: -2px
 }
 
@@ -306,7 +308,6 @@ button,[role=button] {
 
 img,svg,video,canvas,audio,iframe,embed,object {
    display: block;
-   vertical-align: middle
 }
 
 img,video {
