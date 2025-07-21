@@ -93,7 +93,7 @@
           ]
         }
       ],
-      "icon": "src/app/icon.ico"
+      "icon": "src/app/icon_large.png"
     },
     "win": {
       "target": [
@@ -109,20 +109,14 @@
     "linux": {
       "target": [
         {
-          "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "deb",
+          "target": "tar.gz",
           "arch": [
             "x64"
           ]
         }
       ],
       "category": "Utility",
-      "icon": "src/app/icon.ico"
+      "icon": "src/app/icon_large.png"
     },
     "nsis": {
       "oneClick": false,
