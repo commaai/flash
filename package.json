@@ -1,10 +1,16 @@
 {
   "name": "@commaai/flash",
   "version": "0.1.0",
+  "description": "flash.comma.ai - The official flash tool for comma devices",
   "private": true,
   "type": "module",
   "main": "electron/main.js",
   "homepage": "./",
+  "author": {
+    "name": "comma.ai",
+    "email": "support@comma.ai",
+    "url": "https://comma.ai"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -43,6 +49,7 @@
     "cross-env": "^7.0.3",
     "electron": "^37.2.1",
     "electron-builder": "^26.0.12",
+    "electron-icon-builder": "^2.0.1",
     "electron-squirrel-startup": "^1.0.1",
     "jsdom": "^26.0.0",
     "postcss": "^8.5.3",
@@ -80,33 +87,42 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
-      "icon": "src/app/icon.svg"
+      "icon": "src/app/icon.ico"
     },
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
-      "icon": "src/app/icon.svg"
+      "icon": "src/app/icon.ico"
     },
     "linux": {
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "category": "Utility",
-      "icon": "src/app/icon.svg"
+      "icon": "src/app/icon.ico"
     },
     "nsis": {
       "oneClick": false,
