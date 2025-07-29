@@ -16,9 +16,9 @@
     "build": "vite build",
     "start": "vite preview",
     "test": "vitest",
-    "electron": "cross-env NODE_ENV=development electron .",
-    "electron-dev": "concurrently \"bun run dev\" \"wait-on http://localhost:5173 && bun run electron\"",
-    "electron-build": "bun run build && electron-builder",
+    "electron": "npm run electron-npm",
+    "electron-dev": "concurrently \"bun run dev\" \"wait-on http://localhost:5173 && npm run electron-npm\"",
+    "electron-build": "bun run build && npm run electron-builder",
     "electron-build-win": "bun run build && electron-builder --win",
     "electron-build-mac": "bun run build && electron-builder --mac",
     "electron-build-linux": "bun run build && electron-builder --linux",
@@ -38,6 +38,7 @@
     "xz-decompress": "^0.2.2"
   },
   "devDependencies": {
+    "electron": "^37.2.4",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -47,7 +48,6 @@
     "autoprefixer": "10.4.21",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
-    "electron": "^37.2.3",
     "electron-builder": "^26.0.12",
     "electron-icon-builder": "^2.0.1",
     "electron-squirrel-startup": "^1.0.1",

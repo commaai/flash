@@ -45,3 +45,4 @@ package-lock.json
 
 # build files
 release/**
+bun.lockb
