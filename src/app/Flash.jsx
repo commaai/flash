@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { createSignal, createEffect, onMount, onCleanup } from 'solid-js'
 
 import { FlashManager, StepCode, ErrorCode } from '../utils/manager'
 import { useImageManager } from '../utils/image'
@@ -172,24 +172,24 @@ function beforeUnloadListener(event) {
 
 
 export default function Flash() {
-  const [step, setStep] = useState(StepCode.INITIALIZING)
-  const [message, setMessage] = useState('')
-  const [progress, setProgress] = useState(-1)
-  const [error, setError] = useState(ErrorCode.NONE)
-  const [connected, setConnected] = useState(false)
-  const [serial, setSerial] = useState(null)
+  const [step, setStep] = createSignal(StepCode.INITIALIZING)
+  const [message, setMessage] = createSignal('')
+  const [progress, setProgress] = createSignal(-1)
+  const [error, setError] = createSignal(ErrorCode.NONE)
+  const [connected, setConnected] = createSignal(false)
+  const [serial, setSerial] = createSignal(null)
 
-  const qdlManager = useRef(null)
+  let qdlManager = null
   const imageManager = useImageManager()
 
-  useEffect(() => {
+  onMount(() => {
     if (!imageManager.current) return
 
     fetch(config.loader.url)
       .then((res) => res.arrayBuffer())
       .then((programmer) => {
-        // Create QDL manager with callbacks that update React state
-        qdlManager.current = new FlashManager(config.manifests.release, programmer, {
+        // Create QDL manager with callbacks that update state
+        qdlManager = new FlashManager(config.manifests.release, programmer, {
           onStepChange: setStep,
           onMessageChange: setMessage,
           onProgressChange: setProgress,
@@ -199,75 +199,91 @@ export default function Flash() {
         })
 
         // Initialize the manager
-        return qdlManager.current.initialize(imageManager.current)
+        return qdlManager.initialize(imageManager.current)
       })
       .catch((err) => {
         console.error('Error initializing Flash manager:', err)
         setError(ErrorCode.UNKNOWN)
       })
-  }, [config, imageManager.current])
+  })
 
   // Handle user clicking the start button
-  const handleStart = () => qdlManager.current?.start()
-  const canStart = step === StepCode.READY && !error
+  const handleStart = () => qdlManager?.start()
+  const canStart = () => step() === StepCode.READY && !error()
 
   // Handle retry on error
   const handleRetry = () => window.location.reload()
 
-  const uiState = steps[step]
-  if (error) {
-    Object.assign(uiState, errors[ErrorCode.UNKNOWN], errors[error])
-  }
-  const { status, description, bgColor, icon, iconStyle = 'invert' } = uiState
-
-  let title
-  if (message && !error) {
-    title = message + '...'
-    if (progress >= 0) {
-      title += ` (${(progress * 100).toFixed(0)}%)`
+  const uiState = () => {
+    const currentStep = steps[step()]
+    const currentError = error()
+    if (currentError) {
+      return Object.assign({}, currentStep, errors[ErrorCode.UNKNOWN], errors[currentError])
     }
-  } else if (error === ErrorCode.STORAGE_SPACE) {
-    title = message
-  } else {
-    title = status
+    return currentStep
+  }
+
+  const title = () => {
+    const currentMessage = message()
+    const currentError = error()
+    const currentProgress = progress()
+    
+    if (currentMessage && !currentError) {
+      let result = currentMessage + '...'
+      if (currentProgress >= 0) {
+        result += ` (${(currentProgress * 100).toFixed(0)}%)`
+      }
+      return result
+    } else if (currentError === ErrorCode.STORAGE_SPACE) {
+      return currentMessage
+    } else {
+      return uiState().status
+    }
   }
 
   // warn the user if they try to leave the page while flashing
-  if (step >= StepCode.REPAIR_PARTITION_TABLES && step <= StepCode.FINALIZING) {
-    window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  } else {
+  createEffect(() => {
+    const currentStep = step()
+    if (currentStep >= StepCode.REPAIR_PARTITION_TABLES && currentStep <= StepCode.FINALIZING) {
+      window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    } else {
+      window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
+    }
+  })
+
+  onCleanup(() => {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  }
+  })
 
   return (
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
-        className={`p-8 rounded-full ${bgColor}`}
-        style={{ cursor: canStart ? 'pointer' : 'default' }}
-        onClick={canStart ? handleStart : null}
+        className={`p-8 rounded-full ${uiState().bgColor}`}
+        style={{ cursor: canStart() ? 'pointer' : 'default' }}
+        onClick={canStart() ? handleStart : null}
       >
         <img
-          src={icon}
+          src={uiState().icon}
           alt="cable"
           width={128}
           height={128}
-          className={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
+          className={`${uiState().iconStyle || 'invert'} ${!error() && step() !== StepCode.DONE ? 'animate-pulse' : ''}`}
         />
       </div>
-      <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
-        <LinearProgress value={progress * 100} barColor={bgColor} />
+      <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress() === -1 ? 0 : 1 }}>
+        <LinearProgress value={progress() * 100} barColor={uiState().bgColor} />
       </div>
-      <span className="text-3xl dark:text-white font-mono font-light">{title}</span>
-      <span className="text-xl dark:text-white px-8 max-w-xl">{description}</span>
-      {error && (
+      <span className="text-3xl dark:text-white font-mono font-light">{title()}</span>
+      <span className="text-xl dark:text-white px-8 max-w-xl">{uiState().description}</span>
+      {error() && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
           onClick={handleRetry}
         >
           Retry
         </button>
-      ) || false}
-      {connected && <DeviceState serial={serial} />}
+      )}
+      {connected() && <DeviceState serial={serial()} />}
     </div>
   )
 }
