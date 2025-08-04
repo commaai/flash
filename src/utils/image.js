@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { XzReadableStream } from 'xz-decompress'
 
 import { fetchStream } from './stream'
@@ -83,14 +82,8 @@ export class ImageManager {
   }
 }
 
-/** @returns {React.MutableRefObject<ImageManager>} */
-export function useImageManager() {
-  const apiRef = useRef()
-
-  useEffect(() => {
-    const worker = new ImageManager()
-    apiRef.current = worker
-  }, [])
-
-  return apiRef
+// Retain a simple factory for creating an ImageManager instance in
+// environments without React hooks.
+export function createImageManager() {
+  return new ImageManager()
 }
