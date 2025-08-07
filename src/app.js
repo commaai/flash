@@ -1,6 +1,5 @@
 import { isWindows, isLinux } from './utils/platform'
 
-// Alpine.js App component
 export function appComponent() {
   return {
     version: import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev',

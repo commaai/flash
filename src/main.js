@@ -2,8 +2,8 @@ import Alpine from 'alpinejs'
 import '@fontsource-variable/inter'
 import '@fontsource-variable/jetbrains-mono'
 import './index.css'
-import { appComponent, copyTextComponent } from './alpine-app'
-import { flashComponent } from './alpine-flash'
+import { appComponent, copyTextComponent } from './app'
+import { flashComponent } from './flash'
 
 // Register Alpine components
 Alpine.data('app', appComponent)
