@@ -82,6 +82,10 @@ export class ImageManager {
   }
 }
 
+/**
+ * Create a new ImageManager instance.
+ * @returns {ImageManager}
+ */
 export function createImageManager() {
   return new ImageManager()
 }
