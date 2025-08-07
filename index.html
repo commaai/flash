@@ -9,9 +9,13 @@
       content="Update your comma device to the latest software"
     />
     <title>flash.comma.ai</title>
+    <style>
+      /* Critical CSS to prevent flash of unstyled content */
+      [x-cloak] { display: none !important; }
+    </style>
   </head>
   <body>
-    <div id="root" x-data="app" class="flex flex-col lg:flex-row flex-wrap">
+    <div id="root" x-data="app" x-cloak class="flex flex-col lg:flex-row flex-wrap alpine-ready">
       <main class="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
         <section>
           <img src="./src/assets/comma.svg" alt="comma" width="128" height="128" class="dark:invert" />
