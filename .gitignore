@@ -11,6 +11,8 @@
 /.pnp
 .pnp.js
 /.pnpm-store
+package-lock.json
+yarn.lock
 
 # testing
 /coverage
