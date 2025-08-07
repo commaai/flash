@@ -151,9 +151,71 @@
       </main>
 
       <div class="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
-        <div id="flash-component">
-          <!-- Flash component will be loaded here -->
-          <p class="text-black dark:text-white">Loading...</p>
+        <div x-data="flash" class="relative flex flex-col gap-8 justify-center items-center h-full">
+          <div
+            :class="uiState.bgColor"
+            class="p-8 rounded-full"
+            :style="{ cursor: canStart ? 'pointer' : 'default' }"
+            @click="canStart && handleStart()"
+          >
+            <img
+              :src="uiState.icon"
+              alt="flash icon"
+              width="128"
+              height="128"
+              :class="[(uiState.iconStyle || 'invert'), (!error && step !== 7) ? 'animate-pulse' : '']"
+            />
+          </div>
+          
+          <div class="w-full max-w-3xl px-8 transition-opacity duration-300" :style="{ opacity: progress === -1 ? 0 : 1 }">
+            <div class="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                :class="uiState.bgColor"
+                class="absolute top-0 bottom-0 left-0 w-full transition-all"
+                :style="{ transform: `translateX(${progressValue - 100}%)` }"
+              ></div>
+            </div>
+          </div>
+          
+          <span class="text-3xl dark:text-white font-mono font-light" x-text="title"></span>
+          <span class="text-xl dark:text-white px-8 max-w-xl" x-text="uiState.description"></span>
+          
+          <button
+            x-show="error"
+            class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
+            @click="handleRetry()"
+          >
+            Retry
+          </button>
+          
+          <div
+            x-show="connected"
+            class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
+            style="left: 50%; transform: translate(-50%, -50%)"
+          >
+            <div class="flex flex-row gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 96 960 960"
+                class="text-green-500 dark:text-[#51ff00]"
+                height="24"
+                width="24"
+              >
+                <path
+                  fill="currentColor"
+                  d="M480 976q-32 0-52-20t-20-52q0-22 11-40t31-29V724H302q-24 0-42-18t-18-42V555q-20-9-31-26.609-11-17.608-11-40.108Q200 456 220 436t52-20q32 0 52 20t20 52.411Q344 511 333 528.5T302 555v109h148V324h-80l110-149 110 149h-80v340h148V560h-42V416h144v144h-42v104q0 24-18 42t-42 18H510v111q19.95 10.652 30.975 29.826Q552 884 552 904q0 32-20 52t-52 20Z"
+                />
+              </svg>
+              Device connected
+            </div>
+            <span class="text-gray-400">|</span>
+            <div class="flex flex-row gap-2">
+              <span>
+                Serial:
+                <span class="ml-2 font-mono" x-text="serial || 'unknown'"></span>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
