@@ -2,17 +2,242 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./src/app/icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./src/assets/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
       content="Update your comma device to the latest software"
     />
     <title>flash.comma.ai</title>
+    <!-- Asset preloading for critical resources -->
+    <link rel="preload" href="./src/assets/qdl-ports.svg" as="image" type="image/svg+xml">
+    <link rel="preload" href="./src/assets/comma.svg" as="image" type="image/svg+xml">
+    <link rel="dns-prefetch" href="//raw.githubusercontent.com">
+    <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+    <link rel="dns-prefetch" href="//plausible.io">
+    <link rel="preconnect" href="https://plausible.io" crossorigin>
+    
+    <style>
+      /* Critical CSS to prevent flash of unstyled content */
+      [x-cloak] { display: none !important; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="./src/main.jsx"></script>
+    <div id="root" x-data="app" x-cloak class="flex flex-col lg:flex-row flex-wrap alpine-ready">
+      <main class="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
+        <section>
+          <img src="./src/assets/comma.svg" alt="comma" width="128" height="128" class="dark:invert" />
+          <h1>flash.comma.ai</h1>
+          <p>
+            This tool allows you to flash AGNOS onto your comma device. AGNOS is the Ubuntu-based operating system for
+            your <a href="https://comma.ai/shop/comma-3x" target="_blank">comma 3/3X</a>.
+          </p>
+        </section>
+        <hr />
+
+        <section>
+          <h2>Requirements</h2>
+          <ul>
+            <li>
+              A web browser which supports <a href="https://caniuse.com/webusb" target="_blank">WebUSB</a>
+              (such as Google Chrome, Microsoft Edge, Opera), running on Windows, macOS, Linux, or Android.
+            </li>
+            <li>
+              A good quality USB-C cable to connect the device to your computer. <span title="SuperSpeed">USB 3</span>
+              is recommended for faster flashing speed.
+            </li>
+            <li>
+              Another USB-C cable and a charger, to power the device outside your car.
+            </li>
+          </ul>
+          <div x-show="isWindows">
+            <h3>USB Driver</h3>
+            <p>You need additional driver software for Windows before you connect your device.</p>
+            <ol>
+              <li>
+                Download and run <a href="https://zadig.akeo.ie/" target="_blank">Zadig</a>.
+              </li>
+              <li>
+                Under <code>Device</code> in the menu bar, select <code>Create New Device</code>.
+                <img
+                  src="./src/assets/zadig_create_new_device.png"
+                  alt="Zadig Create New Device"
+                  width="575"
+                  height="254"
+                  loading="lazy"
+                />
+              </li>
+              <li>
+                Fill in three fields. The first field is just a description and you can fill in anything. The next two
+                fields are very important. Fill them in with <code x-text="vendorId"></code> and <code x-text="productId"></code>
+                respectively. Press "Install Driver" and give it a few minutes to install.
+                <img
+                  src="./src/assets/zadig_form.png"
+                  alt="Zadig Form"
+                  width="575"
+                  height="254"
+                  loading="lazy"
+                />
+              </li>
+            </ol>
+            <p>No additional software is required for macOS, Linux or Android.</p>
+          </div>
+        </section>
+        <hr />
+
+        <section>
+          <h2>Flashing</h2>
+          <p>Follow these steps to put your device into QDL mode:</p>
+          <ol>
+            <li>Unplug the device and wait for the LED to switch off.</li>
+            <li>First, connect the device to your computer using the <strong>lower</strong> <span class="whitespace-nowrap">USB-C</span> port <strong>(port 1)</strong>.</li>
+            <li>Second, connect power to the <strong>upper</strong> <span class="whitespace-nowrap">OBD-C</span> port <strong>(port 2)</strong>.</li>
+          </ol>
+          <img
+            src="./src/assets/qdl-ports.svg"
+            alt="image showing comma three and two ports. the lower port is labeled 1. the upper port is labeled 2."
+            width="450"
+            height="300"
+          />
+          <p>Your device's screen will remain blank for the entire flashing process. This is normal.</p>
+          <div x-show="isLinux">
+            <strong>Note for Linux users</strong>
+            <p>
+              On Linux systems, devices in QDL mode are automatically bound to the kernel's qcserial driver, and
+              need to be unbound before we can access the device. Copy the script below into your terminal and run it
+              after plugging in your device.
+            </p>
+            <div x-data="copyText" class="relative text-sm">
+              <pre class="font-mono pt-12" x-text="detachScript"></pre>
+              <button
+                class="absolute top-2 right-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-300 transition-colors text-white p-1 rounded-md"
+                @click="copy()"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+          <p>
+            Next, click the button to start flashing. From the prompt select the device which starts with
+            "QUSB_BULK".
+          </p>
+          <p>
+            The process can take 30+ minutes depending on your internet connection and system performance. Do not
+            unplug the device until all steps are complete.
+          </p>
+        </section>
+        <hr />
+
+        <section>
+          <h2>Troubleshooting</h2>
+          <h3>Lost connection</h3>
+          <p>
+            Try using high quality USB 3 cables. You should also try different USB ports on the front or back of your
+            computer. If you're using a USB hub, try connecting directly to your computer instead.
+          </p>
+          <h3>My device's screen is blank</h3>
+          <p>
+            This is normal in QDL mode. You can verify that the "QUSB_BULK" device shows up when you press
+            the Flash button to know that it is working correctly.
+          </p>
+          <h3>My device says "fastboot mode"</h3>
+          <p>
+            You may have followed outdated instructions for flashing. Please read the instructions above for putting
+            your device into QDL mode.
+          </p>
+          <h3>General Tips</h3>
+          <ul>
+            <li>Try another computer or OS</li>
+            <li>Try different USB ports on your computer</li>
+            <li>Try different USB-C cables; low quality cables are often the source of problems. Note that the included OBD-C cable will not work.</li>
+          </ul>
+          <h3>Other questions</h3>
+          <p>
+            If you need help, join our <a href="https://discord.comma.ai" target="_blank">Discord server</a> and go to
+            the <strong>#hw-three-3x</strong> channel.
+          </p>
+        </section>
+
+        <div class="hidden lg:block">
+          <hr />
+          flash.comma.ai version: <a :href="`https://github.com/commaai/flash/tree/${version}`" target="_blank"><code x-text="version"></code></a>
+        </div>
+      </main>
+
+      <div class="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
+        <div x-data="flash" class="relative flex flex-col gap-8 justify-center items-center h-full">
+          <div
+            :class="uiState.bgColor"
+            class="p-8 rounded-full"
+            :style="{ cursor: canStart ? 'pointer' : 'default' }"
+            @click="canStart && handleStart()"
+          >
+            <img
+              :src="uiState.icon"
+              alt="flash icon"
+              width="128"
+              height="128"
+              :class="[(uiState.iconStyle || 'invert'), (!error && step !== 7) ? 'animate-pulse' : '']"
+            />
+          </div>
+          
+          <div class="w-full max-w-3xl px-8 transition-opacity duration-300" :style="{ opacity: progress === -1 ? 0 : 1 }">
+            <div class="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                :class="uiState.bgColor"
+                class="absolute top-0 bottom-0 left-0 w-full transition-all"
+                :style="{ transform: `translateX(${progressValue - 100}%)` }"
+              ></div>
+            </div>
+          </div>
+          
+          <span class="text-3xl dark:text-white font-mono font-light" x-text="title"></span>
+          <span class="text-xl dark:text-white px-8 max-w-xl" x-text="uiState.description"></span>
+          
+          <button
+            x-show="error"
+            class="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
+            @click="handleRetry()"
+          >
+            Retry
+          </button>
+          
+          <div
+            x-show="connected"
+            class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
+            style="left: 50%; transform: translate(-50%, -50%)"
+          >
+            <div class="flex flex-row gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 96 960 960"
+                class="text-green-500 dark:text-[#51ff00]"
+                height="24"
+                width="24"
+              >
+                <path
+                  fill="currentColor"
+                  d="M480 976q-32 0-52-20t-20-52q0-22 11-40t31-29V724H302q-24 0-42-18t-18-42V555q-20-9-31-26.609-11-17.608-11-40.108Q200 456 220 436t52-20q32 0 52 20t20 52.411Q344 511 333 528.5T302 555v109h148V324h-80l110-149 110 149h-80v340h148V560h-42V416h144v144h-42v104q0 24-18 42t-42 18H510v111q19.95 10.652 30.975 29.826Q552 884 552 904q0 32-20 52t-52 20Z"
+                />
+              </svg>
+              Device connected
+            </div>
+            <span class="text-gray-400">|</span>
+            <div class="flex flex-row gap-2">
+              <span>
+                Serial:
+                <span class="ml-2 font-mono" x-text="serial || 'unknown'"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
+        flash.comma.ai version: <a :href="`https://github.com/commaai/flash/tree/${version}`" target="_blank"><code x-text="version"></code></a>
+      </div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
     <script
       defer
       data-domain="flash.comma.ai"

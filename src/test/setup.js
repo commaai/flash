@@ -1,1 +1,1 @@
-import '@testing-library/jest-dom'
+// Test setup file for Vitest

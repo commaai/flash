@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchStream } from './stream'
+import { fetchStream } from '../stream'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()

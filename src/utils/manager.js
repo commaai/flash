@@ -105,6 +105,9 @@ export class FlashManager {
     this.manifest = null
     this.step = StepCode.INITIALIZING
     this.error = ErrorCode.NONE
+
+    this.initialize = this.initialize.bind(this)
+    this.start = this.start.bind(this)
   }
 
   /** @param {number} step */

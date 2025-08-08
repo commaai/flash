@@ -11,6 +11,10 @@
 /.pnp
 .pnp.js
 /.pnpm-store
+package-lock.json
+yarn.lock
+bun.lockb
+bun.lock
 
 # testing
 /coverage

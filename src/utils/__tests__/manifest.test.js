@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest'
 
-import config from '../config'
-import { ImageManager } from './image'
-import { getManifest } from './manifest'
+import config from '../../config'
+import { ImageManager } from '../image'
+import { getManifest } from '../manifest'
 
 const CI = import.meta.env.CI
 const MANIFEST_BRANCH = import.meta.env.MANIFEST_BRANCH
