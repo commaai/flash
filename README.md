@@ -28,7 +28,7 @@ This document compares the performance metrics between a React implementation an
 | **Overall Performance Score**      | 0.87 (87%) | 1.0 (100%) | 🏆 Alpine.js |
 | **First Contentful Paint (FCP)**   | 0.3s       | 0.3s       | 🤝 Tie       |
 | **Largest Contentful Paint (LCP)** | 1.3s       | 0.6s       | 🏆 Alpine.js |
-| **Speed Index**                    | 4.5s       | 0.4s       | 🏆 Alpine.js |
+| **Speed Index**                    | 4.5s       | 0.3s       | 🏆 Alpine.js |
 | **Total Blocking Time (TBT)**      | 0ms        | 0ms        | 🤝 Tie       |
 | **Cumulative Layout Shift (CLS)**  | 0          | 0.004      | 🏆 React     |
 
@@ -36,8 +36,8 @@ This document compares the performance metrics between a React implementation an
 
 | Metric                | React     | Alpine.js | Winner       |
 | --------------------- | --------- | --------- | ------------ |
-| **Uncompressed Size** | 153.37 kB | 142.95 kB | 🏆 Alpine.js |
-| **Gzipped Size**      | 50.00 kB  | 50.53 kB  | 🏆 React     |
+| **Uncompressed Size** | 153.37 kB | 98.58 kB  | 🏆 Alpine.js |
+| **Gzipped Size**      | 50.00 kB  | 34.44 kB  | 🏆 Alpine.js |
 
 ## Summary
 
@@ -45,20 +45,20 @@ This document compares the performance metrics between a React implementation an
 
 - **Superior overall performance** (100% vs 87%)
 - **Faster Largest Contentful Paint** (0.6s vs 1.3s)
-- **Significantly better Speed Index** (0.4s vs 4.5s)
-- **Smaller uncompressed bundle size** (142.95 kB vs 153.37 kB)
+- **Significantly better Speed Index** (0.3s vs 4.5s)
+- **Dramatically smaller uncompressed bundle size** (98.58 kB vs 153.37 kB)
+- **Substantially smaller gzipped size** (34.44 kB vs 50.00 kB)
 
 ### React Advantages:
 
 - **Slightly better Cumulative Layout Shift** (0 vs 0.004)
-- **Marginally smaller gzipped size** (50.00 kB vs 50.53 kB)
 
 ### Key Findings:
 
-- Alpine.js shows **dramatically better Speed Index performance** (11x faster)
+- Alpine.js shows **dramatically better Speed Index performance** (15x faster)
 - Alpine.js achieves **perfect 100% Lighthouse performance score**
 - Both frameworks perform equally well for **First Contentful Paint** and **Total Blocking Time**
-- **Build sizes are very comparable** with minimal differences
+- **Alpine.js has significantly smaller bundle sizes** (36% smaller uncompressed, 31% smaller gzipped)
 - Alpine.js provides **better perceived performance**
 
 ### Additional Considerations:
