@@ -11,6 +11,24 @@ export default defineConfig({
       brotliSize: true,
     }),
   ],
+  build: {
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['alpinejs'],
+          fonts: ['@fontsource-variable/inter', '@fontsource-variable/jetbrains-mono'],
+        },
+      },
+    },
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

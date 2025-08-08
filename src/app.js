@@ -11,10 +11,6 @@ export function appComponent() {
 
     init() {
       console.info(`flash.comma.ai version: ${this.version}`)
-    },
-
-    copyToClipboard(text) {
-      navigator.clipboard.writeText(text)
     }
   }
 }
