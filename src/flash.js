@@ -22,7 +22,7 @@ const steps = {
     status: 'Tap to start',
     bgColor: 'bg-[#51ff00]',
     icon: bolt,
-    iconStyle: '',
+    iconStyle: 'no-invert',
   },
   [StepCode.CONNECTING]: {
     status: 'Waiting for connection',
