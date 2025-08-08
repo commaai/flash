@@ -21,6 +21,7 @@ export default defineConfig({
         },
       },
     },
+    // Using terser for advanced minification options: https://www.npmjs.com/package/terser
     minify: 'terser',
     terserOptions: {
       compress: {
