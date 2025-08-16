@@ -1,7 +1,6 @@
 <!-- src/routes/+page.svelte -->
 <script>
   import { onMount } from 'svelte';
-  import Flash from '../lib/Flash.svelte';
   
   import comma from '../lib/assets/comma.svg';
   import qdlPorts from '../lib/assets/qdl-ports.svg';
@@ -219,101 +218,5 @@
     class="flash-panel bg-gray-100 dark:bg-gray-800"
     style="width: {100 - leftWidth}%"
   >
-    <Flash />
   </div>
 </div>
-
-<style>
-  .resizable-container {
-    display: flex;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-  }
-
-  .main-panel {
-    overflow-y: auto;
-    padding: 3rem;
-    min-width: 300px;
-    position: relative;
-  }
-
-  .flash-panel {
-    overflow: hidden;
-    min-width: 300px;
-    position: relative;
-  }
-
-  .resize-handle {
-    width: 8px;
-    background: linear-gradient(to right, 
-      transparent 0%, 
-      var(--border-color, #4b5563) 25%, 
-      var(--border-color, #4b5563) 75%, 
-      transparent 100%);
-    cursor: col-resize;
-    position: relative;
-    transition: background 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .resize-handle:hover,
-  .resize-handle.resizing {
-    background: linear-gradient(to right, 
-      transparent 0%, 
-      var(--accent-green, #51ff00) 25%, 
-      var(--accent-green, #51ff00) 75%, 
-      transparent 100%);
-  }
-
-  .resize-handle-line {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 2px;
-    height: 40px;
-    background: currentColor;
-    transform: translate(-50%, -50%);
-    opacity: 0.5;
-  }
-
-  .resize-handle:hover .resize-handle-line,
-  .resize-handle.resizing .resize-handle-line {
-    opacity: 1;
-    background: var(--accent-green, #51ff00);
-  }
-
-  .version-info {
-    margin-top: 2rem;
-  }
-
-  /* Mobile responsiveness */
-  @media (max-width: 768px) {
-    .resizable-container {
-      flex-direction: column;
-      height: auto;
-    }
-
-    .main-panel {
-      width: 100% !important;
-      padding: 2rem;
-    }
-
-    .flash-panel {
-      width: 100% !important;
-      height: 500px;
-    }
-
-    .resize-handle {
-      display: none;
-    }
-  }
-
-  /* Ensure images don't overflow */
-  .main-panel :global(img) {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 1rem 0;
-  }
-</style>
