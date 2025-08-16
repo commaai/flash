@@ -1,6 +1,7 @@
 {
   "name": "flash.comma.ai",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+  "workspaceFolder": "/workspaces/flash/svelte-flash",
   "features": {
     "ghcr.io/shyim/devcontainers-features/bun:0": {}
   },
