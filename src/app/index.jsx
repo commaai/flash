@@ -1,33 +1,35 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy } from 'solid-js';
 
-import comma from '../assets/comma.svg'
-import qdlPorts from '../assets/qdl-ports.svg'
-import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
-import zadigForm from '../assets/zadig_form.png'
+import comma from '../assets/comma.svg';
+import qdlPorts from '../assets/qdl-ports.svg';
+import zadigCreateNewDevice from '../assets/zadig_create_new_device.png';
+import zadigForm from '../assets/zadig_form.png';
 
-import { isLinux, isWindows } from '../utils/platform'
+import { isLinux, isWindows } from '../utils/platform';
 
-const Flash = lazy(() => import('./Flash'))
+const Flash = lazy(() => import('./Flash'));
 
-const VENDOR_ID = '05C6'
-const PRODUCT_ID = '9008'
+const VENDOR_ID = '05C6';
+const PRODUCT_ID = '9008';
 const DETACH_SCRIPT = 'for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e "$d" ] && echo -n "$(basename $d)" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done';
 
-function CopyText({ children: text }) {
-  return <div className="relative text-sm">
-    <pre className="font-mono pt-12">{text}</pre>
-    <button
-      className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-300 transition-colors text-white p-1 rounded-md"
-      onClick={() => navigator.clipboard.writeText(text)}
-    >
-      Copy
-    </button>
-  </div>;
+function CopyText(props) {
+  return (
+    <div className="relative text-sm">
+      <pre className="font-mono pt-12">{props.children}</pre>
+      <button
+        className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-300 transition-colors text-white p-1 rounded-md"
+        onClick={() => navigator.clipboard.writeText(props.children)}
+      >
+        Copy
+      </button>
+    </div>
+  );
 }
 
 export default function App() {
-  const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
-  console.info(`flash.comma.ai version: ${version}`)
+  const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev';
+  console.info(`flash.comma.ai version: ${version}`);
   return (
     <div className="flex flex-col lg:flex-row flex-wrap">
       <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
@@ -170,5 +172,5 @@ export default function App() {
         flash.comma.ai version: <a href={`https://github.com/commaai/flash/tree/${version}`} target="_blank"><code>{version}</code></a>
       </div>
     </div>
-  )
+  );
 }

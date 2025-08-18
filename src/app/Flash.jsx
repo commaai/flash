@@ -1,18 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { createSignal, createEffect, onMount, onCleanup } from 'solid-js';
 
-import { FlashManager, StepCode, ErrorCode } from '../utils/manager'
-import { useImageManager } from '../utils/image'
-import { isLinux } from '../utils/platform'
-import config from '../config'
+import { FlashManager, StepCode, ErrorCode } from '../utils/manager';
+import { useImageManager } from '../utils/image';
+import { isLinux } from '../utils/platform';
+import config from '../config';
 
-import bolt from '../assets/bolt.svg'
-import cable from '../assets/cable.svg'
-import deviceExclamation from '../assets/device_exclamation_c3.svg'
-import deviceQuestion from '../assets/device_question_c3.svg'
-import done from '../assets/done.svg'
-import exclamation from '../assets/exclamation.svg'
-import systemUpdate from '../assets/system_update_c3.svg'
-
+import bolt from '../assets/bolt.svg';
+import cable from '../assets/cable.svg';
+import deviceExclamation from '../assets/device_exclamation_c3.svg';
+import deviceQuestion from '../assets/device_question_c3.svg';
+import done from '../assets/done.svg';
+import exclamation from '../assets/exclamation.svg';
+import systemUpdate from '../assets/system_update_c3.svg';
 
 const steps = {
   [StepCode.INITIALIZING]: {
@@ -62,7 +61,7 @@ const steps = {
     bgColor: 'bg-green-500',
     icon: done,
   },
-}
+};
 
 const errors = {
   [ErrorCode.UNKNOWN]: {
@@ -110,16 +109,15 @@ const errors = {
       'the problem persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
-}
+};
 
 if (isLinux) {
   // this is likely in StepCode.CONNECTING
-  errors[ErrorCode.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?'
+  errors[ErrorCode.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?';
 }
 
-
 function LinearProgress({ value, barColor }) {
-  if (value === -1 || value > 100) value = 100
+  if (value === -1 || value > 100) value = 100;
   return (
     <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
       <div
@@ -127,9 +125,8 @@ function LinearProgress({ value, barColor }) {
         style={{ transform: `translateX(${value - 100}%)` }}
       />
     </div>
-  )
+  );
 }
-
 
 function DeviceState({ serial }) {
   return (
@@ -160,114 +157,128 @@ function DeviceState({ serial }) {
         </span>
       </div>
     </div>
-  )
+  );
 }
-
 
 function beforeUnloadListener(event) {
   // NOTE: not all browsers will show this message
-  event.preventDefault()
-  return (event.returnValue = "Flash in progress. Are you sure you want to leave?")
+  event.preventDefault();
+  return (event.returnValue = "Flash in progress. Are you sure you want to leave?");
 }
 
-
 export default function Flash() {
-  const [step, setStep] = useState(StepCode.INITIALIZING)
-  const [message, setMessage] = useState('')
-  const [progress, setProgress] = useState(-1)
-  const [error, setError] = useState(ErrorCode.NONE)
-  const [connected, setConnected] = useState(false)
-  const [serial, setSerial] = useState(null)
+  const [step, setStep] = createSignal(StepCode.INITIALIZING);
+  const [message, setMessage] = createSignal('');
+  const [progress, setProgress] = createSignal(-1);
+  const [error, setError] = createSignal(ErrorCode.NONE);
+  const [connected, setConnected] = createSignal(false);
+  const [serial, setSerial] = createSignal(null);
 
-  const qdlManager = useRef(null)
-  const imageManager = useImageManager()
+  let qdlManager;
+  const imageManager = useImageManager();
 
-  useEffect(() => {
-    if (!imageManager.current) return
+  onMount(() => {
+    if (!imageManager.current) return;
 
     fetch(config.loader.url)
       .then((res) => res.arrayBuffer())
       .then((programmer) => {
-        // Create QDL manager with callbacks that update React state
-        qdlManager.current = new FlashManager(config.manifests.release, programmer, {
+        // Create QDL manager with callbacks that update Solid state
+        qdlManager = new FlashManager(config.manifests.release, programmer, {
           onStepChange: setStep,
           onMessageChange: setMessage,
           onProgressChange: setProgress,
           onErrorChange: setError,
           onConnectionChange: setConnected,
-          onSerialChange: setSerial
-        })
+          onSerialChange: setSerial,
+        });
 
         // Initialize the manager
-        return qdlManager.current.initialize(imageManager.current)
+        return qdlManager.initialize(imageManager.current);
       })
       .catch((err) => {
-        console.error('Error initializing Flash manager:', err)
-        setError(ErrorCode.UNKNOWN)
-      })
-  }, [config, imageManager.current])
+        console.error('Error initializing Flash manager:', err);
+        setError(ErrorCode.UNKNOWN);
+      });
+  });
 
   // Handle user clicking the start button
-  const handleStart = () => qdlManager.current?.start()
-  const canStart = step === StepCode.READY && !error
+  const handleStart = () => qdlManager?.start();
+  const canStart = () => step() === StepCode.READY && !error();
 
   // Handle retry on error
-  const handleRetry = () => window.location.reload()
+  const handleRetry = () => window.location.reload();
 
-  const uiState = steps[step]
-  if (error) {
-    Object.assign(uiState, errors[ErrorCode.UNKNOWN], errors[error])
-  }
-  const { status, description, bgColor, icon, iconStyle = 'invert' } = uiState
-
-  let title
-  if (message && !error) {
-    title = message + '...'
-    if (progress >= 0) {
-      title += ` (${(progress * 100).toFixed(0)}%)`
+  const uiState = () => {
+    let state = steps[step()];
+    if (error()) {
+      state = { ...errors[ErrorCode.UNKNOWN], ...errors[error()] };
     }
-  } else if (error === ErrorCode.STORAGE_SPACE) {
-    title = message
-  } else {
-    title = status
-  }
+    return state;
+  };
+
+  const status = () => uiState().status;
+  const description = () => uiState().description;
+  const bgColor = () => uiState().bgColor;
+  const icon = () => uiState().icon;
+  const iconStyle = () => uiState().iconStyle || 'invert';
+
+  const title = () => {
+    if (message() && !error()) {
+      let t = message() + '...';
+      if (progress() >= 0) {
+        t += ` (${(progress() * 100).toFixed(0)}%)`;
+      }
+      return t;
+    } else if (error() === ErrorCode.STORAGE_SPACE) {
+      return message();
+    } else {
+      return status();
+    }
+  };
 
   // warn the user if they try to leave the page while flashing
-  if (step >= StepCode.REPAIR_PARTITION_TABLES && step <= StepCode.FINALIZING) {
-    window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  } else {
-    window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
-  }
+  createEffect(() => {
+    if (step() >= StepCode.REPAIR_PARTITION_TABLES && step() <= StepCode.FINALIZING) {
+      window.addEventListener("beforeunload", beforeUnloadListener, { capture: true });
+    } else {
+      window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true });
+    }
+  });
+
+  onCleanup(() => {
+    window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true });
+  });
 
   return (
     <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
       <div
-        className={`p-8 rounded-full ${bgColor}`}
-        style={{ cursor: canStart ? 'pointer' : 'default' }}
-        onClick={canStart ? handleStart : null}
+        className={`p-8 rounded-full ${bgColor()}`}
+        style={{ cursor: canStart() ? 'pointer' : 'default' }}
+        onClick={() => { if (canStart()) handleStart(); }}
       >
         <img
-          src={icon}
+          src={icon()}
           alt="cable"
           width={128}
           height={128}
-          className={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
+          className={`${iconStyle()} ${!error() && step() !== StepCode.DONE ? 'animate-pulse' : ''}`}
         />
       </div>
-      <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
-        <LinearProgress value={progress * 100} barColor={bgColor} />
+      <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress() === -1 ? 0 : 1 }}>
+        <LinearProgress value={progress() * 100} barColor={bgColor()} />
       </div>
-      <span className="text-3xl dark:text-white font-mono font-light">{title}</span>
-      <span className="text-xl dark:text-white px-8 max-w-xl">{description}</span>
-      {error && (
+      <span className="text-3xl dark:text-white font-mono font-light">{title()}</span>
+      <span className="text-xl dark:text-white px-8 max-w-xl">{description()}</span>
+      {error() && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
           onClick={handleRetry}
         >
           Retry
         </button>
-      ) || false}
-      {connected && <DeviceState serial={serial} />}
+      )}
+      {connected() && <DeviceState serial={serial()} />}
     </div>
-  )
+  );
 }

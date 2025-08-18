@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { XzReadableStream } from 'xz-decompress'
 
 import { fetchStream } from './stream'
@@ -83,14 +82,7 @@ export class ImageManager {
   }
 }
 
-/** @returns {React.MutableRefObject<ImageManager>} */
+/** @returns {{ current: ImageManager }} */
 export function useImageManager() {
-  const apiRef = useRef()
-
-  useEffect(() => {
-    const worker = new ImageManager()
-    apiRef.current = worker
-  }, [])
-
-  return apiRef
+  return { current: new ImageManager() }
 }
