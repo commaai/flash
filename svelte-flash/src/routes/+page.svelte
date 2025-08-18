@@ -1,4 +1,3 @@
-<!-- src/routes/+page.svelte -->
 <script>
   import { onMount } from 'svelte';
   
@@ -26,6 +25,9 @@
     isLinux = navigator.platform.toLowerCase().includes('linux');
     version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev';
     console.info(`flash.comma.ai version: ${version}`);
+    
+    // Set initial width
+    updatePanelWidths();
   });
 
   function copyText(text) {
@@ -47,12 +49,20 @@
     
     // Constrain between 20% and 80%
     leftWidth = Math.max(20, Math.min(80, newLeftWidth));
+    updatePanelWidths();
   }
 
   function handleMouseUp() {
     isResizing = false;
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
+  }
+
+  function updatePanelWidths() {
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--left-panel-width', `${leftWidth}%`);
+      document.documentElement.style.setProperty('--right-panel-width', `${100 - leftWidth}%`);
+    }
   }
 </script>
 
@@ -63,10 +73,7 @@
 
 <div class="resizable-container" bind:this={containerRef}>
   <!-- Main content -->
-  <main 
-    class="main-panel prose dark:prose-invert prose-green bg-white dark:bg-gray-900"
-    style="width: {leftWidth}%"
-  >
+  <main class="main-panel prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
     <!-- Header Section -->
     <section>
       <img src={comma} alt="comma" width="128" height="128" class="dark:invert" />
@@ -141,12 +148,9 @@
           need to be unbound before we can access the device. Copy the script below into your terminal and run it
           after plugging in your device.
         </p>
-        <div class="relative text-sm">
-          <pre class="font-mono pt-12">{DETACH_SCRIPT}</pre>
-          <button
-            class="absolute top-2 right-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-300 transition-colors text-white p-1 rounded-md"
-            on:click={() => copyText(DETACH_SCRIPT)}
-          >
+        <div class="code-container">
+          <pre class="code-block">{DETACH_SCRIPT}</pre>
+          <button class="copy-button" on:click={() => copyText(DETACH_SCRIPT)}>
             Copy
           </button>
         </div>
@@ -214,9 +218,6 @@
   </div>
 
   <!-- Flash Component -->
-  <div 
-    class="flash-panel bg-gray-100 dark:bg-gray-800"
-    style="width: {100 - leftWidth}%"
-  >
+  <div class="flash-panel bg-gray-100 dark:bg-gray-800">
   </div>
 </div>
