@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Show, Suspense, lazy } from 'solid-js'
 
 import comma from '../assets/comma.svg'
 import qdlPorts from '../assets/qdl-ports.svg'
@@ -14,10 +14,10 @@ const PRODUCT_ID = '9008'
 const DETACH_SCRIPT = 'for d in /sys/bus/usb/drivers/qcserial/*-*; do [ -e "$d" ] && echo -n "$(basename $d)" | sudo tee /sys/bus/usb/drivers/qcserial/unbind > /dev/null; done';
 
 function CopyText({ children: text }) {
-  return <div className="relative text-sm">
-    <pre className="font-mono pt-12">{text}</pre>
+  return <div class="relative text-sm">
+    <pre class="font-mono pt-12">{text}</pre>
     <button
-      className="absolute top-2 right-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-300 transition-colors text-white p-1 rounded-md"
+      class="absolute top-2 right-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-300 transition-colors text-white p-1 rounded-md"
       onClick={() => navigator.clipboard.writeText(text)}
     >
       Copy
@@ -29,10 +29,10 @@ export default function App() {
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
   console.info(`flash.comma.ai version: ${version}`)
   return (
-    <div className="flex flex-col lg:flex-row flex-wrap">
-      <main className="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
+    <div class="flex flex-col lg:flex-row flex-wrap">
+      <main class="p-12 md:p-16 lg:p-20 xl:p-24 w-screen max-w-none lg:max-w-prose lg:w-auto h-auto lg:h-screen lg:overflow-y-auto prose dark:prose-invert prose-green bg-white dark:bg-gray-900">
         <section>
-          <img src={comma} alt="comma" width={128} height={128} className="dark:invert" />
+          <img src={comma} alt="comma" width={128} height={128} class="dark:invert" />
           <h1>flash.comma.ai</h1>
           <p>
             This tool allows you to flash AGNOS onto your comma device. AGNOS is the Ubuntu-based operating system for
@@ -56,7 +56,8 @@ export default function App() {
               Another USB-C cable and a charger, to power the device outside your car.
             </li>
           </ul>
-          {isWindows && (<>
+          
+          <Show when={isWindows}>
             <h3>USB Driver</h3>
             <p>You need additional driver software for Windows before you connect your device.</p>
             <ol>
@@ -85,7 +86,7 @@ export default function App() {
               </li>
             </ol>
             <p>No additional software is required for macOS, Linux or Android.</p>
-          </>)}
+          </Show>
         </section>
         <hr />
 
@@ -94,8 +95,8 @@ export default function App() {
           <p>Follow these steps to put your device into QDL mode:</p>
           <ol>
             <li>Unplug the device and wait for the LED to switch off.</li>
-            <li>First, connect the device to your computer using the <strong>lower</strong> <span className="whitespace-nowrap">USB-C</span> port <strong>(port 1)</strong>.</li>
-            <li>Second, connect power to the <strong>upper</strong> <span className="whitespace-nowrap">OBD-C</span> port <strong>(port 2)</strong>.</li>
+            <li>First, connect the device to your computer using the <strong>lower</strong> <span class="whitespace-nowrap">USB-C</span> port <strong>(port 1)</strong>.</li>
+            <li>Second, connect power to the <strong>upper</strong> <span class="whitespace-nowrap">OBD-C</span> port <strong>(port 2)</strong>.</li>
           </ol>
           <img
             src={qdlPorts}
@@ -104,7 +105,7 @@ export default function App() {
             height={300}
           />
           <p>Your device&apos;s screen will remain blank for the entire flashing process. This is normal.</p>
-          {isLinux && (<>
+            <Show when={isLinux}>
             <strong>Note for Linux users</strong>
             <p>
               On Linux systems, devices in QDL mode are automatically bound to the kernel&apos;s qcserial driver, and
@@ -112,7 +113,8 @@ export default function App() {
               after plugging in your device.
             </p>
             <CopyText>{DETACH_SCRIPT}</CopyText>
-          </>)}
+          </Show>
+
           <p>
             Next, click the button to start flashing. From the prompt select the device which starts with
             &ldquo;QUSB_BULK&rdquo;.
@@ -154,19 +156,19 @@ export default function App() {
           </p>
         </section>
 
-        <div className="hidden lg:block">
+        <div class="hidden lg:block">
           <hr />
           flash.comma.ai version: <a href={`https://github.com/commaai/flash/tree/${version}`} target="_blank"><code>{version}</code></a>
         </div>
       </main>
 
-      <div className="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
-        <Suspense fallback={<p className="text-black dark:text-white">Loading...</p>}>
+      <div class="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
+        <Suspense fallback={<p class="text-black dark:text-white">Loading...</p>}>
           <Flash />
         </Suspense>
       </div>
 
-      <div className="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
+      <div class="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
         flash.comma.ai version: <a href={`https://github.com/commaai/flash/tree/${version}`} target="_blank"><code>{version}</code></a>
       </div>
     </div>

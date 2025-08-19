@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { createResource } from 'solid-js'
 import { XzReadableStream } from 'xz-decompress'
 
 import { fetchStream } from './stream'
@@ -83,14 +83,15 @@ export class ImageManager {
   }
 }
 
-/** @returns {React.MutableRefObject<ImageManager>} */
+/**
+ * @returns {Resource<ImageManager | undefined>}
+ */
 export function useImageManager() {
-  const apiRef = useRef()
-
-  useEffect(() => {
-    const worker = new ImageManager()
-    apiRef.current = worker
-  }, [])
-
-  return apiRef
+  const [imageManager] = createResource(async () => {
+    const manager = new ImageManager()
+    await manager.init() // Auto-initialize
+    return manager
+  })
+  
+  return imageManager
 }
