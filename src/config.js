@@ -1,6 +1,6 @@
 const config = {
   manifests: {
-    release: 'https://raw.githubusercontent.com/commaai/openpilot/release3/system/hardware/tici/all-partitions.json',
+    release: 'https://raw.githubusercontent.com/commaai/openpilot/927548621be1be0c2c9063868b93d1f5020904de/system/hardware/tici/all-partitions.json',
     master: 'https://raw.githubusercontent.com/commaai/openpilot/master/system/hardware/tici/all-partitions.json',
   },
   loader: {
