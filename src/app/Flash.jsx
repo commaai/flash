@@ -92,6 +92,11 @@ const errors = {
     description: 'The connection to your device was lost. Unplug your device and try again.',
     icon: cable,
   },
+  [ErrorCode.UNSUPPORTED_TICI]: {
+    status: 'Unsupported device detected',
+    description: "Visit https://github.com/commaai/hardware/tree/master/comma_three to reflash your comma three with the latest compatible firmware.",
+    icon: deviceExclamation,
+  },
   [ErrorCode.REPAIR_PARTITION_TABLES_FAILED]: {
     status: 'Repairing partition tables failed',
     description: 'Your device\'s partition tables could not be repaired. Try using a different cable, USB port, or ' +

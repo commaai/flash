@@ -26,6 +26,7 @@ export const ErrorCode = {
   ERASE_FAILED: 6,
   FLASH_SYSTEM_FAILED: 7,
   FINALIZING_FAILED: 8,
+  UNSUPPORTED_TICI: 9,
 }
 
 /**
@@ -232,6 +233,20 @@ export class FlashManager {
 
     console.info('[Flash] Connected')
     this.#setConnected(true)
+
+    try {
+      const deviceType = await this.device.getDeviceType()
+      if (deviceType == 32) {
+        this.#setError(ErrorCode.UNSUPPORTED_TICI)
+        this.#setConnected(false)
+        return
+      }
+    } catch (err) {
+      console.error('[Flash] Connection lost', err)
+      this.#setError(ErrorCode.LOST_CONNECTION)
+      this.#setConnected(false)
+      return
+    }
 
     let storageInfo
     try {
