@@ -194,7 +194,7 @@ export default function Flash() {
       .then((res) => res.arrayBuffer())
       .then((programmer) => {
         // Create QDL manager with callbacks that update React state
-        qdlManager.current = new FlashManager(config.manifests.release, programmer, {
+        qdlManager.current = new FlashManager(programmer, {
           onStepChange: setStep,
           onMessageChange: setMessage,
           onProgressChange: setProgress,

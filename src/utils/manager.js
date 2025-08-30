@@ -2,6 +2,7 @@ import { qdlDevice } from '@commaai/qdl'
 import { usbClass } from '@commaai/qdl/usblib'
 
 import { getManifest } from './manifest'
+import config from '../config'
 import { createSteps, withProgress } from './progress'
 
 export const StepCode = {
@@ -96,8 +97,8 @@ export class FlashManager {
    * @param {ArrayBuffer} programmer
    * @param {FlashManagerCallbacks} callbacks
    */
-  constructor(manifestUrl, programmer, callbacks = {}) {
-    this.manifestUrl = manifestUrl
+  constructor(programmer, callbacks = {}) {
+    this.manifestUrl = null
     this.callbacks = callbacks
     this.device = new qdlDevice(programmer)
     /** @type {import('./image').ImageManager|null} */
@@ -190,21 +191,6 @@ export class FlashManager {
       return
     }
 
-    if (!this.manifest?.length) {
-      try {
-        this.manifest = await getManifest(this.manifestUrl)
-        if (this.manifest.length === 0) {
-          throw new Error('Manifest is empty')
-        }
-      } catch (err) {
-        console.error('[Flash] Failed to fetch manifest')
-        console.error(err)
-        this.#setError(ErrorCode.UNKNOWN)
-        return
-      }
-      console.info('[Flash] Loaded manifest', this.manifest)
-    }
-
     this.#setStep(StepCode.READY)
   }
 
@@ -237,10 +223,27 @@ export class FlashManager {
     try {
       const deviceType = await this.device.getDeviceType()
       if (deviceType == 32) {
-        this.#setError(ErrorCode.UNSUPPORTED_TICI)
+        this.manifestUrl = config.manifests.release_tici
+        console.log('tici')
+      } else {
+        this.manifestUrl = config.manifests.release_tizi
+        console.log('tizi')
+      }
+
+      try {
+        this.manifest = await getManifest(this.manifestUrl)
+        if (this.manifest.length === 0) {
+          throw new Error('Manifest is empty')
+        }
+      } catch (err) {
+        console.error('[Flash] Failed to fetch manifest')
+        console.error(err)
         this.#setConnected(false)
+        this.#setError(ErrorCode.UNKNOWN)
         return
       }
+      console.info('[Flash] Loaded manifest', this.manifest)
+
     } catch (err) {
       console.error('[Flash] Connection lost', err)
       this.#setError(ErrorCode.LOST_CONNECTION)
