@@ -156,7 +156,7 @@ export default function App() {
 
         <div className="hidden lg:block">
           <hr />
-          flash.comma.ai version: <code>{version}</code>
+          flash.comma.ai version: <a href={`https://github.com/commaai/flash/tree/${version}`} target="_blank"><code>{version}</code></a>
         </div>
       </main>
 
@@ -167,7 +167,7 @@ export default function App() {
       </div>
 
       <div className="w-screen max-w-none p-12 md:p-16 prose dark:prose-invert bg-white dark:bg-gray-900 lg:hidden">
-        flash.comma.ai version: <code>{version}</code>
+        flash.comma.ai version: <a href={`https://github.com/commaai/flash/tree/${version}`} target="_blank"><code>{version}</code></a>
       </div>
     </div>
   )
