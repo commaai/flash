@@ -27,7 +27,6 @@ export const ErrorCode = {
   ERASE_FAILED: 6,
   FLASH_SYSTEM_FAILED: 7,
   FINALIZING_FAILED: 8,
-  UNSUPPORTED_TICI: 9,
 }
 
 /**
@@ -224,10 +223,8 @@ export class FlashManager {
       const deviceType = await this.device.getDeviceType()
       if (deviceType == 32) {
         this.manifestUrl = config.manifests.release_tici
-        console.log('tici')
       } else {
         this.manifestUrl = config.manifests.release_tizi
-        console.log('tizi')
       }
 
       try {
