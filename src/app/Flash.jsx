@@ -188,9 +188,10 @@ export default function Flash() {
     fetch(config.loader.url)
       .then((res) => res.arrayBuffer())
       .then((programmer) => {
+
         // Create QDL manager with callbacks that update the signals
         setQdlManager(
-          new FlashManager(config.manifests.release, programmer, {
+          new FlashManager(programmer, {
             onStepChange: setStep,
             onMessageChange: setMessage,
             onProgressChange: setProgress,
