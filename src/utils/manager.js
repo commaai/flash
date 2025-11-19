@@ -223,8 +223,12 @@ export class FlashManager {
       const deviceType = await this.device.getDeviceType()
       if (deviceType == 32) {
         this.manifestUrl = config.manifests.release_tici
-      } else {
+      } else if (deviceType == 33) {
         this.manifestUrl = config.manifests.release_tizi
+      } else if (deviceType == 34) {
+        this.manifestUrl = config.manifests.release_mici
+      } else {
+        throw new Error('Unknown device type', deviceType)
       }
 
       try {
