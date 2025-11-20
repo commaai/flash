@@ -1,7 +1,8 @@
 import { Suspense, lazy } from 'react'
 
 import comma from '../assets/comma.svg'
-import qdlPorts from '../assets/qdl-ports.svg'
+import qdlPortsFour from '../assets/qdl-ports-four.svg'
+import qdlPortsThree from '../assets/qdl-ports-three.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
 
@@ -98,7 +99,13 @@ export default function App() {
             <li>Second, connect power to the <strong>upper</strong> <span className="whitespace-nowrap">OBD-C</span> port <strong>(port 2)</strong>.</li>
           </ol>
           <img
-            src={qdlPorts}
+            src={qdlPortsFour}
+            alt="image showing comma four and two ports. the right port is labeled 1. the left port is labeled 2."
+            width={225}
+            height={150}
+          />
+          <img
+            src={qdlPortsThree}
             alt="image showing comma three and two ports. the lower port is labeled 1. the upper port is labeled 2."
             width={450}
             height={300}
