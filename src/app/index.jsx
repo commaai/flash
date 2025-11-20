@@ -36,7 +36,7 @@ export default function App() {
           <h1>flash.comma.ai</h1>
           <p>
             This tool allows you to flash AGNOS onto your comma device. AGNOS is the Ubuntu-based operating system for
-            your <a href="https://comma.ai/shop/comma-3x" target="_blank">comma 3/3X</a>.
+            your <a href="https://comma.ai/shop/comma-four" target="_blank">comma 3/3X/4</a>.
           </p>
         </section>
         <hr />
