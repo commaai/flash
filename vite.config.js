@@ -1,12 +1,41 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vitest/config";
+import { playwright } from "@vitest/browser-playwright";
+import { sveltekit } from "@sveltejs/kit/vite";
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [tailwindcss(), sveltekit()],
   test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.js',
+    expect: { requireAssertions: true },
+    projects: [
+      {
+        extends: "./vite.config.js",
+        test: {
+          name: "client",
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            instances: [{ browser: "chromium", headless: true }],
+          },
+          include: ["src/**/*.svelte.{test,spec}.{js,ts}"],
+          exclude: ["src/lib/server/**"],
+        },
+      },
+      {
+        extends: "./vite.config.js",
+        test: {
+          name: "server",
+          environment: "node",
+          include: ["src/**/*.{test,spec}.{js,ts}"],
+          exclude: ["src/**/*.svelte.{test,spec}.{js,ts}"],
+        },
+      },
+    ],
   },
-})
+  ssr: {
+    noExternal: [
+      "@commaai/qdl",
+      "crc-32",
+    ],
+  },
+});
