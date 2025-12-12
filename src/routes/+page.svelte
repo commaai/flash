@@ -1,4 +1,5 @@
 <script>
+  import { browser } from "$app/environment";
   import comma from "$lib/images/comma.svg";
   import qdlPortsFour from "$lib/images/qdl-ports-four.svg";
   import qdlPortsThree from "$lib/images/qdl-ports-three.svg";
@@ -61,7 +62,7 @@
           Another USB-C cable and a charger, to power the device outside your car.
         </li>
       </ul>
-      {#if isWindows}
+      {#if browser && isWindows}
         <h3>USB Driver</h3>
         <p>
           You need additional driver software for Windows before you connect your device.
@@ -124,7 +125,7 @@
       <p>
         Your device&apos;s screen will remain blank for the entire flashing process. This is normal.
       </p>
-      {#if isLinux}
+      {#if browser && isLinux}
         <strong>Note for Linux users</strong>
         <p>
           On Linux systems, devices in QDL mode are automatically bound to the kernel&apos;s qcserial driver, and need
