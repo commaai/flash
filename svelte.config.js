@@ -13,7 +13,7 @@ const config = {
       strict: true,
     }),
     paths: {
-      relative: false,
+      relative: true,
     },
   },
   preprocess: [vitePreprocess()],
