@@ -13,7 +13,8 @@ const config = {
       strict: true,
     }),
     paths: {
-      relative: true,
+      base: "/flash",
+      assets: "/flash"
     },
   },
   preprocess: [vitePreprocess()],
