@@ -148,7 +148,7 @@ export class FlashManager {
 
   /** @returns {boolean} */
   #checkRequirements() {
-    if (typeof navigator.usb === 'undefined') {
+    if (typeof globalThis.navigator.usb === 'undefined') {
       console.error('[Flash] WebUSB not supported')
       this.#setError(ErrorCode.REQUIREMENTS_NOT_MET)
       return false

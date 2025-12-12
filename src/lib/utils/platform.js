@@ -1,8 +1,8 @@
 const platform = (() => {
-  if ('userAgentData' in navigator && 'platform' in navigator.userAgentData && navigator.userAgentData.platform) {
-    return navigator.userAgentData.platform
+  if ('userAgentData' in globalThis.navigator && 'platform' in globalThis.navigator.userAgentData && globalThis.navigator.userAgentData.platform) {
+    return globalThis.navigator.userAgentData.platform
   }
-  const userAgent = navigator.userAgent.toLowerCase()
+  const userAgent = globalThis.navigator.userAgent.toLowerCase()
   if (userAgent.includes('linux')) return 'Linux' // includes Android
   if (userAgent.includes('win32') || userAgent.includes('windows')) return 'Windows'
   return null

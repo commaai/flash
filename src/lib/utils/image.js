@@ -17,12 +17,12 @@ export class ImageManager {
 
   async init() {
     if (!this.root) {
-      this.root = await navigator.storage.getDirectory();
+      this.root = await globalThis.navigator.storage.getDirectory();
       await this.root.remove({ recursive: true });
       console.info("[ImageManager] Initialized");
     }
 
-    const estimate = await navigator.storage.estimate();
+    const estimate = await globalThis.navigator.storage.estimate();
     const quotaMB = (estimate.quota || 0) / (1024 ** 2);
     if (quotaMB < MIN_QUOTA_MB) {
       throw new Error(
