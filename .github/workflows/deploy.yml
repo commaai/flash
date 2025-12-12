@@ -22,7 +22,8 @@ jobs:
 
       - id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
+        env:
+          BASE_PATH: '/${{ github.event.repository.name }}'
       - run: bun install
       - run: bun run build
         env:
