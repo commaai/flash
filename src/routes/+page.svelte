@@ -1,5 +1,6 @@
 <script>
   import { browser } from "$app/environment";
+  import { onMount } from "svelte";
   import comma from "$lib/images/comma.svg";
   import qdlPortsFour from "$lib/images/qdl-ports-four.svg";
   import qdlPortsThree from "$lib/images/qdl-ports-three.svg";
@@ -7,8 +8,24 @@
   import zadigForm from "$lib/images/zadig_form.png";
 
   import Flash from "$lib/components/Flash.svelte";
+  import CopyText from "$lib/components/CopyText.svelte";
 
-  import { isLinux, isWindows } from "$lib/utils/platform";
+  let isLinux = $state(false);
+  let isWindows = $state(false);
+
+  if (browser) {
+    let userAgent = "";
+    if ('userAgentData' in globalThis.navigator && 'platform' in globalThis.navigator.userAgentData && globalThis.navigator.userAgentData.platform) {
+      userAgent = globalThis.navigator.userAgentData.platform
+    } else {
+      userAgent = globalThis.navigator.userAgent.toLowerCase()
+    }
+    if (userAgent.includes('linux')) {
+      isLinux = true;
+    } else if (userAgent.includes('win32') || userAgent.includes('windows')) {
+      isWindows = true;
+    }
+  }
 
   const VENDOR_ID = "05C6";
   const PRODUCT_ID = "9008";
@@ -62,34 +79,36 @@
           Another USB-C cable and a charger, to power the device outside your car.
         </li>
       </ul>
-      {#if browser && isWindows}
-        <h3>USB Driver</h3>
-        <p>
-          You need additional driver software for Windows before you connect your device.
-        </p>
-        <ol>
-          <li>
-            Download and run <a href="https://zadig.akeo.ie/" target="_blank">Zadig</a>.
-          </li>
-          <li>
-            Under <code>Device</code> in the menu bar, select{" "}
-            <code>Create New Device</code>.
-            <img
-              src={zadigCreateNewDevice}
-              alt="Zadig Create New Device"
-              width={575}
-              height={254}
-            />
-          </li>
-          <li>
-            Fill in three fields. The first field is just a description and you can fill in anything. The next two
-            fields are very important. Fill them in with{" "}
-            <code>{VENDOR_ID}</code> and <code>{PRODUCT_ID}</code>
-            respectively. Press &quot;Install Driver&quot; and give it a few minutes to install.
-            <img src={zadigForm} alt="Zadig Form" width={575} height={254} />
-          </li>
-        </ol>
-        <p>No additional software is required for macOS, Linux or Android.</p>
+      {#if browser}
+        {#if isWindows}
+          <h3>USB Driver</h3>
+          <p>
+            You need additional driver software for Windows before you connect your device.
+          </p>
+          <ol>
+            <li>
+              Download and run <a href="https://zadig.akeo.ie/" target="_blank">Zadig</a>.
+            </li>
+            <li>
+              Under <code>Device</code> in the menu bar, select{" "}
+              <code>Create New Device</code>.
+              <img
+                src={zadigCreateNewDevice}
+                alt="Zadig Create New Device"
+                width={575}
+                height={254}
+              />
+            </li>
+            <li>
+              Fill in three fields. The first field is just a description and you can fill in anything. The next two
+              fields are very important. Fill them in with{" "}
+              <code>{VENDOR_ID}</code> and <code>{PRODUCT_ID}</code>
+              respectively. Press &quot;Install Driver&quot; and give it a few minutes to install.
+              <img src={zadigForm} alt="Zadig Form" width={575} height={254} />
+            </li>
+          </ol>
+          <p>No additional software is required for macOS, Linux or Android.</p>
+        {/if}
       {/if}
     </section>
     <hr />
@@ -125,14 +144,16 @@
       <p>
         Your device&apos;s screen will remain blank for the entire flashing process. This is normal.
       </p>
-      {#if browser && isLinux}
-        <strong>Note for Linux users</strong>
-        <p>
-          On Linux systems, devices in QDL mode are automatically bound to the kernel&apos;s qcserial driver, and need
-          to be unbound before we can access the device. Copy the script below into your terminal and run it after
-          plugging in your device.
-        </p>
-        <!-- TODO: <CopyText>{DETACH_SCRIPT}</CopyText> -->
+      {#if browser}
+        {#if isLinux}
+          <strong>Note for Linux users</strong>
+          <p>
+            On Linux systems, devices in QDL mode are automatically bound to the kernel&apos;s qcserial driver, and need
+            to be unbound before we can access the device. Copy the script below into your terminal and run it after
+            plugging in your device.
+          </p>
+          <CopyText text={DETACH_SCRIPT}></CopyText>
+        {/if}
       {/if}
       <p>
         Next, click the button to start flashing. From the prompt select the device which starts with
@@ -190,8 +211,10 @@
     </div>
   </main>
 
-  <div class="lg:flex-1 h-[700px] lg:h-screen bg-gray-100 dark:bg-gray-800">
-    <Flash />
+  <div class="lg:flex-1 h-175 lg:h-screen bg-gray-100 dark:bg-gray-800">
+    {#if browser}
+      <Flash />
+    {/if}
   </div>
 
   <div

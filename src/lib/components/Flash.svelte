@@ -1,7 +1,7 @@
 <script>
+  import { browser } from "$app/environment";
   import { ErrorCode, FlashManager, StepCode } from "$lib/utils/manager";
   import { ImageManager } from "$lib/utils/image";
-  import { isLinux } from "$lib/utils/platform";
   import config from "$lib/config";
   import LinearProgress from "./LinearProgress.svelte";
   import DeviceState from "./DeviceState.svelte";
@@ -13,6 +13,22 @@
   import done from "$lib/images/done.svg";
   import exclamation from "$lib/images/exclamation.svg";
   import systemUpdate from "$lib/images/system_update_c3.svg";
+
+  let isLinux = false;
+
+  if (browser) {
+    let userAgent = "";
+    if ('userAgentData' in globalThis.navigator && 'platform' in globalThis.navigator.userAgentData && globalThis.navigator.userAgentData.platform) {
+      userAgent = globalThis.navigator.userAgentData.platform
+    } else {
+      userAgent = globalThis.navigator.userAgent.toLowerCase()
+    }
+    if (userAgent.includes('linux')) {
+      isLinux = true;
+    } else if (userAgent.includes('win32') || userAgent.includes('windows')) {
+      isWindows = true;
+    }
+  }
 
   const steps = {
     [StepCode.INITIALIZING]: {
@@ -151,14 +167,6 @@
   const setSerial = (newSerial) => serial = newSerial;
 
   $effect(() => {
-    console.log("message:\n", message);
-  })
-
-  $effect(() => {
-    console.log("error:\n", error);
-  })
-
-  $effect(() => {
     fetch(config.loader.url)
       .then((res) => res.arrayBuffer())
       .then((programmer) => {
@@ -193,7 +201,6 @@
     if (error) {
       Object.assign(uiState, errors[ErrorCode.UNKNOWN], errors[error]);
     }
-    console.log(uiState);
     return uiState;
   });
   const { status, description, bgColor, icon, iconStyle = "invert" } = $derived(uiState);
