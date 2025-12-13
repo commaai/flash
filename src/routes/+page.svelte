@@ -10,22 +10,8 @@
   import Flash from "$lib/components/Flash.svelte";
   import CopyText from "$lib/components/CopyText.svelte";
 
-  let isLinux = $state(false);
-  let isWindows = $state(false);
-
-  if (browser) {
-    let userAgent = "";
-    if ('userAgentData' in globalThis.navigator && 'platform' in globalThis.navigator.userAgentData && globalThis.navigator.userAgentData.platform) {
-      userAgent = globalThis.navigator.userAgentData.platform
-    } else {
-      userAgent = globalThis.navigator.userAgent.toLowerCase()
-    }
-    if (userAgent.includes('linux')) {
-      isLinux = true;
-    } else if (userAgent.includes('win32') || userAgent.includes('windows')) {
-      isWindows = true;
-    }
-  }
+  let isLinux = () => globalThis.navigator.userAgent.toLowerCase().includes("linux") ?? false;
+  let isWindows = () => globalThis.navigator.userAgent.toLowerCase().includes("windows") ?? false;
 
   const VENDOR_ID = "05C6";
   const PRODUCT_ID = "9008";
@@ -80,7 +66,7 @@
         </li>
       </ul>
       {#if browser}
-        {#if isWindows}
+        {#if isWindows()}
           <h3>USB Driver</h3>
           <p>
             You need additional driver software for Windows before you connect your device.
@@ -145,7 +131,7 @@
         Your device&apos;s screen will remain blank for the entire flashing process. This is normal.
       </p>
       {#if browser}
-        {#if isLinux}
+        {#if isLinux()}
           <strong>Note for Linux users</strong>
           <p>
             On Linux systems, devices in QDL mode are automatically bound to the kernel&apos;s qcserial driver, and need

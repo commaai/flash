@@ -14,21 +14,7 @@
   import exclamation from "$lib/images/exclamation.svg";
   import systemUpdate from "$lib/images/system_update_c3.svg";
 
-  let isLinux = false;
-
-  if (browser) {
-    let userAgent = "";
-    if ('userAgentData' in globalThis.navigator && 'platform' in globalThis.navigator.userAgentData && globalThis.navigator.userAgentData.platform) {
-      userAgent = globalThis.navigator.userAgentData.platform
-    } else {
-      userAgent = globalThis.navigator.userAgent.toLowerCase()
-    }
-    if (userAgent.includes('linux')) {
-      isLinux = true;
-    } else if (userAgent.includes('win32') || userAgent.includes('windows')) {
-      isWindows = true;
-    }
-  }
+  let isLinux = () => globalThis.navigator.userAgent.toLowerCase().includes("linux") ?? false;
 
   const steps = {
     [StepCode.INITIALIZING]: {
@@ -136,7 +122,7 @@
     },
   };
 
-  if (isLinux) {
+  if (isLinux()) {
     // this is likely in StepCode.CONNECTING
     errors[ErrorCode.LOST_CONNECTION].description +=
       " Did you forget to unbind the device from qcserial?";
