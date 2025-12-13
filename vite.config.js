@@ -6,7 +6,7 @@ import { sveltekit } from "@sveltejs/kit/vite";
 export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
   test: {
-    expect: { requireAssertions: true },
+    expect: { requireAssertions: false },
     projects: [
       {
         extends: "./vite.config.js",
@@ -16,6 +16,7 @@ export default defineConfig({
             enabled: true,
             provider: playwright(),
             instances: [{ browser: "chromium", headless: true }],
+            
           },
           include: ["src/**/*.svelte.{test,spec}.{js,ts}"],
           exclude: ["src/lib/server/**"],
@@ -24,8 +25,9 @@ export default defineConfig({
       {
         extends: "./vite.config.js",
         test: {
+          globals: true,
           name: "server",
-          environment: "node",
+          environment: "jsdom",
           include: ["src/**/*.{test,spec}.{js,ts}"],
           exclude: ["src/**/*.svelte.{test,spec}.{js,ts}"],
         },

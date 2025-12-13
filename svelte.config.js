@@ -13,7 +13,7 @@ const config = {
       strict: true,
     }),
     paths: {
-      base: "/flash"
+      base: process.argv.includes('dev') ? '' : process.env.BASE_PATH ?? ""
     },
   },
   preprocess: [vitePreprocess()],
