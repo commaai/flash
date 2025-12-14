@@ -217,7 +217,8 @@
 
 <div id="flash" class="relative flex flex-col gap-8 justify-center items-center h-full">
   <button
-    class={`p-8 rounded-full ${bgColor}`}
+    type="button"
+    class={`p-8 rounded-full ${bgColor} ${canStart ? "cursor-pointer" : ""}`}
     onclick={handleStart}
     disabled={!canStart}
   >

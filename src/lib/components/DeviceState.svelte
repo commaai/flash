@@ -3,7 +3,7 @@
 </script>
 
 <div
-  class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+  class="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-87.5 sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2 left-1/2 -translate-x-1/2 -translate-y-1/2"
 >
   <div class="flex flex-row gap-2">
     <svg
