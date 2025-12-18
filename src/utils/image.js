@@ -20,7 +20,15 @@ export class ImageManager {
   async init() {
     if (!this.root) {
       this.root = await navigator.storage.getDirectory()
-      await this.root.remove({ recursive: true })
+      // Clean up any leftover files from previous sessions
+      try {
+        await this.root.remove({ recursive: true })
+      } catch (e) {
+        // Ignore errors - directory might not exist or be empty
+        console.debug('[ImageManager] Could not remove old directory:', e)
+      }
+      // Re-get the directory after removal
+      this.root = await navigator.storage.getDirectory()
       console.info('[ImageManager] Initialized')
     }
 

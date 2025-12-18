@@ -188,9 +188,10 @@ export class FlashManager {
     } catch (err) {
       console.error('[Flash] Failed to initialize image worker')
       console.error(err)
-      if (err instanceof String && err.startsWith('Not enough storage')) {
+      const message = err?.message || String(err)
+      if (message.startsWith('Not enough storage')) {
         this.#setError(ErrorCode.STORAGE_SPACE)
-        this.#setMessage(err)
+        this.#setMessage(message)
       } else {
         this.#setError(ErrorCode.UNKNOWN)
       }

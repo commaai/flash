@@ -113,7 +113,7 @@ const errors = {
   },
   [ErrorCode.FLASH_SYSTEM_FAILED]: {
     status: 'Flash failed',
-    description: 'AGNOS could not be flashed to your device. Try using a different cable, USB port, or computer. If ' +
+    description: 'Try using a different cable, USB port, or computer. If ' +
       'the problem persists, join the #hw-three-3x channel on Discord for help.',
     icon: deviceExclamation,
   },
@@ -659,8 +659,8 @@ export default function Flash() {
     title = status
   }
 
-  // warn the user if they try to leave the page while flashing
-  if (step >= StepCode.REPAIR_PARTITION_TABLES && step <= StepCode.FINALIZING) {
+  // warn the user if they try to leave the page while flashing (but not if there's an error)
+  if (step >= StepCode.REPAIR_PARTITION_TABLES && step <= StepCode.FINALIZING && error === ErrorCode.NONE) {
     window.addEventListener("beforeunload", beforeUnloadListener, { capture: true })
   } else {
     window.removeEventListener("beforeunload", beforeUnloadListener, { capture: true })
@@ -692,7 +692,7 @@ export default function Flash() {
       </div>
       <span className="text-3xl dark:text-white font-mono font-light">{title}</span>
       <span className="text-xl dark:text-white px-8 max-w-xl text-center">{description}</span>
-      {error && (
+      {error !== ErrorCode.NONE && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
           onClick={handleRetry}
