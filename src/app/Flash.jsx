@@ -137,10 +137,7 @@ function LinearProgress({ value, barColor }) {
 
 function DeviceState({ serial }) {
   return (
-    <div
-      className="absolute bottom-0 m-0 lg:m-4 p-4 w-full sm:w-auto sm:min-w-[350px] sm:border sm:border-gray-200 dark:sm:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2"
-      style={{ left: '50%', transform: 'translate(-50%, -50%)' }}
-    >
+    <div className="mt-8 p-4 sm:min-w-[350px] border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row gap-2">
       <div className="flex flex-row gap-2">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -222,7 +219,7 @@ function LandingPage({ onStart }) {
       <div className="text-center">
         <h1 className="text-4xl font-bold dark:text-white mb-4">flash.comma.ai</h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 max-w-md">
-          Flash your comma back to a factory state
+          Restore your comma device back to a fresh factory state
         </p>
       </div>
       <button
@@ -304,22 +301,22 @@ function ConnectInstructions({ deviceType, onNext }) {
 
         <ol className="text-left space-y-3 text-lg dark:text-white">
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">a</span>
+            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">A</span>
             <span>Unplug the device</span>
           </li>
           {!isCommaFour && (
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">b</span>
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">B</span>
               <span>Wait for the light on the back to fully turn off</span>
             </li>
           )}
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">{isCommaFour ? 'b' : 'c'}</span>
-            <span>Connect the <strong>{isCommaFour ? 'right' : 'lower'}</strong> USB-C port <strong>(port 1)</strong> to your computer</span>
+            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">{isCommaFour ? 'B' : 'C'}</span>
+            <span>Connect <strong>port 1</strong> to your computer</span>
           </li>
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">{isCommaFour ? 'c' : 'd'}</span>
-            <span>Connect power to the <strong>{isCommaFour ? 'left' : 'upper'}</strong> port <strong>(port 2)</strong></span>
+            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">{isCommaFour ? 'C' : 'D'}</span>
+            <span>Connect <strong>port 2</strong> to your computer or a power brick</span>
           </li>
         </ol>
       </div>
@@ -356,7 +353,7 @@ function LinuxUnbind({ onNext }) {
         <h2 className="text-3xl font-bold dark:text-white mb-2">Unbind from qcserial</h2>
         <p className="text-gray-600 dark:text-gray-300 max-w-lg">
           On Linux, devices in QDL mode are bound to the kernel&apos;s qcserial driver.
-          Run this command to unbind it:
+          Run this command in a terminal to unbind it:
         </p>
       </div>
 
@@ -382,6 +379,29 @@ function LinuxUnbind({ onNext }) {
   )
 }
 
+// WebUSB connection screen - shows while waiting for user to select device
+function WebUSBConnect({ onConnect }) {
+  return (
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
+      <div className="p-8 rounded-full bg-yellow-500">
+        <img src={cable} alt="connect" width={128} height={128} className="invert" />
+      </div>
+      <div className="text-center">
+        <h2 className="text-3xl font-bold dark:text-white mb-2">Select your device</h2>
+        <p className="text-gray-600 dark:text-gray-300 max-w-lg">
+          Click the button below to open the device selector, then choose <code className="px-2 py-0.5 bg-[#51ff00] rounded font-mono text-black font-semibold">QUSB_BULK_CID</code> from the list.
+        </p>
+      </div>
+      <button
+        onClick={onConnect}
+        className="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
+      >
+        Connect
+      </button>
+    </div>
+  )
+}
+
 // Device picker component
 function DevicePicker({ onSelect }) {
   const [selected, setSelected] = useState(null)
@@ -402,8 +422,8 @@ function DevicePicker({ onSelect }) {
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }`}
         >
-          <img src={comma3XProduct} alt="comma 3/3X" className="h-32 object-contain" />
-          <span className="text-xl font-semibold dark:text-white">comma 3 / 3X</span>
+          <img src={comma3XProduct} alt="comma three or comma 3X" className="h-32 object-contain" />
+          <span className="text-xl font-semibold dark:text-white">comma three<br/>comma 3X</span>
         </button>
 
         <button
@@ -434,16 +454,8 @@ function DevicePicker({ onSelect }) {
   )
 }
 
-// Wizard step names for the stepper (UI-level steps, not flash manager steps)
-// Steps are inserted dynamically based on OS and device
-function getWizardSteps(needsZadig, needsUnbind) {
-  const steps = ['Device']
-  if (needsZadig) steps.push('Driver')
-  steps.push('Connect')
-  if (needsUnbind) steps.push('Unbind')
-  steps.push('Flash')
-  return steps
-}
+// Fixed wizard steps - always show the same steps regardless of platform/device
+const WIZARD_STEPS = ['Device', 'Setup', 'Flash']
 
 export default function Flash() {
   const [step, setStep] = useState(StepCode.INITIALIZING)
@@ -459,13 +471,9 @@ export default function Flash() {
   const qdlManager = useRef(null)
   const imageManager = useImageManager()
 
-  // Determine which optional steps are needed
+  // Determine which optional setup screens are needed
   const needsZadig = isWindows
   const needsUnbind = isLinux && selectedDevice === DeviceType.COMMA_3
-  const wizardSteps = getWizardSteps(needsZadig, needsUnbind)
-
-  // Get the index of a step in the wizard
-  const getStepIndex = (stepName) => wizardSteps.indexOf(stepName)
 
   useEffect(() => {
     if (!imageManager.current) return
@@ -494,35 +502,37 @@ export default function Flash() {
 
   // Transition to flash screen when connected
   useEffect(() => {
-    if (connected && (wizardScreen === 'connect' || wizardScreen === 'unbind')) {
+    if (connected && wizardScreen === 'webusb') {
       setWizardScreen('flash')
-      setWizardStep(getStepIndex('Flash'))
     }
   }, [connected, wizardScreen])
+
+  // Wizard step indices (fixed)
+  const STEP_DEVICE = 0
+  const STEP_SETUP = 1
+  const STEP_FLASH = 2
 
   // Handle user clicking start on landing page
   const handleStart = () => {
     setStep(StepCode.DEVICE_PICKER)
     setWizardScreen('device')
-    setWizardStep(getStepIndex('Device'))
+    setWizardStep(STEP_DEVICE)
   }
 
   // Handle device selection
   const handleDeviceSelect = (deviceType) => {
     setSelectedDevice(deviceType)
+    setWizardStep(STEP_SETUP)
     if (isWindows) {
       setWizardScreen('zadig')
-      setWizardStep(getStepIndex('Driver'))
     } else {
       setWizardScreen('connect')
-      setWizardStep(getStepIndex('Connect'))
     }
   }
 
   // Handle zadig done
   const handleZadigDone = () => {
     setWizardScreen('connect')
-    setWizardStep(getStepIndex('Connect'))
   }
 
   // Handle connect instructions next
@@ -530,36 +540,41 @@ export default function Flash() {
     // On Linux with comma 3/3X, need to unbind qcserial BEFORE showing WebUSB picker
     if (isLinux && selectedDevice === DeviceType.COMMA_3) {
       setWizardScreen('unbind')
-      setWizardStep(getStepIndex('Unbind'))
     } else {
-      // Start connection - stay on connect screen until connected
-      qdlManager.current?.start()
+      // Go to WebUSB connection screen
+      setWizardScreen('webusb')
+      setWizardStep(STEP_FLASH)
     }
   }
 
   // Handle linux unbind done
   const handleUnbindDone = () => {
-    // Start connection - stay on unbind screen until connected
+    // Go to WebUSB connection screen
+    setWizardScreen('webusb')
+    setWizardStep(STEP_FLASH)
+  }
+
+  // Handle WebUSB connect button
+  const handleWebUSBConnect = () => {
     qdlManager.current?.start()
   }
 
   // Handle going back in wizard
   const handleWizardBack = (toStep) => {
-    const stepName = wizardSteps[toStep]
+    const stepName = WIZARD_STEPS[toStep]
     if (stepName === 'Device') {
       setStep(StepCode.DEVICE_PICKER)
       setWizardScreen('device')
-      setWizardStep(toStep)
+      setWizardStep(STEP_DEVICE)
       setSelectedDevice(null)
-    } else if (stepName === 'Driver') {
-      setWizardScreen('zadig')
-      setWizardStep(toStep)
-    } else if (stepName === 'Connect') {
-      setWizardScreen('connect')
-      setWizardStep(toStep)
-    } else if (stepName === 'Unbind') {
-      setWizardScreen('unbind')
-      setWizardStep(toStep)
+    } else if (stepName === 'Setup') {
+      // Go back to the appropriate setup screen based on platform
+      setWizardStep(STEP_SETUP)
+      if (isWindows) {
+        setWizardScreen('zadig')
+      } else {
+        setWizardScreen('connect')
+      }
     }
   }
 
@@ -575,7 +590,7 @@ export default function Flash() {
   if (wizardScreen === 'device' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <DevicePicker onSelect={handleDeviceSelect} />
       </div>
     )
@@ -585,7 +600,7 @@ export default function Flash() {
   if (wizardScreen === 'zadig' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <WindowsZadig onNext={handleZadigDone} />
       </div>
     )
@@ -595,7 +610,7 @@ export default function Flash() {
   if (wizardScreen === 'connect' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <ConnectInstructions deviceType={selectedDevice} onNext={handleConnectNext} />
       </div>
     )
@@ -605,12 +620,21 @@ export default function Flash() {
   if (wizardScreen === 'unbind' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <LinuxUnbind onNext={handleUnbindDone} />
       </div>
     )
   }
 
+  // Render WebUSB connection screen
+  if (wizardScreen === 'webusb' && !error) {
+    return (
+      <div className="relative h-full">
+        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <WebUSBConnect onConnect={handleWebUSBConnect} />
+      </div>
+    )
+  }
 
   const uiState = steps[step] || {}
   if (error) {
@@ -649,7 +673,7 @@ export default function Flash() {
     <div id="flash" className="wizard-screen relative flex flex-col gap-8 justify-center items-center h-full">
       {wizardStep >= 0 && (
         <Stepper
-          steps={wizardSteps}
+          steps={WIZARD_STEPS}
           currentStep={wizardStep}
           onStepClick={canGoBack ? handleWizardBack : () => {}}
         />
