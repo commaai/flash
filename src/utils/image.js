@@ -11,7 +11,7 @@ import { fetchStream } from './stream'
  * @returns {void}
  */
 
-const MIN_QUOTA_MB = 5250
+const MIN_QUOTA_GB = 5.25
 
 export class ImageManager {
   /** @type {FileSystemDirectoryHandle} */
@@ -33,9 +33,9 @@ export class ImageManager {
     }
 
     const estimate = await navigator.storage.estimate()
-    const quotaMB = (estimate.quota || 0) / (1024 ** 2)
-    if (quotaMB < MIN_QUOTA_MB) {
-      throw new Error(`Not enough storage: ${quotaMB.toFixed(0)}MB free, need ${MIN_QUOTA_MB.toFixed(0)}MB`)
+    const quotaGB = (estimate.quota || 0) / (1024 ** 3)
+    if (quotaGB < MIN_QUOTA_GB) {
+      throw new Error(`Not enough storage: ${quotaGB.toFixed(1)}GB free, need ${MIN_QUOTA_GB.toFixed(1)}GB`)
     }
   }
 

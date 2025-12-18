@@ -109,8 +109,9 @@ const errors = {
     hideRetry: true,
   },
   [ErrorCode.STORAGE_SPACE]: {
-    description: 'Your system does not have enough space available to download AGNOS. Your browser may be restricting' +
+    description: 'Your system does not have enough space available to download the OS images. Your browser may be restricting' +
       ' the available space if you are in a private, incognito or guest session.',
+    hideRetry: true,
   },
   [ErrorCode.UNRECOGNIZED_DEVICE]: {
     status: 'Unrecognized device',
