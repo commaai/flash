@@ -18,3 +18,4 @@ You can start editing the page by modifying `src/app/index.jsx`. The page auto-u
 **Helpful for debugging**
 * [chrome://usb-internals/](chrome://usb-internals/)
 * [chrome://device-log/](chrome://device-log/)
+* Add `?fast=1` to the URL to skip flashing the system partition (the slowest). Useful for testing the full flow quickly.

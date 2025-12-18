@@ -5,6 +5,13 @@ import { getManifest } from './manifest'
 import config from '../config'
 import { createSteps, withProgress } from './progress'
 
+// Fast mode for development - skips flashing system partition (the slowest)
+// Enable with ?fast=1 in URL
+const FAST_MODE = new URLSearchParams(window.location.search).has('fast')
+if (FAST_MODE) {
+  console.warn('[Flash] FAST MODE ENABLED - skipping system partition')
+}
+
 export const StepCode = {
   INITIALIZING: 0,
   READY: 1,
@@ -367,9 +374,15 @@ export class FlashManager {
     this.#setProgress(0)
 
     // Exclude GPT images and persist image, and pick correct userdata image to flash
-    const systemImages = this.manifest
+    let systemImages = this.manifest
       .filter((image) => !image.gpt && image.name !== 'persist')
       .filter((image) => !image.name.startsWith('userdata_') || image.name === this.#userdataImage)
+
+    // In fast mode, skip the system partition (slowest to flash)
+    if (FAST_MODE) {
+      systemImages = systemImages.filter((image) => image.name !== 'system')
+      console.info('[Flash] Fast mode: skipping system partition')
+    }
 
     if (!systemImages.find((image) => image.name === this.#userdataImage)) {
       console.error(`[Flash] Did not find userdata image "${this.#userdataImage}"`)
