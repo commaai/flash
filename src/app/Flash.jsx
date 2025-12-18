@@ -119,10 +119,7 @@ const errors = {
   },
 }
 
-if (isLinux) {
-  // this is likely in StepCode.CONNECTING
-  errors[ErrorCode.LOST_CONNECTION].description += ' Did you forget to unbind the device from qcserial?'
-}
+// Note: qcserial unbind hint is added dynamically in the component based on device type
 
 
 function LinearProgress({ value, barColor }) {
@@ -307,15 +304,21 @@ function ConnectInstructions({ deviceType, onNext }) {
 
         <ol className="text-left space-y-3 text-lg dark:text-white">
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">1</span>
-            <span>Unplug the device and wait for the LED to switch off</span>
+            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">a</span>
+            <span>Unplug the device</span>
           </li>
+          {!isCommaFour && (
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">b</span>
+              <span>Wait for the light on the back to fully turn off</span>
+            </li>
+          )}
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">2</span>
+            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">{isCommaFour ? 'b' : 'c'}</span>
             <span>Connect the <strong>{isCommaFour ? 'right' : 'lower'}</strong> USB-C port <strong>(port 1)</strong> to your computer</span>
           </li>
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">3</span>
+            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">{isCommaFour ? 'c' : 'd'}</span>
             <span>Connect power to the <strong>{isCommaFour ? 'left' : 'upper'}</strong> port <strong>(port 2)</strong></span>
           </li>
         </ol>
@@ -489,6 +492,14 @@ export default function Flash() {
       })
   }, [config, imageManager.current])
 
+  // Transition to flash screen when connected
+  useEffect(() => {
+    if (connected && (wizardScreen === 'connect' || wizardScreen === 'unbind')) {
+      setWizardScreen('flash')
+      setWizardStep(getStepIndex('Flash'))
+    }
+  }, [connected, wizardScreen])
+
   // Handle user clicking start on landing page
   const handleStart = () => {
     setStep(StepCode.DEVICE_PICKER)
@@ -521,17 +532,14 @@ export default function Flash() {
       setWizardScreen('unbind')
       setWizardStep(getStepIndex('Unbind'))
     } else {
-      // Go directly to flash (show WebUSB picker)
-      setWizardScreen('flash')
-      setWizardStep(getStepIndex('Flash'))
+      // Start connection - stay on connect screen until connected
       qdlManager.current?.start()
     }
   }
 
   // Handle linux unbind done
   const handleUnbindDone = () => {
-    setWizardScreen('flash')
-    setWizardStep(getStepIndex('Flash'))
+    // Start connection - stay on unbind screen until connected
     qdlManager.current?.start()
   }
 
@@ -603,11 +611,17 @@ export default function Flash() {
     )
   }
 
+
   const uiState = steps[step] || {}
   if (error) {
     Object.assign(uiState, errors[ErrorCode.UNKNOWN], errors[error])
   }
-  const { status, description, bgColor = 'bg-gray-400', icon = bolt, iconStyle = 'invert' } = uiState
+  let { status, description, bgColor = 'bg-gray-400', icon = bolt, iconStyle = 'invert' } = uiState
+
+  // Add qcserial hint for Linux + comma 3/3X only
+  if (error === ErrorCode.LOST_CONNECTION && isLinux && selectedDevice === DeviceType.COMMA_3) {
+    description += ' Did you forget to unbind the device from qcserial?'
+  }
 
   let title
   if (message && !error) {

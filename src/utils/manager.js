@@ -217,6 +217,12 @@ export class FlashManager {
     try {
       await this.device.connect(usb)
     } catch (err) {
+      // User cancelled the WebUSB dialog or no device was selected - not an error
+      if (err.name === 'NotFoundError') {
+        console.info('[Flash] No device selected')
+        this.#setStep(StepCode.READY)
+        return
+      }
       console.error('[Flash] Connection error', err)
       this.#setError(ErrorCode.LOST_CONNECTION)
       this.#setConnected(false)
@@ -421,7 +427,8 @@ export class FlashManager {
   async start() {
     if (this.step !== StepCode.READY) return
     await this.#connect()
-    if (this.error !== ErrorCode.NONE) return
+    // Check if connection was cancelled (step went back to READY) or failed
+    if (this.step === StepCode.READY || this.error !== ErrorCode.NONE) return
     let start = performance.now()
     await this.#repairPartitionTables()
     console.info(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
