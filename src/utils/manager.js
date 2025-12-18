@@ -8,12 +8,19 @@ import { createSteps, withProgress } from './progress'
 export const StepCode = {
   INITIALIZING: 0,
   READY: 1,
-  CONNECTING: 2,
-  REPAIR_PARTITION_TABLES: 3,
-  ERASE_DEVICE: 4,
-  FLASH_SYSTEM: 5,
-  FINALIZING: 6,
-  DONE: 7,
+  DEVICE_PICKER: 2,
+  CONNECTING: 3,
+  REPAIR_PARTITION_TABLES: 4,
+  ERASE_DEVICE: 5,
+  FLASH_SYSTEM: 6,
+  FINALIZING: 7,
+  DONE: 8,
+}
+
+// Device types for the picker
+export const DeviceType = {
+  COMMA_3: 'comma3',  // comma 3 or 3X
+  COMMA_4: 'comma4',  // comma four
 }
 
 export const ErrorCode = {
