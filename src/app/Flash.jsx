@@ -220,7 +220,7 @@ function Stepper({ steps, currentStep, onStepClick }) {
 // Landing page component
 function LandingPage({ onStart }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-8 p-8">
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
       <img src={comma} alt="comma" width={80} height={80} className="dark:invert" />
       <div className="text-center">
         <h1 className="text-4xl font-bold dark:text-white mb-4">flash.comma.ai</h1>
@@ -244,7 +244,7 @@ const PRODUCT_ID = '9008'
 
 function WindowsZadig({ onNext }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 p-8 overflow-y-auto">
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8 overflow-y-auto">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Install USB Driver</h2>
         <p className="text-gray-600 dark:text-gray-300">Windows requires a driver to communicate with your device</p>
@@ -292,7 +292,7 @@ function ConnectInstructions({ deviceType, onNext }) {
   const isCommaFour = deviceType === DeviceType.COMMA_4
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Connect your device</h2>
         <p className="text-gray-600 dark:text-gray-300">Follow these steps to put your device into QDL mode</p>
@@ -348,7 +348,7 @@ function LinuxUnbind({ onNext }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Unbind from qcserial</h2>
         <p className="text-gray-600 dark:text-gray-300 max-w-lg">
@@ -384,7 +384,7 @@ function DevicePicker({ onSelect }) {
   const [selected, setSelected] = useState(null)
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-8 p-8">
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Which device are you flashing?</h2>
         <p className="text-gray-600 dark:text-gray-300">Select your comma device</p>
@@ -516,11 +516,12 @@ export default function Flash() {
 
   // Handle connect instructions next
   const handleConnectNext = () => {
+    // On Linux with comma 3/3X, need to unbind qcserial BEFORE showing WebUSB picker
     if (isLinux && selectedDevice === DeviceType.COMMA_3) {
       setWizardScreen('unbind')
       setWizardStep(getStepIndex('Unbind'))
     } else {
-      // Go directly to flash
+      // Go directly to flash (show WebUSB picker)
       setWizardScreen('flash')
       setWizardStep(getStepIndex('Flash'))
       qdlManager.current?.start()
@@ -631,7 +632,7 @@ export default function Flash() {
   const canGoBack = step === StepCode.CONNECTING && !connected
 
   return (
-    <div id="flash" className="relative flex flex-col gap-8 justify-center items-center h-full">
+    <div id="flash" className="wizard-screen relative flex flex-col gap-8 justify-center items-center h-full">
       {wizardStep >= 0 && (
         <Stepper
           steps={wizardSteps}

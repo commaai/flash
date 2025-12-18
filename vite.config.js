@@ -8,5 +8,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',
+    // Inline @commaai/qdl to fix ESM resolution issues (missing .js extensions in imports)
+    deps: {
+      inline: ['@commaai/qdl'],
+    },
   },
 })
