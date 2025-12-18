@@ -93,7 +93,7 @@ const errors = {
   [ErrorCode.UNKNOWN]: {
     status: 'Unknown error',
     description: 'An unknown error has occurred. Unplug your device, restart your browser and try again.',
-    bgColor: 'bg-red-500',
+    bgColor: 'bg-yellow-500',
     icon: exclamation,
   },
   [ErrorCode.REQUIREMENTS_NOT_MET]: {
