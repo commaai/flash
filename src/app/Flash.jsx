@@ -97,9 +97,16 @@ const errors = {
     icon: exclamation,
   },
   [ErrorCode.REQUIREMENTS_NOT_MET]: {
-    status: 'Requirements not met',
-    description: 'Your system does not meet the requirements to flash your device. Make sure to use a browser which ' +
-      'supports WebUSB and is up to date.',
+    status: 'Unsupported Browser',
+    description: (
+      <>
+        This browser doesn&apos;t support WebUSB. Please use a compatible browser like{' '}
+        <a href="https://www.google.com/chrome/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">
+          Google Chrome
+        </a>.
+      </>
+    ),
+    hideRetry: true,
   },
   [ErrorCode.STORAGE_SPACE]: {
     description: 'Your system does not have enough space available to download AGNOS. Your browser may be restricting' +
@@ -472,8 +479,25 @@ function DevicePicker({ onSelect }) {
   )
 }
 
-// Fixed wizard steps - always show the same steps regardless of platform/device
-const WIZARD_STEPS = ['Device', 'Setup', 'Flash']
+// Build wizard steps dynamically based on platform and device
+function getWizardSteps(selectedDevice) {
+  const steps = ['Device']
+  if (isWindows) steps.push('Driver')
+  steps.push('Connect')
+  if (isLinux && selectedDevice === DeviceType.COMMA_3) steps.push('Unbind')
+  steps.push('Flash')
+  return steps
+}
+
+// Map screen names to step names
+const screenToStep = {
+  device: 'Device',
+  zadig: 'Driver',
+  connect: 'Connect',
+  unbind: 'Unbind',
+  webusb: 'Flash',
+  flash: 'Flash',
+}
 
 export default function Flash() {
   const [step, setStep] = useState(StepCode.INITIALIZING)
@@ -483,15 +507,14 @@ export default function Flash() {
   const [connected, setConnected] = useState(false)
   const [serial, setSerial] = useState(null)
   const [selectedDevice, setSelectedDevice] = useState(null)
-  const [wizardStep, setWizardStep] = useState(-1) // -1 = landing
-  const [wizardScreen, setWizardScreen] = useState('landing') // 'landing', 'device', 'zadig', 'connect', 'unbind', 'flash'
+  const [wizardScreen, setWizardScreen] = useState('landing') // 'landing', 'device', 'zadig', 'connect', 'unbind', 'webusb', 'flash'
 
   const qdlManager = useRef(null)
   const imageManager = useImageManager()
 
-  // Determine which optional setup screens are needed
-  const needsZadig = isWindows
-  const needsUnbind = isLinux && selectedDevice === DeviceType.COMMA_3
+  // Build steps based on current platform and selected device
+  const wizardSteps = getWizardSteps(selectedDevice)
+  const wizardStep = screenToStep[wizardScreen] ? wizardSteps.indexOf(screenToStep[wizardScreen]) : -1
 
   useEffect(() => {
     if (!imageManager.current) return
@@ -525,22 +548,15 @@ export default function Flash() {
     }
   }, [connected, wizardScreen])
 
-  // Wizard step indices (fixed)
-  const STEP_DEVICE = 0
-  const STEP_SETUP = 1
-  const STEP_FLASH = 2
-
   // Handle user clicking start on landing page
   const handleStart = () => {
     setStep(StepCode.DEVICE_PICKER)
     setWizardScreen('device')
-    setWizardStep(STEP_DEVICE)
   }
 
   // Handle device selection
   const handleDeviceSelect = (deviceType) => {
     setSelectedDevice(deviceType)
-    setWizardStep(STEP_SETUP)
     if (isWindows) {
       setWizardScreen('zadig')
     } else {
@@ -559,17 +575,13 @@ export default function Flash() {
     if (isLinux && selectedDevice === DeviceType.COMMA_3) {
       setWizardScreen('unbind')
     } else {
-      // Go to WebUSB connection screen
       setWizardScreen('webusb')
-      setWizardStep(STEP_FLASH)
     }
   }
 
   // Handle linux unbind done
   const handleUnbindDone = () => {
-    // Go to WebUSB connection screen
     setWizardScreen('webusb')
-    setWizardStep(STEP_FLASH)
   }
 
   // Handle WebUSB connect button
@@ -579,20 +591,17 @@ export default function Flash() {
 
   // Handle going back in wizard
   const handleWizardBack = (toStep) => {
-    const stepName = WIZARD_STEPS[toStep]
+    const stepName = wizardSteps[toStep]
     if (stepName === 'Device') {
       setStep(StepCode.DEVICE_PICKER)
       setWizardScreen('device')
-      setWizardStep(STEP_DEVICE)
       setSelectedDevice(null)
-    } else if (stepName === 'Setup') {
-      // Go back to the appropriate setup screen based on platform
-      setWizardStep(STEP_SETUP)
-      if (isWindows) {
-        setWizardScreen('zadig')
-      } else {
-        setWizardScreen('connect')
-      }
+    } else if (stepName === 'Driver') {
+      setWizardScreen('zadig')
+    } else if (stepName === 'Connect') {
+      setWizardScreen('connect')
+    } else if (stepName === 'Unbind') {
+      setWizardScreen('unbind')
     }
   }
 
@@ -613,7 +622,7 @@ export default function Flash() {
   if (wizardScreen === 'device' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <DevicePicker onSelect={handleDeviceSelect} />
       </div>
     )
@@ -623,7 +632,7 @@ export default function Flash() {
   if (wizardScreen === 'zadig' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <WindowsZadig deviceType={selectedDevice} onNext={handleZadigDone} />
       </div>
     )
@@ -633,7 +642,7 @@ export default function Flash() {
   if (wizardScreen === 'connect' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <ConnectInstructions deviceType={selectedDevice} onNext={handleConnectNext} />
       </div>
     )
@@ -643,7 +652,7 @@ export default function Flash() {
   if (wizardScreen === 'unbind' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <LinuxUnbind onNext={handleUnbindDone} />
       </div>
     )
@@ -653,7 +662,7 @@ export default function Flash() {
   if (wizardScreen === 'webusb' && !error) {
     return (
       <div className="relative h-full">
-        <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <WebUSBConnect onConnect={handleWebUSBConnect} />
       </div>
     )
@@ -663,7 +672,7 @@ export default function Flash() {
   if (error) {
     Object.assign(uiState, errors[ErrorCode.UNKNOWN], errors[error])
   }
-  let { status, description, bgColor = 'bg-gray-400', icon = bolt, iconStyle = 'invert' } = uiState
+  let { status, description, bgColor = 'bg-gray-400', icon = bolt, iconStyle = 'invert', hideRetry = false } = uiState
 
   // Add qcserial hint for Linux + comma 3/3X only
   if (error === ErrorCode.LOST_CONNECTION && isLinux && selectedDevice === DeviceType.COMMA_3) {
@@ -696,7 +705,7 @@ export default function Flash() {
     <div id="flash" className="wizard-screen relative flex flex-col gap-8 justify-center items-center h-full">
       {wizardStep >= 0 && (
         <Stepper
-          steps={WIZARD_STEPS}
+          steps={wizardSteps}
           currentStep={wizardStep}
           onStepClick={canGoBack ? handleWizardBack : () => {}}
         />
@@ -715,7 +724,7 @@ export default function Flash() {
       </div>
       <span className="text-3xl dark:text-white font-mono font-light">{title}</span>
       <span className="text-xl dark:text-white px-8 max-w-xl text-center">{description}</span>
-      {error !== ErrorCode.NONE && (
+      {error !== ErrorCode.NONE && !hideRetry && (
         <button
           className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
           onClick={handleRetry}
