@@ -558,7 +558,7 @@ export default function Flash() {
   const handleRetry = () => window.location.reload()
 
   // Render landing page
-  if (step === StepCode.READY && !error) {
+  if (wizardScreen === 'landing' && !error) {
     return <LandingPage onStart={handleStart} />
   }
 
