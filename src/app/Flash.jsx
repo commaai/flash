@@ -17,6 +17,8 @@ import qdlPortsThree from '../assets/qdl-ports-three.svg'
 import qdlPortsFour from '../assets/qdl-ports-four.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
+import comma3XProduct from '../assets/comma3X.png'
+import comma4Product from '../assets/four_screen_on.png'
 
 
 const steps = {
@@ -236,6 +238,55 @@ function LandingPage({ onStart }) {
   )
 }
 
+// Windows Zadig driver setup component
+const VENDOR_ID = '05C6'
+const PRODUCT_ID = '9008'
+
+function WindowsZadig({ onNext }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-6 p-8 overflow-y-auto">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold dark:text-white mb-2">Install USB Driver</h2>
+        <p className="text-gray-600 dark:text-gray-300">Windows requires a driver to communicate with your device</p>
+      </div>
+
+      <div className="max-w-2xl space-y-6">
+        <div className="flex gap-4">
+          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">1</span>
+          <div className="dark:text-white">
+            <p>Download and run <a href="https://zadig.akeo.ie/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Zadig</a></p>
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">2</span>
+          <div className="dark:text-white">
+            <p className="mb-2">Under <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Device</code> in the menu bar, select <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Create New Device</code></p>
+            <img src={zadigCreateNewDevice} alt="Zadig Create New Device" className="rounded-lg border border-gray-300 dark:border-gray-600" width={460} />
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">3</span>
+          <div className="dark:text-white">
+            <p className="mb-2">
+              Fill in the fields: any name, then <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{VENDOR_ID}</code> and <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{PRODUCT_ID}</code>. Click &quot;Install Driver&quot;.
+            </p>
+            <img src={zadigForm} alt="Zadig Form" className="rounded-lg border border-gray-300 dark:border-gray-600" width={460} />
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={onNext}
+        className="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
+      >
+        Done
+      </button>
+    </div>
+  )
+}
+
 // Connect instructions component - shows how to physically connect the device
 function ConnectInstructions({ deviceType, onNext }) {
   const isCommaFour = deviceType === DeviceType.COMMA_4
@@ -348,7 +399,7 @@ function DevicePicker({ onSelect }) {
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }`}
         >
-          <img src={qdlPortsThree} alt="comma 3/3X" className="h-24 dark:invert" />
+          <img src={comma3XProduct} alt="comma 3/3X" className="h-32 object-contain" />
           <span className="text-xl font-semibold dark:text-white">comma 3 / 3X</span>
         </button>
 
@@ -360,7 +411,7 @@ function DevicePicker({ onSelect }) {
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }`}
         >
-          <img src={qdlPortsFour} alt="comma four" className="h-24 dark:invert" />
+          <img src={comma4Product} alt="comma four" className="h-32 object-contain" />
           <span className="text-xl font-semibold dark:text-white">comma four</span>
         </button>
       </div>
@@ -381,16 +432,14 @@ function DevicePicker({ onSelect }) {
 }
 
 // Wizard step names for the stepper (UI-level steps, not flash manager steps)
-// Note: Linux unbind step is inserted dynamically for Linux + comma 3/3X users
-const WIZARD_STEPS_BASE = ['Device', 'Connect', 'Flash']
-const WIZARD_STEPS_LINUX = ['Device', 'Connect', 'Unbind', 'Flash']
-
-// Wizard step indices
-const WizardStep = {
-  DEVICE: 0,
-  CONNECT: 1,
-  UNBIND: 2,  // Only for Linux + comma 3/3X
-  FLASH: -1,  // Computed dynamically based on whether unbind is shown
+// Steps are inserted dynamically based on OS and device
+function getWizardSteps(needsZadig, needsUnbind) {
+  const steps = ['Device']
+  if (needsZadig) steps.push('Driver')
+  steps.push('Connect')
+  if (needsUnbind) steps.push('Unbind')
+  steps.push('Flash')
+  return steps
 }
 
 export default function Flash() {
@@ -402,14 +451,18 @@ export default function Flash() {
   const [serial, setSerial] = useState(null)
   const [selectedDevice, setSelectedDevice] = useState(null)
   const [wizardStep, setWizardStep] = useState(-1) // -1 = landing
+  const [wizardScreen, setWizardScreen] = useState('landing') // 'landing', 'device', 'zadig', 'connect', 'unbind', 'flash'
 
   const qdlManager = useRef(null)
   const imageManager = useImageManager()
 
-  // Determine if we need to show the Linux unbind step
-  const needsLinuxUnbind = isLinux && selectedDevice === DeviceType.COMMA_3
-  const wizardSteps = needsLinuxUnbind ? WIZARD_STEPS_LINUX : WIZARD_STEPS_BASE
-  const flashStepIndex = needsLinuxUnbind ? 3 : 2
+  // Determine which optional steps are needed
+  const needsZadig = isWindows
+  const needsUnbind = isLinux && selectedDevice === DeviceType.COMMA_3
+  const wizardSteps = getWizardSteps(needsZadig, needsUnbind)
+
+  // Get the index of a step in the wizard
+  const getStepIndex = (stepName) => wizardSteps.indexOf(stepName)
 
   useEffect(() => {
     if (!imageManager.current) return
@@ -439,40 +492,65 @@ export default function Flash() {
   // Handle user clicking start on landing page
   const handleStart = () => {
     setStep(StepCode.DEVICE_PICKER)
-    setWizardStep(WizardStep.DEVICE)
+    setWizardScreen('device')
+    setWizardStep(getStepIndex('Device'))
   }
 
   // Handle device selection
   const handleDeviceSelect = (deviceType) => {
     setSelectedDevice(deviceType)
-    setWizardStep(WizardStep.CONNECT)
+    if (isWindows) {
+      setWizardScreen('zadig')
+      setWizardStep(getStepIndex('Driver'))
+    } else {
+      setWizardScreen('connect')
+      setWizardStep(getStepIndex('Connect'))
+    }
+  }
+
+  // Handle zadig done
+  const handleZadigDone = () => {
+    setWizardScreen('connect')
+    setWizardStep(getStepIndex('Connect'))
   }
 
   // Handle connect instructions next
   const handleConnectNext = () => {
     if (isLinux && selectedDevice === DeviceType.COMMA_3) {
-      setWizardStep(WizardStep.UNBIND)
+      setWizardScreen('unbind')
+      setWizardStep(getStepIndex('Unbind'))
     } else {
       // Go directly to flash
-      setWizardStep(flashStepIndex)
+      setWizardScreen('flash')
+      setWizardStep(getStepIndex('Flash'))
       qdlManager.current?.start()
     }
   }
 
   // Handle linux unbind done
   const handleUnbindDone = () => {
-    setWizardStep(flashStepIndex)
+    setWizardScreen('flash')
+    setWizardStep(getStepIndex('Flash'))
     qdlManager.current?.start()
   }
 
   // Handle going back in wizard
   const handleWizardBack = (toStep) => {
-    if (toStep === WizardStep.DEVICE) {
+    const stepName = wizardSteps[toStep]
+    if (stepName === 'Device') {
       setStep(StepCode.DEVICE_PICKER)
-      setWizardStep(WizardStep.DEVICE)
+      setWizardScreen('device')
+      setWizardStep(toStep)
       setSelectedDevice(null)
-    } else if (toStep === WizardStep.CONNECT) {
-      setWizardStep(WizardStep.CONNECT)
+    } else if (stepName === 'Driver') {
+      setWizardScreen('zadig')
+      setWizardStep(toStep)
+    } else if (stepName === 'Connect') {
+      setWizardScreen('connect')
+      setWizardStep(toStep)
+    } else if (stepName === 'Unbind') {
+      setWizardScreen('unbind')
+      setWizardStep(toStep)
     }
   }
 
@@ -485,7 +563,7 @@ export default function Flash() {
   }
 
   // Render device picker
-  if (wizardStep === WizardStep.DEVICE && !error) {
+  if (wizardScreen === 'device' && !error) {
     return (
       <div className="relative h-full">
         <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
@@ -494,8 +572,18 @@ export default function Flash() {
     )
   }
 
+  // Render Windows Zadig driver setup
+  if (wizardScreen === 'zadig' && !error) {
+    return (
+      <div className="relative h-full">
+        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <WindowsZadig onNext={handleZadigDone} />
+      </div>
+    )
+  }
+
   // Render connect instructions
-  if (wizardStep === WizardStep.CONNECT && !error) {
+  if (wizardScreen === 'connect' && !error) {
     return (
       <div className="relative h-full">
         <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
@@ -505,7 +593,7 @@ export default function Flash() {
   }
 
   // Render linux unbind
-  if (wizardStep === WizardStep.UNBIND && !error) {
+  if (wizardScreen === 'unbind' && !error) {
     return (
       <div className="relative h-full">
         <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
