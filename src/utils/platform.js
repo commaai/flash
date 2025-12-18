@@ -1,3 +1,10 @@
+// Force Windows mode for development - shows Zadig driver instructions
+// Enable with ?windows=1 in URL
+const FORCE_WINDOWS = new URLSearchParams(window.location.search).has('windows')
+if (FORCE_WINDOWS) {
+  console.warn('[Platform] FORCE WINDOWS MODE ENABLED')
+}
+
 const platform = (() => {
   if ('userAgentData' in navigator && 'platform' in navigator.userAgentData && navigator.userAgentData.platform) {
     return navigator.userAgentData.platform
@@ -8,5 +15,5 @@ const platform = (() => {
   return null
 })()
 
-export const isWindows = !platform || platform === 'Windows'
-export const isLinux = platform === 'Linux'
+export const isWindows = FORCE_WINDOWS || !platform || platform === 'Windows'
+export const isLinux = !FORCE_WINDOWS && platform === 'Linux'
