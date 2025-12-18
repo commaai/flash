@@ -7,3 +7,26 @@
   color: black;
 }
 
+/* Custom scrollbar for debug info */
+.debug-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.debug-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.debug-scrollbar::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.debug-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.debug-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
