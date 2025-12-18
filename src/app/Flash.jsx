@@ -17,8 +17,26 @@ import qdlPortsThree from '../assets/qdl-ports-three.svg'
 import qdlPortsFour from '../assets/qdl-ports-four.svg'
 import zadigCreateNewDevice from '../assets/zadig_create_new_device.png'
 import zadigForm from '../assets/zadig_form.png'
-import comma3XProduct from '../assets/comma3X.png'
-import comma4Product from '../assets/four_screen_on.png'
+import comma3XProduct from '../assets/comma3X.webp'
+import comma4Product from '../assets/four_screen_on.webp'
+
+// All images that need to be preloaded
+const preloadImages = [
+  comma, bolt, cable, deviceExclamation, deviceQuestion, done, exclamation,
+  systemUpdate, qdlPortsThree, qdlPortsFour, zadigCreateNewDevice, zadigForm,
+  comma3XProduct, comma4Product
+]
+
+// Hidden preload component - renders all images offscreen so they're decoded and ready
+function ImagePreloader() {
+  return (
+    <div style={{ position: 'absolute', left: -9999, top: -9999, visibility: 'hidden' }}>
+      {preloadImages.map((src) => (
+        <img key={src} src={src} alt="" />
+      ))}
+    </div>
+  )
+}
 
 
 const steps = {
@@ -210,7 +228,7 @@ function LandingPage({ onStart }) {
       <div className="text-center">
         <h1 className="text-4xl font-bold dark:text-white mb-4">flash.comma.ai</h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 max-w-md">
-          Restore your comma device back to a fresh factory state
+          Restore your comma device to a fresh factory state
         </p>
       </div>
       <button
@@ -289,13 +307,13 @@ function ConnectInstructions({ deviceType, onNext }) {
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Connect your device</h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300">Follow these steps to put your device into QDL mode</p>
+        <p className="text-xl text-gray-600 dark:text-gray-300">Follow these steps to prepare your device for flashing</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <img
           src={isCommaFour ? qdlPortsFour : qdlPortsThree}
-          alt={isCommaFour ? "comma four ports" : "comma 3/3X ports"}
+          alt={isCommaFour ? "comma four ports" : "comma 3 and 3X ports"}
           className="h-48 dark:invert"
         />
 
@@ -422,8 +440,8 @@ function DevicePicker({ onSelect }) {
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }`}
         >
-          <img src={comma3XProduct} alt="comma three or comma 3X" className="h-32 object-contain" />
-          <span className="text-xl font-semibold dark:text-white">comma three<br/>comma 3X</span>
+          <img src={comma3XProduct} alt="comma 3 or comma 3X" className="h-32 object-contain" />
+          <span className="text-xl font-semibold dark:text-white">comma 3<br/>comma 3X</span>
         </button>
 
         <button
@@ -583,7 +601,12 @@ export default function Flash() {
 
   // Render landing page
   if (wizardScreen === 'landing' && !error) {
-    return <LandingPage onStart={handleStart} />
+    return (
+      <>
+        <ImagePreloader />
+        <LandingPage onStart={handleStart} />
+      </>
+    )
   }
 
   // Render device picker
