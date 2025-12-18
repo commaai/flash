@@ -65,7 +65,7 @@ const steps = {
   },
   [StepCode.DONE]: {
     status: 'Done',
-    description: 'Your device was flashed successfully. It should now boot into the openpilot setup.',
+    description: 'Your device was flashed successfully!',
     bgColor: 'bg-green-500',
     icon: done,
   },
@@ -224,10 +224,10 @@ function LandingPage({ onStart }) {
 }
 
 // Windows Zadig driver setup component
-const VENDOR_ID = '05C6'
 const PRODUCT_ID = '9008'
 
-function WindowsZadig({ onNext }) {
+function WindowsZadig({ deviceType, onNext }) {
+  const vendorId = deviceType === DeviceType.COMMA_4 ? '3801' : '05C6'
   return (
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8 overflow-y-auto">
       <div className="text-center">
@@ -254,10 +254,19 @@ function WindowsZadig({ onNext }) {
         <div className="flex gap-4">
           <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">3</span>
           <div className="dark:text-white">
-            <p className="mb-2">
-              Fill in the fields: any name, then <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{VENDOR_ID}</code> and <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{PRODUCT_ID}</code>. Click &quot;Install Driver&quot;.
-            </p>
+            <p className="mb-2">Fill in the form:</p>
+            <ul className="list-none space-y-1 ml-2 mb-2">
+              <li><span className="text-gray-500 mr-2">a.</span>Name: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{deviceType === DeviceType.COMMA_4 ? 'comma four' : 'comma 3/3X'}</code></li>
+              <li><span className="text-gray-500 mr-2">b.</span>USB ID: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{vendorId}</code> and <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{PRODUCT_ID}</code></li>
+            </ul>
             <img src={zadigForm} alt="Zadig Form" className="rounded-lg border border-gray-300 dark:border-gray-600" width={460} />
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">4</span>
+          <div className="dark:text-white">
+            <p>Click <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Install Driver</code></p>
           </div>
         </div>
       </div>
@@ -592,7 +601,7 @@ export default function Flash() {
     return (
       <div className="relative h-full">
         <Stepper steps={WIZARD_STEPS} currentStep={wizardStep} onStepClick={handleWizardBack} />
-        <WindowsZadig onNext={handleZadigDone} />
+        <WindowsZadig deviceType={selectedDevice} onNext={handleZadigDone} />
       </div>
     )
   }
