@@ -115,10 +115,10 @@ const errors = {
   },
   [ErrorCode.UNRECOGNIZED_DEVICE]: {
     status: 'Unrecognized device',
-    description: 'The device connected to your computer is not supported. Try using a different cable, USB port, or ' +
-      'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
+    description: 'The device connected to your computer is not supported. Try using a different cable, USB port, or computer.',
     bgColor: 'bg-yellow-500',
     icon: deviceQuestion,
+    showDiscordHelp: true,
   },
   [ErrorCode.LOST_CONNECTION]: {
     status: 'Lost connection',
@@ -127,21 +127,21 @@ const errors = {
   },
   [ErrorCode.REPAIR_PARTITION_TABLES_FAILED]: {
     status: 'Repairing partition tables failed',
-    description: 'Your device\'s partition tables could not be repaired. Try using a different cable, USB port, or ' +
-      'computer. If the problem persists, join the #hw-three-3x channel on Discord for help.',
+    description: 'Your device\'s partition tables could not be repaired. Try using a different cable, USB port, or computer.',
     icon: deviceExclamation,
+    showDiscordHelp: true,
   },
   [ErrorCode.ERASE_FAILED]: {
     status: 'Erase failed',
-    description: 'The device could not be erased. Try using a different cable, USB port, or computer. If the problem ' +
-      'persists, join the #hw-three-3x channel on Discord for help.',
+    description: 'The device could not be erased. Try using a different cable, USB port, or computer.',
     icon: deviceExclamation,
+    showDiscordHelp: true,
   },
   [ErrorCode.FLASH_SYSTEM_FAILED]: {
     status: 'Flash failed',
-    description: 'Try using a different cable, USB port, or computer. If ' +
-      'the problem persists, join the #hw-three-3x channel on Discord for help.',
+    description: 'Try using a different cable, USB port, browser, or computer.',
     icon: deviceExclamation,
+    showDiscordHelp: true,
   },
 }
 
@@ -673,12 +673,18 @@ export default function Flash() {
   if (error) {
     Object.assign(uiState, errors[ErrorCode.UNKNOWN], errors[error])
   }
-  let { status, description, bgColor = 'bg-gray-400', icon = bolt, iconStyle = 'invert', hideRetry = false } = uiState
+  let { status, description, bgColor = 'bg-gray-400', icon = bolt, iconStyle = 'invert', hideRetry = false, showDiscordHelp = false } = uiState
 
   // Add qcserial hint for Linux + comma 3/3X only
   if (error === ErrorCode.LOST_CONNECTION && isLinux && selectedDevice === DeviceType.COMMA_3) {
     description += ' Did you forget to unbind the device from qcserial?'
   }
+
+  // Build Discord help link based on device type
+  const discordChannel = selectedDevice === DeviceType.COMMA_4 ? 'hw-four' : 'hw-three-3x'
+  const discordLink = showDiscordHelp && (
+    <> If the problem persists, join <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">#{discordChannel}</a> on Discord for help.</>
+  )
 
   let title
   if (message && !error) {
@@ -724,10 +730,10 @@ export default function Flash() {
         <LinearProgress value={progress * 100} barColor={bgColor} />
       </div>
       <span className="text-3xl font-mono font-light">{title}</span>
-      <span className="text-xl px-8 max-w-xl text-center">{description}</span>
+      <span className="text-xl px-8 max-w-xl text-center">{description}{discordLink}</span>
       {error !== ErrorCode.NONE && !hideRetry && (
         <button
-          className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-800 transition-colors"
+          className="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
           onClick={handleRetry}
         >
           Retry
