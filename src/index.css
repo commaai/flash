@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+::selection {
+  background-color: #51ff00;
+  color: black;
+}
+
 /* Fade in animation for wizard screens */
 @keyframes fadeIn {
   from { opacity: 0; }

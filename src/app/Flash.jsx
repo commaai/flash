@@ -184,8 +184,8 @@ function Stepper({ steps, currentStep, onStepClick }) {
                 isCurrent
                   ? 'bg-[#51ff00] text-black'
                   : isCompleted
-                    ? 'bg-[#51ff00]/20 text-[#51ff00] hover:bg-[#51ff00]/30 cursor-pointer'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-default'
+                    ? 'bg-[#51ff00]/80 text-black hover:bg-[#51ff00] cursor-pointer'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-default'
               }`}
             >
               {isCompleted && (
@@ -232,19 +232,19 @@ function WindowsZadig({ deviceType, onNext }) {
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8 overflow-y-auto">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Install USB Driver</h2>
-        <p className="text-gray-600 dark:text-gray-300">Windows requires a driver to communicate with your device</p>
+        <p className="text-xl text-gray-600 dark:text-gray-300">Windows requires a driver to communicate with your device</p>
       </div>
 
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-2xl space-y-6 text-lg">
         <div className="flex gap-4">
-          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">1</span>
+          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-base">1</span>
           <div className="dark:text-white">
             <p>Download and run <a href="https://zadig.akeo.ie/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Zadig</a></p>
           </div>
         </div>
 
         <div className="flex gap-4">
-          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">2</span>
+          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-base">2</span>
           <div className="dark:text-white">
             <p className="mb-2">Under <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Device</code> in the menu bar, select <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Create New Device</code></p>
             <img src={zadigCreateNewDevice} alt="Zadig Create New Device" className="rounded-lg border border-gray-300 dark:border-gray-600" width={460} />
@@ -252,7 +252,7 @@ function WindowsZadig({ deviceType, onNext }) {
         </div>
 
         <div className="flex gap-4">
-          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">3</span>
+          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-base">3</span>
           <div className="dark:text-white">
             <p className="mb-2">Fill in the form:</p>
             <ul className="list-none space-y-1 ml-2 mb-2">
@@ -264,7 +264,7 @@ function WindowsZadig({ deviceType, onNext }) {
         </div>
 
         <div className="flex gap-4">
-          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold">4</span>
+          <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-base">4</span>
           <div className="dark:text-white">
             <p>Click <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Install Driver</code></p>
           </div>
@@ -289,7 +289,7 @@ function ConnectInstructions({ deviceType, onNext }) {
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Connect your device</h2>
-        <p className="text-gray-600 dark:text-gray-300">Follow these steps to put your device into QDL mode</p>
+        <p className="text-xl text-gray-600 dark:text-gray-300">Follow these steps to put your device into QDL mode</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 items-center">
@@ -321,7 +321,7 @@ function ConnectInstructions({ deviceType, onNext }) {
         </ol>
       </div>
 
-      <p className="text-gray-500 dark:text-gray-400 text-sm">
+      <p className="text-gray-500 dark:text-gray-400 text-xl">
         Your device&apos;s screen will remain blank. This is normal.
       </p>
 
@@ -351,7 +351,7 @@ function LinuxUnbind({ onNext }) {
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Unbind from qcserial</h2>
-        <p className="text-gray-600 dark:text-gray-300 max-w-lg">
+        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-lg">
           On Linux, devices in QDL mode are bound to the kernel&apos;s qcserial driver.
           Run this command in a terminal to unbind it:
         </p>
@@ -388,7 +388,7 @@ function WebUSBConnect({ onConnect }) {
       </div>
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Select your device</h2>
-        <p className="text-gray-600 dark:text-gray-300 max-w-lg">
+        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-lg">
           Click the button below to open the device selector, then choose <code className="px-2 py-0.5 bg-[#51ff00] rounded font-mono text-black font-semibold">QUSB_BULK_CID</code> from the list.
         </p>
       </div>
@@ -410,13 +410,13 @@ function DevicePicker({ onSelect }) {
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold dark:text-white mb-2">Which device are you flashing?</h2>
-        <p className="text-gray-600 dark:text-gray-300">Select your comma device</p>
+        <p className="text-xl text-gray-600 dark:text-gray-300">Select your comma device</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-6">
         <button
           onClick={() => setSelected(DeviceType.COMMA_3)}
-          className={`flex flex-col items-center gap-4 px-8 py-6 rounded-xl border-2 transition-all ${
+          className={`flex flex-col items-center gap-4 px-8 py-6 rounded-xl border-2 transition-colors ${
             selected === DeviceType.COMMA_3
               ? 'border-[#51ff00] bg-[#51ff00]/10'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -428,7 +428,7 @@ function DevicePicker({ onSelect }) {
 
         <button
           onClick={() => setSelected(DeviceType.COMMA_4)}
-          className={`flex flex-col items-center gap-4 px-8 py-6 rounded-xl border-2 transition-all ${
+          className={`flex flex-col items-center gap-4 px-8 py-6 rounded-xl border-2 transition-colors ${
             selected === DeviceType.COMMA_4
               ? 'border-[#51ff00] bg-[#51ff00]/10'
               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
