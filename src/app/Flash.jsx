@@ -42,7 +42,7 @@ function ImagePreloader() {
 const steps = {
   [StepCode.INITIALIZING]: {
     status: 'Initializing...',
-    bgColor: 'bg-gray-400 dark:bg-gray-700',
+    bgColor: 'bg-gray-400',
     icon: bolt,
   },
   [StepCode.READY]: {
@@ -155,7 +155,7 @@ function LinearProgress({ value, barColor }) {
       <div
         className={`absolute top-0 bottom-0 left-0 w-full transition-all ${barColor}`}
         style={{ transform: `translateX(${value - 100}%)` }}
-      />
+     />
     </div>
   )
 }
@@ -163,18 +163,18 @@ function LinearProgress({ value, barColor }) {
 
 function DeviceState({ serial }) {
   return (
-    <div className="mt-8 p-3 px-4 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-black dark:text-white rounded-md flex flex-row items-center gap-2">
+    <div className="mt-8 p-3 px-4 border border-gray-200 bg-white text-black rounded-md flex flex-row items-center gap-2">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 96 960 960"
-        className="text-green-500 dark:text-[#51ff00]"
+        className="text-green-500"
         height="20"
         width="20"
       >
         <path
           fill="currentColor"
           d="M480 976q-32 0-52-20t-20-52q0-22 11-40t31-29V724H302q-24 0-42-18t-18-42V555q-20-9-31-26.609-11-17.608-11-40.108Q200 456 220 436t52-20q32 0 52 20t20 52.411Q344 511 333 528.5T302 555v109h148V324h-80l110-149 110 149h-80v340h148V560h-42V416h144v144h-42v104q0 24-18 42t-42 18H510v111q19.95 10.652 30.975 29.826Q552 884 552 904q0 32-20 52t-52 20Z"
-        />
+       />
       </svg>
       <span className="font-mono">Device serial: {serial || 'unknown'}</span>
     </div>
@@ -201,7 +201,7 @@ function Stepper({ steps, currentStep, onStepClick }) {
         return (
           <div key={stepName} className="flex items-center">
             {index > 0 && (
-              <div className={`w-8 h-0.5 mx-1 ${isCompleted ? 'bg-[#51ff00]' : 'bg-gray-300 dark:bg-gray-600'}`} />
+              <div className={`w-8 h-0.5 mx-1 ${isCompleted ? 'bg-[#51ff00]' : 'bg-gray-300'}`} />
             )}
             <button
               onClick={() => isClickable && onStepClick(index)}
@@ -211,7 +211,7 @@ function Stepper({ steps, currentStep, onStepClick }) {
                   ? 'bg-[#51ff00] text-black'
                   : isCompleted
                     ? 'bg-[#51ff00]/80 text-black hover:bg-[#51ff00] cursor-pointer'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-default'
+                    : 'bg-gray-200 text-gray-500 cursor-default'
               }`}
             >
               {isCompleted && (
@@ -232,10 +232,10 @@ function Stepper({ steps, currentStep, onStepClick }) {
 function LandingPage({ onStart }) {
   return (
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
-      <img src={comma} alt="comma" width={80} height={80} className="dark:invert" />
+      <img src={comma} alt="comma" width={80} height={80} />
       <div className="text-center">
-        <h1 className="text-4xl font-bold dark:text-white mb-4">flash.comma.ai</h1>
-        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-md">
+        <h1 className="text-4xl font-bold mb-4">flash.comma.ai</h1>
+        <p className="text-xl text-gray-600 max-w-md">
           Restore your comma device to a fresh factory state
         </p>
       </div>
@@ -257,42 +257,42 @@ function WindowsZadig({ deviceType, onNext }) {
   return (
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8 overflow-y-auto">
       <div className="text-center">
-        <h2 className="text-3xl font-bold dark:text-white mb-2">Install USB Driver</h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300">Windows requires a driver to communicate with your device</p>
+        <h2 className="text-3xl font-bold mb-2">Install USB Driver</h2>
+        <p className="text-xl text-gray-600">Windows requires a driver to communicate with your device</p>
       </div>
 
       <div className="max-w-2xl space-y-6 text-lg">
         <div className="flex gap-4">
           <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-base">1</span>
-          <div className="dark:text-white">
+          <div >
             <p>Download and run <a href="https://zadig.akeo.ie/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Zadig</a></p>
           </div>
         </div>
 
         <div className="flex gap-4">
           <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-base">2</span>
-          <div className="dark:text-white">
-            <p className="mb-2">Under <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Device</code> in the menu bar, select <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Create New Device</code></p>
-            <img src={zadigCreateNewDevice} alt="Zadig Create New Device" className="rounded-lg border border-gray-300 dark:border-gray-600" width={460} />
+          <div >
+            <p className="mb-2">Under <code className="bg-gray-200 px-1 rounded">Device</code> in the menu bar, select <code className="bg-gray-200 px-1 rounded">Create New Device</code></p>
+            <img src={zadigCreateNewDevice} alt="Zadig Create New Device" className="rounded-lg border border-gray-300" width={460} />
           </div>
         </div>
 
         <div className="flex gap-4">
           <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-base">3</span>
-          <div className="dark:text-white">
+          <div >
             <p className="mb-2">Fill in the form:</p>
             <ul className="list-none space-y-1 ml-2 mb-2">
-              <li><span className="text-gray-500 mr-2">a.</span>Name: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{deviceType === DeviceType.COMMA_4 ? 'comma four' : 'comma 3/3X'}</code></li>
-              <li><span className="text-gray-500 mr-2">b.</span>USB ID: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{vendorId}</code> and <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{PRODUCT_ID}</code></li>
+              <li><span className="text-gray-500 mr-2">a.</span>Name: <code className="bg-gray-200 px-1 rounded">{deviceType === DeviceType.COMMA_4 ? 'comma four' : 'comma 3/3X'}</code></li>
+              <li><span className="text-gray-500 mr-2">b.</span>USB ID: <code className="bg-gray-200 px-1 rounded">{vendorId}</code> and <code className="bg-gray-200 px-1 rounded">{PRODUCT_ID}</code></li>
             </ul>
-            <img src={zadigForm} alt="Zadig Form" className="rounded-lg border border-gray-300 dark:border-gray-600" width={460} />
+            <img src={zadigForm} alt="Zadig Form" className="rounded-lg border border-gray-300" width={460} />
           </div>
         </div>
 
         <div className="flex gap-4">
           <span className="flex-shrink-0 w-8 h-8 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-base">4</span>
-          <div className="dark:text-white">
-            <p>Click <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Install Driver</code></p>
+          <div >
+            <p>Click <code className="bg-gray-200 px-1 rounded">Install Driver</code></p>
           </div>
         </div>
       </div>
@@ -314,18 +314,18 @@ function ConnectInstructions({ deviceType, onNext }) {
   return (
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold dark:text-white mb-2">Connect your device</h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300">Follow these steps to prepare your device for flashing</p>
+        <h2 className="text-3xl font-bold mb-2">Connect your device</h2>
+        <p className="text-xl text-gray-600">Follow these steps to prepare your device for flashing</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <img
           src={isCommaFour ? qdlPortsFour : qdlPortsThree}
           alt={isCommaFour ? "comma four ports" : "comma 3 and 3X ports"}
-          className="h-48 dark:invert"
-        />
+          className="h-48"
+       />
 
-        <ol className="text-left space-y-3 text-lg dark:text-white">
+        <ol className="text-left space-y-3 text-lg">
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">A</span>
             <span>Unplug the device</span>
@@ -347,7 +347,7 @@ function ConnectInstructions({ deviceType, onNext }) {
         </ol>
       </div>
 
-      <p className="text-gray-500 dark:text-gray-400 text-xl">
+      <p className="text-gray-500 text-xl">
         Your device&apos;s screen will remain blank. This is normal.
       </p>
 
@@ -376,8 +376,8 @@ function LinuxUnbind({ onNext }) {
   return (
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold dark:text-white mb-2">Unbind from qcserial</h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-lg">
+        <h2 className="text-3xl font-bold mb-2">Unbind from qcserial</h2>
+        <p className="text-xl text-gray-600 max-w-lg">
           On Linux, devices in QDL mode are bound to the kernel&apos;s qcserial driver.
           Run this command in a terminal to unbind it:
         </p>
@@ -413,8 +413,8 @@ function WebUSBConnect({ onConnect }) {
         <img src={cable} alt="connect" width={128} height={128} className="invert" />
       </div>
       <div className="text-center">
-        <h2 className="text-3xl font-bold dark:text-white mb-2">Select your device</h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-lg">
+        <h2 className="text-3xl font-bold mb-2">Select your device</h2>
+        <p className="text-xl text-gray-600 max-w-lg">
           Click the button below to open the device selector, then choose <code className="px-2 py-0.5 bg-[#51ff00] rounded font-mono text-black font-semibold">QUSB_BULK_CID</code> from the list.
         </p>
       </div>
@@ -435,8 +435,8 @@ function DevicePicker({ onSelect }) {
   return (
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold dark:text-white mb-2">Which device are you flashing?</h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300">Select your comma device</p>
+        <h2 className="text-3xl font-bold mb-2">Which device are you flashing?</h2>
+        <p className="text-xl text-gray-600">Select your comma device</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-6">
@@ -445,11 +445,11 @@ function DevicePicker({ onSelect }) {
           className={`flex flex-col items-center gap-4 px-8 py-6 rounded-xl border-2 transition-colors ${
             selected === DeviceType.COMMA_3
               ? 'border-[#51ff00] bg-[#51ff00]/10'
-              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              : 'border-gray-300 hover:border-gray-400'
           }`}
         >
           <img src={comma3XProduct} alt="comma 3 or comma 3X" className="h-32 object-contain" />
-          <span className="text-xl font-semibold dark:text-white">comma 3<br/>comma 3X</span>
+          <span className="text-xl font-semibold">comma 3<br/>comma 3X</span>
         </button>
 
         <button
@@ -457,11 +457,11 @@ function DevicePicker({ onSelect }) {
           className={`flex flex-col items-center gap-4 px-8 py-6 rounded-xl border-2 transition-colors ${
             selected === DeviceType.COMMA_4
               ? 'border-[#51ff00] bg-[#51ff00]/10'
-              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              : 'border-gray-300 hover:border-gray-400'
           }`}
         >
           <img src={comma4Product} alt="comma four" className="h-32 object-contain" />
-          <span className="text-xl font-semibold dark:text-white">comma four</span>
+          <span className="text-xl font-semibold">comma four</span>
         </button>
       </div>
 
@@ -471,7 +471,7 @@ function DevicePicker({ onSelect }) {
         className={`px-8 py-3 text-xl font-semibold rounded-full transition-colors ${
           selected
             ? 'bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black'
-            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
         }`}
       >
         Next
@@ -709,7 +709,7 @@ export default function Flash() {
           steps={wizardSteps}
           currentStep={wizardStep}
           onStepClick={canGoBack ? handleWizardBack : () => {}}
-        />
+       />
       )}
       <div className={`p-8 rounded-full ${bgColor}`}>
         <img
@@ -718,16 +718,16 @@ export default function Flash() {
           width={128}
           height={128}
           className={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
-        />
+       />
       </div>
       <div className="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
         <LinearProgress value={progress * 100} barColor={bgColor} />
       </div>
-      <span className="text-3xl dark:text-white font-mono font-light">{title}</span>
-      <span className="text-xl dark:text-white px-8 max-w-xl text-center">{description}</span>
+      <span className="text-3xl font-mono font-light">{title}</span>
+      <span className="text-xl px-8 max-w-xl text-center">{description}</span>
       {error !== ErrorCode.NONE && !hideRetry && (
         <button
-          className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 transition-colors"
+          className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-800 transition-colors"
           onClick={handleRetry}
         >
           Retry
