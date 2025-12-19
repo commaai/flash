@@ -58,7 +58,32 @@ function DebugInfo({ error, step, selectedDevice, serial, message }) {
     const deviceName = selectedDevice === DeviceType.COMMA_4 ? 'comma four' : selectedDevice === DeviceType.COMMA_3 ? 'comma 3/3X' : 'unknown'
     const errorName = Object.keys(ErrorCode).find(k => ErrorCode[k] === error) || 'UNKNOWN'
     const stepName = Object.keys(StepCode).find(k => StepCode[k] === step) || 'UNKNOWN'
-    const platform = isWindows ? 'Windows' : isLinux ? 'Linux' : 'macOS'
+
+    // Get detailed OS info
+    const ua = navigator.userAgent
+    let os = 'Unknown'
+    if (ua.includes('Windows NT 10.0')) os = 'Windows 10/11'
+    else if (ua.includes('Windows NT 6.3')) os = 'Windows 8.1'
+    else if (ua.includes('Windows NT 6.2')) os = 'Windows 8'
+    else if (ua.includes('Windows NT 6.1')) os = 'Windows 7'
+    else if (ua.includes('Mac OS X')) {
+      const match = ua.match(/Mac OS X (\d+[._]\d+[._]?\d*)/)
+      os = match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS'
+    } else if (ua.includes('Linux')) {
+      os = 'Linux'
+      if (ua.includes('Ubuntu')) os += ' (Ubuntu)'
+      else if (ua.includes('Fedora')) os += ' (Fedora)'
+      else if (ua.includes('Debian')) os += ' (Debian)'
+    } else if (ua.includes('CrOS')) os = 'ChromeOS'
+
+    // Detect sandboxed browsers
+    const sandboxHints = []
+    if (ua.includes('snap')) sandboxHints.push('Snap')
+    if (ua.includes('Flatpak')) sandboxHints.push('Flatpak')
+    if (navigator.userAgentData?.brands?.some(b => b.brand.includes('snap'))) sandboxHints.push('Snap')
+    // Snap Chrome often has restricted /dev access which breaks WebUSB
+    if (isLinux && !navigator.usb) sandboxHints.push('WebUSB unavailable - possibly sandboxed')
+    const sandbox = sandboxHints.length ? sandboxHints.join(', ') : 'None detected'
 
     return `## Bug Report - flash.comma.ai
 
@@ -68,8 +93,9 @@ function DebugInfo({ error, step, selectedDevice, serial, message }) {
 **Step:** ${stepName}
 **Last Message:** ${message || 'N/A'}
 
+**OS:** ${os}
+**Sandbox:** ${sandbox}
 **Browser:** ${navigator.userAgent}
-**Platform:** ${platform}
 **URL:** ${window.location.href}
 **Time:** ${new Date().toISOString()}
 
