@@ -38,6 +38,105 @@ function ImagePreloader() {
   )
 }
 
+// Capture console logs for debug reports
+const consoleLogs = []
+const MAX_LOGS = 100
+const originalConsole = { log: console.log, warn: console.warn, error: console.error, info: console.info, debug: console.debug }
+;['log', 'warn', 'error', 'info', 'debug'].forEach(level => {
+  console[level] = (...args) => {
+    consoleLogs.push({ level, time: new Date().toISOString(), message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') })
+    if (consoleLogs.length > MAX_LOGS) consoleLogs.shift()
+    originalConsole[level]?.(...args)
+  }
+})
+
+// Debug info component for error reporting
+function DebugInfo({ error, step, selectedDevice, serial, message }) {
+  const [copied, setCopied] = useState(false)
+
+  const getDebugReport = () => {
+    const deviceName = selectedDevice === DeviceType.COMMA_4 ? 'comma four' : selectedDevice === DeviceType.COMMA_3 ? 'comma 3/3X' : 'unknown'
+    const errorName = Object.keys(ErrorCode).find(k => ErrorCode[k] === error) || 'UNKNOWN'
+    const stepName = Object.keys(StepCode).find(k => StepCode[k] === step) || 'UNKNOWN'
+
+    // Get detailed OS info
+    const ua = navigator.userAgent
+    let os = 'Unknown'
+    if (ua.includes('Windows NT 10.0')) os = 'Windows 10/11'
+    else if (ua.includes('Windows NT 6.3')) os = 'Windows 8.1'
+    else if (ua.includes('Windows NT 6.2')) os = 'Windows 8'
+    else if (ua.includes('Windows NT 6.1')) os = 'Windows 7'
+    else if (ua.includes('Mac OS X')) {
+      const match = ua.match(/Mac OS X (\d+[._]\d+[._]?\d*)/)
+      os = match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS'
+    } else if (ua.includes('Linux')) {
+      os = 'Linux'
+      if (ua.includes('Ubuntu')) os += ' (Ubuntu)'
+      else if (ua.includes('Fedora')) os += ' (Fedora)'
+      else if (ua.includes('Debian')) os += ' (Debian)'
+    } else if (ua.includes('CrOS')) os = 'ChromeOS'
+
+    // Detect sandboxed browsers
+    const sandboxHints = []
+    if (ua.includes('snap')) sandboxHints.push('Snap')
+    if (ua.includes('Flatpak')) sandboxHints.push('Flatpak')
+    if (navigator.userAgentData?.brands?.some(b => b.brand.includes('snap'))) sandboxHints.push('Snap')
+    // Snap Chrome often has restricted /dev access which breaks WebUSB
+    if (isLinux && !navigator.usb) sandboxHints.push('WebUSB unavailable - possibly sandboxed')
+    const sandbox = sandboxHints.length ? sandboxHints.join(', ') : 'None detected'
+
+    return `## Bug Report - flash.comma.ai
+
+**Device:** ${deviceName}
+**Serial:** ${serial || 'N/A'}
+**Error:** ${errorName}
+**Step:** ${stepName}
+**Last Message:** ${message || 'N/A'}
+
+**OS:** ${os}
+**Sandbox:** ${sandbox}
+**Browser:** ${navigator.userAgent}
+**URL:** ${window.location.href}
+**Time:** ${new Date().toISOString()}
+
+<details>
+<summary>Console Logs</summary>
+
+\`\`\`
+${consoleLogs.slice(-30).map(l => `[${l.time}] [${l.level}] ${l.message}`).join('\n')}
+\`\`\`
+
+</details>
+`
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(getDebugReport())
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="mt-6 w-full max-w-xl p-4 bg-gray-100 rounded-lg text-left text-sm">
+      <p className="text-gray-600 mb-3">
+        Copy this debug info and paste it in{' '}
+        <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Discord</a>
+        {' '}or{' '}
+        <a href="https://github.com/commaai/flash/issues/new" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">GitHub Issues</a>.
+      </p>
+      <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-auto max-h-48 font-mono debug-scrollbar">
+        {getDebugReport()}
+      </pre>
+      <button
+        onClick={handleCopy}
+        className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"
+      >
+        {copied ? 'Copied!' : 'Copy Debug Info'}
+      </button>
+    </div>
+  )
+}
+
 
 const steps = {
   [StepCode.INITIALIZING]: {
@@ -740,6 +839,9 @@ export default function Flash() {
         </button>
       )}
       {connected && <DeviceState serial={serial} />}
+      {error !== ErrorCode.NONE && (
+        <DebugInfo error={error} step={step} selectedDevice={selectedDevice} serial={serial} message={message} />
+      )}
     </div>
   )
 }
