@@ -51,7 +51,7 @@ const originalConsole = { log: console.log, warn: console.warn, error: console.e
 })
 
 // Debug info component for error reporting
-function DebugInfo({ error, step, selectedDevice, serial, message }) {
+function DebugInfo({ error, step, selectedDevice, serial, message, onClose }) {
   const [copied, setCopied] = useState(false)
 
   const getDebugReport = () => {
@@ -117,14 +117,27 @@ ${consoleLogs.slice(-30).map(l => `[${l.time}] [${l.level}] ${l.message}`).join(
   }
 
   return (
-    <div className="mt-6 w-full max-w-xl p-4 bg-gray-100 rounded-lg text-left text-sm">
-      <p className="text-gray-600 mb-3">
-        Copy this debug info and paste it in{' '}
-        <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Discord</a>
-        {' '}or{' '}
-        <a href="https://github.com/commaai/flash/issues/new" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">GitHub Issues</a>.
-      </p>
-      <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-auto max-h-48 font-mono debug-scrollbar">
+    <div className="mt-6 w-full max-w-xl mx-4 p-4 bg-gray-100 rounded-lg text-left text-sm overflow-hidden">
+      <div className="flex justify-between items-start mb-3 gap-2">
+        <p className="text-gray-600 text-sm">
+          Copy this debug info and paste it in{' '}
+          <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Discord</a>
+          {' '}or{' '}
+          <a href="https://github.com/commaai/flash/issues/new" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">GitHub Issues</a>.
+        </p>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+            title="Hide debug info"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+      <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-x-auto max-h-32 sm:max-h-48 font-mono debug-scrollbar whitespace-pre-wrap break-all">
         {getDebugReport()}
       </pre>
       <button
@@ -604,6 +617,7 @@ export default function Flash() {
   const [message, setMessage] = useState('')
   const [progress, setProgress] = useState(-1)
   const [error, setError] = useState(ErrorCode.NONE)
+  const [showDebugInfo, setShowDebugInfo] = useState(false)
   const [connected, setConnected] = useState(false)
   const [serial, setSerial] = useState(null)
   const [selectedDevice, setSelectedDevice] = useState(null)
@@ -785,6 +799,7 @@ export default function Flash() {
     <> If the problem persists, join <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">#{discordChannel}</a> on Discord for help.</>
   )
 
+
   let title
   if (message && !error) {
     title = message + '...'
@@ -808,7 +823,7 @@ export default function Flash() {
   const canGoBack = step === StepCode.CONNECTING && !connected
 
   return (
-    <div id="flash" className="wizard-screen relative flex flex-col gap-8 justify-center items-center h-full">
+    <div id="flash" className="wizard-screen relative flex flex-col gap-8 justify-center items-center h-full pt-16 pb-12 overflow-y-auto overflow-x-hidden">
       {wizardStep >= 0 && (
         <Stepper
           steps={wizardSteps}
@@ -829,7 +844,17 @@ export default function Flash() {
         <LinearProgress value={progress * 100} barColor={bgColor} />
       </div>
       <span className="text-3xl font-mono font-light">{title}</span>
-      <span className="text-xl px-8 max-w-xl text-center">{description}{discordLink}</span>
+      <span className="text-xl px-8 max-w-xl text-center">
+        {description}{discordLink}
+        {error !== ErrorCode.NONE && hideRetry && !showDebugInfo && (
+          <button
+            onClick={() => setShowDebugInfo(true)}
+            className="block mx-auto mt-2 text-sm text-gray-500 hover:text-gray-700 underline"
+          >
+            show debug info
+          </button>
+        )}
+      </span>
       {error !== ErrorCode.NONE && !hideRetry && (
         <button
           className="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
@@ -839,8 +864,15 @@ export default function Flash() {
         </button>
       )}
       {connected && <DeviceState serial={serial} />}
-      {error !== ErrorCode.NONE && (
-        <DebugInfo error={error} step={step} selectedDevice={selectedDevice} serial={serial} message={message} />
+      {error !== ErrorCode.NONE && (!hideRetry || showDebugInfo) && (
+        <DebugInfo
+          error={error}
+          step={step}
+          selectedDevice={selectedDevice}
+          serial={serial}
+          message={message}
+          onClose={hideRetry ? () => setShowDebugInfo(false) : undefined}
+        />
       )}
     </div>
   )
