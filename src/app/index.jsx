@@ -30,7 +30,7 @@ export default function App() {
   return (
     <div className="h-screen w-screen bg-gray-100">
       <Flash />
-      <div className="absolute top-4 right-4 flex items-center gap-6">
+      <div className="absolute bottom-4 right-4 flex items-center gap-6">
         <a href="https://comma.ai" target="_blank" rel="noopener noreferrer" title="comma.ai" className="text-gray-400 hover:text-[#51ff00] transition-colors">
           <CommaIcon className="w-12 h-12" />
         </a>
