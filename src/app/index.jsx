@@ -32,13 +32,13 @@ export default function App() {
       <Flash />
       <div className="absolute bottom-4 right-4 flex items-center gap-6">
         <a href="https://comma.ai" target="_blank" rel="noopener noreferrer" title="comma.ai" className="text-gray-400 hover:text-[#51ff00] transition-colors">
-          <CommaIcon className="w-12 h-12" />
+          <CommaIcon className="w-9 h-9" />
         </a>
         <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" title="Discord" className="text-gray-400 hover:text-[#51ff00] transition-colors">
-          <DiscordIcon className="w-12 h-12" />
+          <DiscordIcon className="w-9 h-9" />
         </a>
         <a href="https://github.com/commaai/flash" target="_blank" rel="noopener noreferrer" title="GitHub" className="text-gray-400 hover:text-[#51ff00] transition-colors">
-          <GitHubIcon className="w-12 h-12" />
+          <GitHubIcon className="w-9 h-9" />
         </a>
       </div>
       <div className="absolute bottom-4 left-4 text-sm text-gray-500">
