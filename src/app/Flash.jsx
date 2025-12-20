@@ -433,7 +433,7 @@ function ConnectInstructions({ deviceType, onNext }) {
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <img
           src={isCommaFour ? qdlPortsFour : qdlPortsThree}
-          alt={isCommaFour ? "comma four ports" : "comma 3 and 3X ports"}
+          alt={isCommaFour ? "comma four ports" : "comma three and 3X ports"}
           className="h-48"
        />
 
@@ -560,8 +560,8 @@ function DevicePicker({ onSelect }) {
               : 'border-gray-300 hover:border-gray-400'
           }`}
         >
-          <img src={comma3XProduct} alt="comma 3 or comma 3X" className="h-32 object-contain" />
-          <span className="text-xl font-semibold">comma 3<br/>comma 3X</span>
+          <img src={comma3XProduct} alt="comma three or comma 3X" className="h-32 object-contain" />
+          <span className="text-xl font-semibold">comma three<br/>comma 3X</span>
         </button>
 
         <button
