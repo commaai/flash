@@ -34,6 +34,9 @@ export default defineConfig({
       },
     ],
   },
+  resolve: {
+    extensions: ['.svelte', '.js', '.ts', '.json', '.mjs',] // You can add or remove extensions
+  },
   ssr: {
     noExternal: [
       "@commaai/qdl",
