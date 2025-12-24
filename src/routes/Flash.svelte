@@ -376,18 +376,18 @@
         class={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
       />
     </div>
-    <div class="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
+    <div class="w-full max-w-3xl px-8 transition-opacity duration-300" style:opacity={ progress === -1 ? 0 : 1 }>
       <LinearProgress value={progress * 100} barColor={bgColor} />
     </div>
     <span class="text-3xl font-mono font-light">{title}</span>
     <span class="text-xl px-8 max-w-xl text-center">
-      {description}
+      {@html description}
       {#if showDiscordHelp}
         If the problem persists, join <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline font-semibold">#{discordChannel}</a> on Discord for help.
       {/if}
       {#if error !== ErrorCode.NONE && hideRetry && !showDebugInfo}
         <button
-          onclick={() => setShowDebugInfo(true)}
+          onclick={() => showDebugInfo = true}
           class="block mx-auto mt-2 text-sm text-gray-500 hover:text-gray-700 underline"
         >
           show debug info
@@ -412,7 +412,7 @@
         selectedDevice={selectedDevice}
         serial={serial}
         message={message}
-        onClose={hideRetry ? () => setShowDebugInfo(false) : undefined}
+        onclose={hideRetry ? () => showDebugInfo = false : undefined}
       />
     {/if}
   </div>
