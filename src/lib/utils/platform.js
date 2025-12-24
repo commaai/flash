@@ -9,4 +9,7 @@ export const isWindows = () => {
   return FORCE_WINDOWS || (globalThis.navigator.userAgent.toLowerCase().includes("windows") ?? false)
 }
 
-export const isLinux = () => globalThis.navigator.userAgent.toLowerCase().includes("linux") ?? false
+export const isLinux = () => {
+  if (!browser) return false;
+  return globalThis.navigator.userAgent.toLowerCase().includes("linux") ?? false
+}
