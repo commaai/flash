@@ -7,3 +7,32 @@
   --bg-gradient-radial: radial-gradient(var(--tw-gradient-stops));
   --bg-gradient-conic: conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops));
 }
+
+
+::selection {
+  background-color: #51ff00;
+  color: black;
+}
+
+/* Custom scrollbar for debug info */
+.debug-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.debug-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.debug-scrollbar::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.debug-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.debug-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}

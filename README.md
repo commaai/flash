@@ -16,3 +16,10 @@ bun dev
 Open [http://localhost:5173](http://localhost:5173) with your browser to see the result.
 
 You can start editing the page by modifying `src/app/index.jsx`. The page auto-updates as you edit the file.
+
+
+**Helpful for debugging**
+* [chrome://usb-internals/](chrome://usb-internals/)
+* [chrome://device-log/](chrome://device-log/)
+* Add `?fast=1` to the URL to skip flashing the system partition (the slowest). Useful for testing the full flow quickly.
+* Add `?windows=1` to the URL to force Windows mode (shows Zadig driver instructions). Useful for testing the Windows flow on other platforms.

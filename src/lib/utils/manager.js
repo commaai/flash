@@ -5,15 +5,31 @@ import { getManifest } from './manifest'
 import config from '../config'
 import { createSteps, withProgress } from './progress'
 
+// Fast mode for development - skips flashing system partition (the slowest)
+// Enable with ?fast=1 in URL
+const fastModeEnabled = () => {
+  const FAST_MODE = new URLSearchParams(window.location.search).has('fast')
+  if (FAST_MODE()) {
+    console.warn('[Flash] FAST MODE ENABLED - skipping system partition')
+  }
+}
+
 export const StepCode = {
   INITIALIZING: 0,
   READY: 1,
-  CONNECTING: 2,
-  REPAIR_PARTITION_TABLES: 3,
-  ERASE_DEVICE: 4,
-  FLASH_SYSTEM: 5,
-  FINALIZING: 6,
-  DONE: 7,
+  DEVICE_PICKER: 2,
+  CONNECTING: 3,
+  REPAIR_PARTITION_TABLES: 4,
+  ERASE_DEVICE: 5,
+  FLASH_SYSTEM: 6,
+  FINALIZING: 7,
+  DONE: 8,
+}
+
+// Device types for the picker
+export const DeviceType = {
+  COMMA_3: 'comma3',  // comma 3 or 3X
+  COMMA_4: 'comma4',  // comma four
 }
 
 export const ErrorCode = {
@@ -181,9 +197,10 @@ export class FlashManager {
     } catch (err) {
       console.error('[Flash] Failed to initialize image worker')
       console.error(err)
-      if (err instanceof String && err.startsWith('Not enough storage')) {
+      const message = err?.message || String(err)
+      if (message.startsWith('Not enough storage')) {
         this.#setError(ErrorCode.STORAGE_SPACE)
-        this.#setMessage(err)
+        this.#setMessage(message)
       } else {
         this.#setError(ErrorCode.UNKNOWN)
       }
@@ -210,6 +227,12 @@ export class FlashManager {
     try {
       await this.device.connect(usb)
     } catch (err) {
+      // User cancelled the WebUSB dialog or no device was selected - not an error
+      if (err.name === 'NotFoundError') {
+        console.info('[Flash] No device selected')
+        this.#setStep(StepCode.READY)
+        return
+      }
       console.error('[Flash] Connection error', err)
       this.#setError(ErrorCode.LOST_CONNECTION)
       this.#setConnected(false)
@@ -353,9 +376,15 @@ export class FlashManager {
     this.#setProgress(0)
 
     // Exclude GPT images and persist image, and pick correct userdata image to flash
-    const systemImages = this.manifest
+    let systemImages = this.manifest
       .filter((image) => !image.gpt && image.name !== 'persist')
       .filter((image) => !image.name.startsWith('userdata_') || image.name === this.#userdataImage)
+
+    // In fast mode, skip the system partition (slowest to flash)
+    if (fastModeEnabled()) {
+      systemImages = systemImages.filter((image) => image.name !== 'system')
+      console.info('[Flash] Fast mode: skipping system partition')
+    }
 
     if (!systemImages.find((image) => image.name === this.#userdataImage)) {
       console.error(`[Flash] Did not find userdata image "${this.#userdataImage}"`)
@@ -414,7 +443,8 @@ export class FlashManager {
   async start() {
     if (this.step !== StepCode.READY) return
     await this.#connect()
-    if (this.error !== ErrorCode.NONE) return
+    // Check if connection was cancelled (step went back to READY) or failed
+    if (this.step === StepCode.READY || this.error !== ErrorCode.NONE) return
     let start = performance.now()
     await this.#repairPartitionTables()
     console.info(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
