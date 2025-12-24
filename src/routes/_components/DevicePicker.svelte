@@ -19,7 +19,7 @@
 
   <div class="flex flex-col sm:flex-row gap-6">
     <button
-      onClick={() => selected = DeviceType.COMMA_3}
+      onclick={() => selected = DeviceType.COMMA_3}
       class={`flex flex-col items-center gap-4 px-8 py-6 rounded-xl border-2 transition-colors ${
         selected === DeviceType.COMMA_3
           ? 'border-[#51ff00] bg-[#51ff00]/10'
@@ -31,7 +31,7 @@
     </button>
 
     <button
-      onClick={() => selected = DeviceType.COMMA_4}
+      onclick={() => selected = DeviceType.COMMA_4}
       class={`flex flex-col items-center gap-4 px-8 py-6 rounded-xl border-2 transition-colors ${
         selected === DeviceType.COMMA_4
           ? 'border-[#51ff00] bg-[#51ff00]/10'
@@ -44,7 +44,7 @@
   </div>
 
   <button
-    onClick={() => selected && onSelect(selected)}
+    onclick={() => selected && onSelect(selected)}
     disabled={!selected}
     class={`px-8 py-3 text-xl font-semibold rounded-full transition-colors ${
       selected

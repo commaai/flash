@@ -3,8 +3,12 @@
 
   import qdlPortsThree from '$lib/images/qdl-ports-three.svg'
   import qdlPortsFour from '$lib/images/qdl-ports-four.svg'
+  import { DeviceType } from "$lib/utils/manager"
 
   let { deviceType, onNext } = $props();
+
+  const isCommaFour = $derived(deviceType === DeviceType.COMMA_4)
+
 </script>
 
 <div class="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
@@ -47,7 +51,7 @@
   </p>
 
   <button
-    onClick={onNext}
+    onclick={onNext}
     class="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
   >
     Next

@@ -1,5 +1,8 @@
+import { browser } from "$app/environment"
+
 export const isWindows = () => {
-  const FORCE_WINDOWS = new URLSearchParams(window.location.search).has('windows')
+  if (!browser) return false
+  const FORCE_WINDOWS = new URLSearchParams(globalThis.window.location?.search).has('windows') ?? false
   if (FORCE_WINDOWS) {
     console.warn('[Platform] FORCE WINDOWS MODE ENABLED')
   }

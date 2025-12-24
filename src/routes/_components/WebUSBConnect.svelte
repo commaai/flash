@@ -15,7 +15,7 @@
     </p>
   </div>
   <button
-    onClick={onConnect}
+    onclick={onConnect}
     class="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
   >
     Connect

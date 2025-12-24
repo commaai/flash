@@ -1,6 +1,6 @@
-// Landing page component
 <script>
-  import comma from "$/lib/images/comma.svg"
+  // Landing page component
+  import comma from "$lib/images/comma.svg"
   let { onStart } = $props();
 </script>
 
@@ -13,7 +13,7 @@
     </p>
   </div>
   <button
-    onClick={onStart}
+    onclick={onStart}
     class="px-12 py-4 text-2xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
   >
     Start

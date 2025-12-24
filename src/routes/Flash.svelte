@@ -1,9 +1,19 @@
 <script>
-  import { ErrorCode, FlashManager, StepCode } from "$lib/utils/manager";
+  import { ErrorCode, FlashManager, StepCode, DeviceType } from "$lib/utils/manager";
   import { ImageManager } from "$lib/utils/image";
   import config from "$lib/config";
   import LinearProgress from "./_components/LinearProgress.svelte";
   import DeviceState from "./_components/DeviceState.svelte";
+
+  // Step Pages
+  import ConnectInstructions from "./_components/ConnectInstructions.svelte";
+  import DebugInfo from "./_components/DebugInfo.svelte";
+  import DevicePicker from "./_components/DevicePicker.svelte";
+  import LandingPage from "./_components/LandingPage.svelte";
+  import LinuxUnbind from "./_components/LinuxUnbind.svelte";
+  import WebUSBConnect from "./_components/WebUSBConnect.svelte";
+  import WindowsZadig from "./_components/WindowsZadig.svelte";
+  import Stepper from "./Stepper.svelte";
 
   import bolt from "$lib/images/bolt.svg";
   import cable from "$lib/images/cable.svg";
@@ -141,6 +151,16 @@
     return (event.returnValue = "Flash in progress. Are you sure you want to leave?");
   }
 
+  // Map screen names to step names
+  const screenToStep = {
+    device: 'Device',
+    zadig: 'Driver',
+    connect: 'Connect',
+    unbind: 'Unbind',
+    webusb: 'Flash',
+    flash: 'Flash',
+  }
+
   let step = $state(StepCode.INITIALIZING);
   let message = $state("");
   let progress = $state(-1);
@@ -191,10 +211,71 @@
   });
 
   // Handle user clicking the start button
-  const handleStart = () => qdlManager?.start();
-  const canStart = $derived(step === StepCode.READY && !error);
+  //const canStart = $derived(step === StepCode.READY && !error);
 
-  
+  // Transition to flash screen when connected
+  $effect(() => {
+    if (connected && wizardScreen === 'webusb') {
+      wizardScreen = 'flash'
+    }
+  })
+
+  // Handle user clicking start on landing page
+  const handleStart = () => {
+    step = StepCode.DEVICE_PICKER
+    wizardScreen = 'device'
+  }
+
+  // Handle device selection
+  const handleDeviceSelect = (deviceType) => {
+    selectedDevice = deviceType
+    if (isWindows()) {
+      wizardScreen = 'zadig'
+    } else {
+      wizardScreen = 'connect'
+    }
+  }
+
+  // Handle zadig done
+  const handleZadigDone = () => {
+    wizardScreen = 'connect'
+  }
+
+  // Handle connect instructions next
+  const handleConnectNext = () => {
+    // On Linux with comma 3/3X, need to unbind qcserial BEFORE showing WebUSB picker
+    if (isLinux() && selectedDevice === DeviceType.COMMA_3) {
+      wizardScreen = 'unbind'
+    } else {
+      wizardScreen = 'webusb'
+    }
+  }
+
+  // Handle linux unbind done
+  const handleUnbindDone = () => {
+    wizardScreen = 'webusb'
+  }
+
+  // Handle WebUSB connect button
+  const handleWebUSBConnect = () => {
+    qdlManager?.start()
+  }
+
+  // Handle going back in wizard
+  const handleWizardBack = (toStep) => {
+    const stepName = wizardSteps[toStep]
+    if (stepName === 'Device') {
+      step = StepCode.DEVICE_PICKER
+      wizardScreen = 'device'
+      selectedDevice = null
+    } else if (stepName === 'Driver') {
+      wizardScreen = 'zadig'
+    } else if (stepName === 'Connect') {
+      wizardScreen = 'connect'
+    } else if (stepName === 'Unbind') {
+      wizardScreen = 'unbind'
+    }
+  }
 
   // Handle retry on error
   const handleRetry = () => window.location.reload();
@@ -224,9 +305,6 @@
 
   // Build Discord help link based on device type
   const discordChannel = $derived(selectedDevice === DeviceType.COMMA_4 ? 'hw-four' : 'hw-three-3x')
-  const discordLink = showDiscordHelp && (
-    <></>
-  )
 
   // warn the user if they try to leave the page while flashing (but not if there's an error)
   $effect(() => {
@@ -241,60 +319,101 @@
   const canGoBack = $derived(step === StepCode.CONNECTING && !connected)
 </script>
 
-<div id="flash" class="wizard-screen relative flex flex-col gap-8 justify-center items-center h-full pt-16 pb-12 overflow-y-auto overflow-x-hidden">
-  {#if wizardStep >= 0}
-    <Stepper
-      steps={wizardSteps}
-      currentStep={wizardStep}
-      onStepClick={canGoBack ? handleWizardBack : () => {}}
-    />
-  {/if}
-  <div class={`p-8 rounded-full ${bgColor}`}>
-    <img
-      src={icon}
-      alt="status"
-      width={128}
-      height={128}
-      class={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
-    />
+<!-- Render landing page -->
+{#if wizardScreen === 'landing' && !error}
+  <LandingPage onStart={handleStart} />
+
+<!-- Render device picker -->
+{:else if wizardScreen === 'device' && !error}
+  <div class="relative h-full">
+    <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+    <DevicePicker onSelect={handleDeviceSelect} />
   </div>
-  <div class="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
-    <LinearProgress value={progress * 100} barColor={bgColor} />
+
+<!-- Render Windows Zadig driver setup -->
+{:else if wizardScreen === 'zadig' && !error}
+  <div class="relative h-full">
+    <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+    <WindowsZadig deviceType={selectedDevice} onNext={handleZadigDone} />
   </div>
-  <span class="text-3xl font-mono font-light">{title}</span>
-  <span class="text-xl px-8 max-w-xl text-center">
-    {description}
-    {#if showDiscordHelp}
-      If the problem persists, join <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">#{discordChannel}</a> on Discord for help.
+
+<!-- Render connect instructions -->
+{:else if wizardScreen === 'connect' && !error}
+  <div class="relative h-full">
+    <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+    <ConnectInstructions deviceType={selectedDevice} onNext={handleConnectNext} />
+  </div>
+
+<!-- Render linux unbind -->
+{:else if wizardScreen === 'unbind' && !error}
+  <div class="relative h-full">
+    <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+    <LinuxUnbind onNext={handleUnbindDone} />
+  </div>
+
+<!-- Render WebUSB connection screen -->
+{:else if wizardScreen === 'webusb' && !error}
+  <div class="relative h-full">
+      <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+      <WebUSBConnect onConnect={handleWebUSBConnect} />
+    </div>
+
+{:else}
+  <div id="flash" class="wizard-screen relative flex flex-col gap-8 justify-center items-center h-full pt-16 pb-12 overflow-y-auto overflow-x-hidden">
+    {#if wizardStep >= 0}
+      <Stepper
+        steps={wizardSteps}
+        currentStep={wizardStep}
+        onStepClick={canGoBack ? handleWizardBack : () => {}}
+      />
     {/if}
-    {#if error !== ErrorCode.NONE && hideRetry && !showDebugInfo}
+    <div class={`p-8 rounded-full ${bgColor}`}>
+      <img
+        src={icon}
+        alt="status"
+        width={128}
+        height={128}
+        class={`${iconStyle} ${!error && step !== StepCode.DONE ? 'animate-pulse' : ''}`}
+      />
+    </div>
+    <div class="w-full max-w-3xl px-8 transition-opacity duration-300" style={{ opacity: progress === -1 ? 0 : 1 }}>
+      <LinearProgress value={progress * 100} barColor={bgColor} />
+    </div>
+    <span class="text-3xl font-mono font-light">{title}</span>
+    <span class="text-xl px-8 max-w-xl text-center">
+      {description}
+      {#if showDiscordHelp}
+        If the problem persists, join <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline font-semibold">#{discordChannel}</a> on Discord for help.
+      {/if}
+      {#if error !== ErrorCode.NONE && hideRetry && !showDebugInfo}
+        <button
+          onclick={() => setShowDebugInfo(true)}
+          class="block mx-auto mt-2 text-sm text-gray-500 hover:text-gray-700 underline"
+        >
+          show debug info
+        </button>
+      {/if}
+    </span>
+    {#if error !== ErrorCode.NONE && !hideRetry}
       <button
-        onClick={() => setShowDebugInfo(true)}
-        class="block mx-auto mt-2 text-sm text-gray-500 hover:text-gray-700 underline"
+        class="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
+        onclick={handleRetry}
       >
-        show debug info
+        Retry
       </button>
     {/if}
-  </span>
-  {#if error !== ErrorCode.NONE && !hideRetry}
-    <button
-      class="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
-      onClick={handleRetry}
-    >
-      Retry
-    </button>
-  {/if}
-  {#if connected}
-    <DeviceState {serial} />
-  {/if}
-  {#if error !== ErrorCode.NONE && (!hideRetry || showDebugInfo)}
-    <DebugInfo
-      error={error}
-      step={step}
-      selectedDevice={selectedDevice}
-      serial={serial}
-      message={message}
-      onClose={hideRetry ? () => setShowDebugInfo(false) : undefined}
-    />
-  {/if}
-</div>
+    {#if connected}
+      <DeviceState {serial} />
+    {/if}
+    {#if error !== ErrorCode.NONE && (!hideRetry || showDebugInfo)}
+      <DebugInfo
+        error={error}
+        step={step}
+        selectedDevice={selectedDevice}
+        serial={serial}
+        message={message}
+        onClose={hideRetry ? () => setShowDebugInfo(false) : undefined}
+      />
+    {/if}
+  </div>
+{/if}

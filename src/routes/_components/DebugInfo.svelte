@@ -92,7 +92,7 @@ ${consoleLogs.slice(-30).map(l => `[${l.time}] [${l.level}] ${l.message}`).join(
     </p>
     {#if onClose}
       <button
-        onClick={onClose}
+        onclick={onClose}
         class="text-gray-400 hover:text-gray-600 shrink-0"
         title="Hide debug info"
       >
@@ -106,7 +106,7 @@ ${consoleLogs.slice(-30).map(l => `[${l.time}] [${l.level}] ${l.message}`).join(
     {getDebugReport()}
   </pre>
   <button
-    onClick={handleCopy}
+    onclick={handleCopy}
     class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"
   >
     {copied ? 'Copied!' : 'Copy Debug Info'}

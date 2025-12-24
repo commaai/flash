@@ -27,7 +27,7 @@
       {DETACH_SCRIPT}
     </pre>
     <button
-      onClick={handleCopy}
+      onclick={handleCopy}
       class="absolute top-2 right-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 active:bg-blue-400 text-white text-sm rounded transition-colors"
     >
       {copied ? 'Copied!' : 'Copy'}
@@ -35,7 +35,7 @@
   </div>
 
   <button
-    onClick={onNext}
+    onclick={onNext}
     class="px-8 py-3 text-xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
   >
     Done

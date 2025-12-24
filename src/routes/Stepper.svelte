@@ -1,6 +1,5 @@
-// Stepper/breadcrumb component
-
 <script>
+  // Stepper/breadcrumb component
   let { steps, currentStep, onStepClick } = $props();
 </script>
 
@@ -14,7 +13,7 @@
         <div class={`w-8 h-0.5 mx-1 ${isCompleted ? 'bg-[#51ff00]' : 'bg-gray-300'}`}></div>
       {/if}
       <button
-        onClick={() => isClickable && onStepClick(index)}
+        onclick={() => isClickable && onStepClick(index)}
         disabled={!isClickable}
         class={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
           isCurrent
