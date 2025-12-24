@@ -24,8 +24,8 @@
         }`}
       >
         {#if isCompleted} 
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style:stroke-width="2" style:stroke-linecap="round" style:stroke-linejoin="round" style>
+            <path d="M5 13l4 4L19 7" />
           </svg>
         {/if}
         {stepName}

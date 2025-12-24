@@ -1,8 +1,9 @@
 <script>
   // Debug info component for error reporting
-  import { DeviceType } from "$lib/utils/manager"
+  import { ErrorCode, StepCode, DeviceType } from "$lib/utils/manager";
+  import { isLinux } from "$lib/utils/platform"
   
-  let { error, step, selectedDevice, serial, message, onClose } = $props();
+  let { error, step, selectedDevice, serial, message, onclose } = $props();
 
   // Capture console logs for debug reports
   const consoleLogs = []
@@ -90,9 +91,9 @@ ${consoleLogs.slice(-30).map(l => `[${l.time}] [${l.level}] ${l.message}`).join(
       {' '}or{' '}
       <a href="https://github.com/commaai/flash/issues/new" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">GitHub Issues</a>.
     </p>
-    {#if onClose}
+    {#if onclose}
       <button
-        onclick={onClose}
+        onclick={onclose}
         class="text-gray-400 hover:text-gray-600 shrink-0"
         title="Hide debug info"
       >
