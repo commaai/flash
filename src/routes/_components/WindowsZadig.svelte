@@ -1,6 +1,7 @@
-<script>
+<script lang="ts">
   import zadigCreateNewDevice from '$lib/images/zadig_create_new_device.png'
   import zadigForm from '$lib/images/zadig_form.png'
+  import { DeviceType } from "$lib/utils/manager"
 
   // Windows Zadig driver setup component
   const PRODUCT_ID = '9008'
