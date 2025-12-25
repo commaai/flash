@@ -26,6 +26,25 @@
   ]
 
   let { children } = $props();
+  let fontsLoaded = $state(false);
+
+  // Explicitly load fonts before rendering to prevent FOUT
+  async function loadFonts() {
+    try {
+      await Promise.all([
+        document.fonts.load('16px "Inter Variable"'),
+        document.fonts.load('16px "JetBrains Mono Variable"'),
+      ]);
+      fontsLoaded = true;
+    } catch (error) {
+      console.warn('Font preload failed:', error);
+      fontsLoaded = true;
+    }
+  }
+
+  $effect.pre(() => {
+    loadFonts();
+  })
 </script>
 
 <svelte:head>
@@ -35,4 +54,6 @@
   {/each}
 </svelte:head>
 
-{@render children()}
+{#if fontsLoaded}
+  {@render children()}
+{/if}
