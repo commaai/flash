@@ -358,7 +358,7 @@
 
 {:else}
   <div id="flash" class="wizard-screen relative flex flex-col gap-8 justify-center items-center h-full pt-16 pb-12 overflow-y-auto overflow-x-hidden">
-    {#if wizardStep >= 0}
+    {#if wizardStep >= 0 && error != ErrorCode.REQUIREMENTS_NOT_MET}
       <Stepper
         steps={wizardSteps}
         currentStep={wizardStep}
