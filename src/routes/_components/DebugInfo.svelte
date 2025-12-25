@@ -2,20 +2,11 @@
   // Debug info component for error reporting
   import { ErrorCode, StepCode, DeviceType } from "$lib/utils/manager";
   import { isLinux } from "$lib/utils/platform"
+  import { getContext } from 'svelte';
   
   let { error, step, selectedDevice, serial, message, onclose } = $props();
 
-  // Capture console logs for debug reports
-  const consoleLogs = []
-  const MAX_LOGS = 100
-  const originalConsole = { log: console.log, warn: console.warn, error: console.error, info: console.info, debug: console.debug };
-  ['log', 'warn', 'error', 'info', 'debug'].forEach(level => {
-    console[level] = (...args) => {
-      consoleLogs.push({ level, time: new Date().toISOString(), message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') })
-      if (consoleLogs.length > MAX_LOGS) consoleLogs.shift()
-      originalConsole[level]?.(...args)
-    }
-  })
+  const consoleLogs = getContext('captured-logs')
 
   let copied  = $state(false);
 
@@ -23,7 +14,6 @@
     const deviceName = selectedDevice === DeviceType.COMMA_4 ? 'comma four' : selectedDevice === DeviceType.COMMA_3 ? 'comma 3/3X' : 'unknown'
     const errorName = Object.keys(ErrorCode).find(k => ErrorCode[k] === error) || 'UNKNOWN'
     const stepName = Object.keys(StepCode).find(k => StepCode[k] === step) || 'UNKNOWN'
-
     // Get detailed OS info
     const ua = navigator.userAgent
     let os = 'Unknown'
@@ -103,9 +93,7 @@ ${consoleLogs.slice(-30).map(l => `[${l.time}] [${l.level}] ${l.message}`).join(
       </button>
     {/if}
   </div>
-  <pre class="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-x-auto max-h-32 sm:max-h-48 font-mono debug-scrollbar whitespace-pre-wrap break-all">
-    {getDebugReport()}
-  </pre>
+  <pre class="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-x-auto max-h-32 sm:max-h-48 font-mono debug-scrollbar whitespace-pre-wrap break-all">{getDebugReport()}</pre>
   <button
     onclick={handleCopy}
     class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"

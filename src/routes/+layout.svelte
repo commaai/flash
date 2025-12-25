@@ -2,6 +2,22 @@
   import "./layout.css";
   import "@fontsource-variable/inter";
   import "@fontsource-variable/jetbrains-mono";
+  import { setContext } from 'svelte';
+
+
+  // Capture console logs for debug reports
+  const consoleLogs = []
+  const MAX_LOGS = 100
+  const originalConsole = { log: console.log, warn: console.warn, error: console.error, info: console.info, debug: console.debug };
+  ['log', 'warn', 'error', 'info', 'debug'].forEach(level => {
+    console[level] = (...args) => {
+      consoleLogs.push({ level, time: new Date().toISOString(), message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') })
+      if (consoleLogs.length > MAX_LOGS) consoleLogs.shift()
+      originalConsole[level]?.(...args)
+    }
+  })
+
+  setContext('captured-logs', consoleLogs);
 
   import comma from '$lib/images/comma.svg'
   import bolt from '$lib/images/bolt.svg'
