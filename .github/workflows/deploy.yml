@@ -23,14 +23,18 @@ jobs:
       - id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - run: bun install
-      - run: bun run build
+      - name: "Install Dependencies"
+        run: bun install
+
+      - name: "Build"
+        run: bun run build
         env:
+          BASE_PATH: ''
           VITE_PUBLIC_GIT_SHA: ${{ steps.vars.outputs.sha_short }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./build
 
   deploy:
     environment:
