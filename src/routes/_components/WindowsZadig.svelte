@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   import zadigCreateNewDevice from '$lib/images/zadig_create_new_device.png'
   import zadigForm from '$lib/images/zadig_form.png'
   import { DeviceType } from "$lib/utils/manager"

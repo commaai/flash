@@ -94,12 +94,10 @@
     },
     [ErrorCode.REQUIREMENTS_NOT_MET]: {
       status: 'Unsupported Browser',
-      // TODO Verify that this works lol
       description: `
           This browser doesn&apos;t support WebUSB. Please use a compatible browser like 
           <a href="https://www.google.com/chrome/" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline font-semibold">
-            Google Chrome
-          </a>.`,
+            Google Chrome</a>.`,
       hideRetry: true,
     },
     [ErrorCode.STORAGE_SPACE]: {
@@ -320,7 +318,7 @@
 </script>
 
 <!-- Render landing page -->
-{#if wizardScreen === 'landing' && !error}
+{#if wizardScreen === 'landing' && !(error && error != ErrorCode.REQUIREMENTS_NOT_MET)}
   <LandingPage onStart={handleStart} />
 
 <!-- Render device picker -->
