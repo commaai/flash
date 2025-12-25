@@ -7,9 +7,11 @@ import { createSteps, withProgress } from './progress'
 
 // Fast mode for development - skips flashing system partition (the slowest)
 // Enable with ?fast=1 in URL
-const FAST_MODE = new URLSearchParams(window.location.search).has('fast')
-if (FAST_MODE) {
-  console.warn('[Flash] FAST MODE ENABLED - skipping system partition')
+const fastModeEnabled = () => {
+  const FAST_MODE = new URLSearchParams(window.location.search).has('fast')
+  if (FAST_MODE()) {
+    console.warn('[Flash] FAST MODE ENABLED - skipping system partition')
+  }
 }
 
 export const StepCode = {
@@ -162,7 +164,7 @@ export class FlashManager {
 
   /** @returns {boolean} */
   #checkRequirements() {
-    if (typeof navigator.usb === 'undefined') {
+    if (typeof globalThis.navigator.usb === 'undefined') {
       console.error('[Flash] WebUSB not supported')
       this.#setError(ErrorCode.REQUIREMENTS_NOT_MET)
       return false
@@ -379,7 +381,7 @@ export class FlashManager {
       .filter((image) => !image.name.startsWith('userdata_') || image.name === this.#userdataImage)
 
     // In fast mode, skip the system partition (slowest to flash)
-    if (FAST_MODE) {
+    if (fastModeEnabled()) {
       systemImages = systemImages.filter((image) => image.name !== 'system')
       console.info('[Flash] Fast mode: skipping system partition')
     }

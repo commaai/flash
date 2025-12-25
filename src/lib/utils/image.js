@@ -1,7 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { XzReadableStream } from 'xz-decompress'
-
-import { fetchStream } from './stream'
+import xz from "xz-decompress";
+import { fetchStream } from "./stream";
 
 /**
  * Progress callback
@@ -11,7 +9,7 @@ import { fetchStream } from './stream'
  * @returns {void}
  */
 
-const MIN_QUOTA_GB = 5.25
+const MIN_QUOTA_GB = 5.25;
 
 export class ImageManager {
   /** @type {FileSystemDirectoryHandle} */
@@ -19,7 +17,7 @@ export class ImageManager {
 
   async init() {
     if (!this.root) {
-      this.root = await navigator.storage.getDirectory()
+      this.root = await globalThis.navigator.storage.getDirectory()
       // Clean up any leftover files from previous sessions
       try {
         await this.root.remove({ recursive: true })
@@ -32,7 +30,7 @@ export class ImageManager {
       console.info('[ImageManager] Initialized')
     }
 
-    const estimate = await navigator.storage.estimate()
+    const estimate = await globalThis.navigator.storage.estimate()
     const quotaGB = (estimate.quota || 0) / (1024 ** 3)
     if (quotaGB < MIN_QUOTA_GB) {
       throw new Error(`Not enough storage: ${quotaGB.toFixed(1)}GB free, need ${MIN_QUOTA_GB.toFixed(1)}GB`)
@@ -62,7 +60,7 @@ export class ImageManager {
     let stream = await fetchStream(archiveUrl, { mode: 'cors' }, { onProgress })
     try {
       if (image.compressed) {
-        stream = new XzReadableStream(stream)
+        stream = new xz.XzReadableStream(stream)
       }
       await stream.pipeTo(writable)
       onProgress?.(1)
@@ -89,16 +87,4 @@ export class ImageManager {
 
     return fileHandle.getFile()
   }
-}
-
-/** @returns {React.MutableRefObject<ImageManager>} */
-export function useImageManager() {
-  const apiRef = useRef()
-
-  useEffect(() => {
-    const worker = new ImageManager()
-    apiRef.current = worker
-  }, [])
-
-  return apiRef
 }

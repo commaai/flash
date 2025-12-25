@@ -11,6 +11,7 @@
 /.pnp
 .pnp.js
 /.pnpm-store
+/.svelte-kit
 
 # testing
 /coverage
@@ -41,3 +42,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
