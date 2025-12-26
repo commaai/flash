@@ -3,6 +3,7 @@ set -e
 
 BRANCH="${1:-$(git branch --show-current)}"
 
+bun install
 bun run build
 bunx wrangler pages deploy dist --project-name=connect --branch="$BRANCH"
 
