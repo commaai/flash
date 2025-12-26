@@ -428,6 +428,7 @@ export class FlashManager {
     if (!await this.device.setActiveSlot('a')) {
       console.error('[Flash] Failed to update slot')
       this.#setError(ErrorCode.FINALIZING_FAILED)
+      return
     }
 
     // Reboot the device
