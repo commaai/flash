@@ -425,8 +425,10 @@ export class FlashManager {
     this.#setMessage('Finalizing...')
 
     // Set bootable LUN and update active partitions
-    if (!await this.device.setActiveSlot('a')) {
-      console.error('[Flash] Failed to update slot')
+    try {
+      await this.device.setActiveSlot('a')
+    } catch (err) {
+      console.error('[Flash] Failed to update slot', err)
       this.#setError(ErrorCode.FINALIZING_FAILED)
       return
     }
