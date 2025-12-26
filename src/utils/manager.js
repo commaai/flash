@@ -424,11 +424,12 @@ export class FlashManager {
     this.#setProgress(-1)
     this.#setMessage('Finalizing...')
 
-    // Set bootable LUN and update active partitions
+    // Set bootable LUN to slot A (LUN 1)
+    // GPT images already have correct A/B flags, no need to manipulate them
     try {
-      await this.device.setActiveSlot('a')
+      await this.device.setBootableLun(1)
     } catch (err) {
-      console.error('[Flash] Failed to update slot', err)
+      console.error('[Flash] Failed to set bootable LUN', err)
       this.#setError(ErrorCode.FINALIZING_FAILED)
       return
     }

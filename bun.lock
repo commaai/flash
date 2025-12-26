@@ -5,7 +5,7 @@
     "": {
       "name": "@commaai/flash",
       "dependencies": {
-        "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#ef82d1e517cbd7da0f816a6cf1f576841b66d63c",
+        "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#7177fde779bc6764727130969af1841d71a4c43c",
         "@fontsource-variable/inter": "^5.2.5",
         "@fontsource-variable/jetbrains-mono": "^5.2.5",
         "react": "^18.3.1",
@@ -81,7 +81,7 @@
 
     "@babel/types": ["@babel/types@7.28.5", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.28.5" } }, "sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA=="],
 
-    "@commaai/qdl": ["@commaai/qdl@github:commaai/qdl.js#ef82d1e", { "dependencies": { "@incognitojam/tiny-struct": "npm:@jsr/incognitojam__tiny-struct@^0.1.2", "arg": "^5.0.2", "crc-32": "^1.2.2", "fast-xml-parser": "^5.0.8", "usb": "^2.15.0" }, "peerDependencies": { "typescript": "^5.7.3" }, "bin": { "simg2img.js": "dist/bin/simg2img.js", "qdl.js": "dist/bin/qdl.js" } }, "commaai-qdl.js-ef82d1e"],
+    "@commaai/qdl": ["@commaai/qdl@github:commaai/qdl.js#7177fde", { "dependencies": { "@incognitojam/tiny-struct": "npm:@jsr/incognitojam__tiny-struct@^0.1.2", "arg": "^5.0.2", "crc-32": "^1.2.2", "fast-xml-parser": "^5.0.8", "usb": "^2.15.0" }, "peerDependencies": { "typescript": "^5.7.3" }, "bin": { "simg2img.js": "dist/bin/simg2img.js", "qdl.js": "dist/bin/qdl.js" } }, "commaai-qdl.js-7177fde"],
 
     "@csstools/color-helpers": ["@csstools/color-helpers@5.1.0", "", {}, "sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA=="],
 
