@@ -392,17 +392,17 @@ export class FlashManager {
 
     try {
       for await (const image of systemImages) {
-        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
+        // Flash system to slot A only (large, slow), other A/B partitions to both slots
+        const flashBothSlots = image.hasAB && image.name !== 'system'
+        const [onDownload, onFlash] = createSteps([1, flashBothSlots ? 2 : 1], this.#setProgress.bind(this))
 
         this.#setMessage(`Downloading ${image.name}`)
         await this.imageManager.downloadImage(image, onDownload)
         const blob = await this.imageManager.getImage(image)
         onDownload(1.0)
 
-        // Flash image to each slot
-        const slots = image.hasAB ? ['_a', '_b'] : ['']
+        const slots = flashBothSlots ? ['_a', '_b'] : (image.hasAB ? ['_a'] : [''])
         for (const [slot, onSlotProgress] of withProgress(slots, onFlash)) {
-          // NOTE: userdata image name does not match partition name
           const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
 
           this.#setMessage(`Flashing ${partitionName}`)
