@@ -17,10 +17,6 @@ export function setTag(key, value) {
   Sentry.setTag(key, value)
 }
 
-export function setContext(key, context) {
-  Sentry.setContext(key, context)
-}
-
 export function addBreadcrumb({ category, message, level = 'info', data }) {
   Sentry.addBreadcrumb({ category, message, level, data })
 }

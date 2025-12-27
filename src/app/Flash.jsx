@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import posthog from 'posthog-js'
-import { addBreadcrumb, setTags, setTag, setContext, captureSessionSummary } from '../utils/telemetry'
+import { addBreadcrumb, setTags, setTag, captureSessionSummary } from '../utils/telemetry'
 
 import { FlashManager, StepCode, ErrorCode, DeviceType } from '../utils/manager'
 import { useImageManager } from '../utils/image'
@@ -54,38 +54,6 @@ const originalConsole = { log: console.log, warn: console.warn, error: console.e
 
 // Unique per-page session id for correlating events
 const SESSION_ID = (crypto && 'randomUUID' in crypto) ? crypto.randomUUID() : String(Math.random()).slice(2)
-
-// Helper for building environment metadata
-function buildEnvMeta() {
-  const ua = navigator.userAgent
-  let os = 'Unknown'
-  if (ua.includes('Windows NT 10.0')) os = 'Windows 10/11'
-  else if (ua.includes('Windows NT 6.3')) os = 'Windows 8.1'
-  else if (ua.includes('Windows NT 6.2')) os = 'Windows 8'
-  else if (ua.includes('Windows NT 6.1')) os = 'Windows 7'
-  else if (ua.includes('Mac OS X')) {
-    const match = ua.match(/Mac OS X (\d+[._]\d+[._]?\d*)/)
-    os = match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS'
-  } else if (ua.includes('Linux')) {
-    os = 'Linux'
-    if (ua.includes('Ubuntu')) os += ' (Ubuntu)'
-    else if (ua.includes('Fedora')) os += ' (Fedora)'
-    else if (ua.includes('Debian')) os += ' (Debian)'
-  } else if (ua.includes('CrOS')) os = 'ChromeOS'
-
-  const sandboxHints = []
-  if (ua.includes('snap')) sandboxHints.push('Snap')
-  if (ua.includes('Flatpak')) sandboxHints.push('Flatpak')
-  if (navigator.userAgentData?.brands?.some(b => b.brand.includes('snap'))) sandboxHints.push('Snap')
-
-  return {
-    os,
-    sandbox: sandboxHints.length ? sandboxHints.join(', ') : 'None detected',
-    browser: navigator.userAgent,
-    url: window.location.href,
-    version: import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev',
-  }
-}
 
 // Debug info component for error reporting
 function DebugInfo({ error, step, selectedDevice, serial, message, onClose }) {
@@ -717,7 +685,6 @@ export default function Flash() {
   // Telemetry: set static tags/context once
   useEffect(() => {
     setTags({ session_id: SESSION_ID })
-    setContext('env', buildEnvMeta())
   }, [])
 
   // Telemetry: tag device selection
@@ -751,14 +718,7 @@ export default function Flash() {
     })
 
     // Sentry (for errors with full context)
-    const meta = {
-      ...buildEnvMeta(),
-      selectedDevice,
-      connected,
-      serial,
-      step,
-      message,
-    }
+    const meta = { selectedDevice, serial, step, message }
     const tail = consoleLogs.slice(-200)
     captureSessionSummary({
       sessionId: SESSION_ID,
