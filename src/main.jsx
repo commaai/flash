@@ -10,13 +10,11 @@ import './index.css'
 import App from './app'
 
 // Initialize PostHog
-if (import.meta.env.VITE_PUBLIC_POSTHOG_KEY) {
-  posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_KEY, {
-    api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-    capture_pageview: false,  // We'll track manually
-    persistence: 'memory',    // Don't persist across sessions
-  })
-}
+posthog.init('phc_O4kXIsdyB2cm9Wne1pwJkj5jk9Ua51ABVPAhtSuYQ4V', {
+  api_host: 'https://us.i.posthog.com',
+  capture_pageview: false,  // We'll track manually
+  persistence: 'memory',    // Don't persist across sessions
+})
 
 // Initialize Sentry (no-op if DSN unset)
 initSentry()

@@ -26,19 +26,14 @@ async function ensureSentryBundle() {
   await loadScript(url)
 }
 
-/** Initialize Sentry if `VITE_SENTRY_DSN` is provided. No-op otherwise. */
+const SENTRY_DSN = 'https://acb8cfad1992fafc3dc90ab1bfa3d07f@o33823.ingest.us.sentry.io/4510604761825280'
+
+/** Initialize Sentry */
 export async function initSentry(options = {}) {
   if (sentryInited || sentryInitPromise) return sentryInitPromise
 
-  const dsn = import.meta.env.VITE_SENTRY_DSN
-  if (!dsn) {
-    // No DSN configured; keep helpers as no-ops
-    sentryInited = false
-    sentryInitPromise = Promise.resolve(false)
-    return sentryInitPromise
-  }
-
   sentryInitPromise = (async () => {
+    const dsn = SENTRY_DSN
     try {
       await ensureSentryBundle()
       if (!window.Sentry) return false
