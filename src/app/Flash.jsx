@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import posthog from 'posthog-js'
+import * as Sentry from '@sentry/react'
 
 import { FlashManager, StepCode, ErrorCode, DeviceType } from '../utils/manager'
 import { useImageManager } from '../utils/image'
@@ -38,9 +40,9 @@ function ImagePreloader() {
   )
 }
 
-// Capture console logs for debug reports
+// Capture console logs for debug reports and telemetry
 const consoleLogs = []
-const MAX_LOGS = 100
+const MAX_LOGS = 500
 const originalConsole = { log: console.log, warn: console.warn, error: console.error, info: console.info, debug: console.debug }
 ;['log', 'warn', 'error', 'info', 'debug'].forEach(level => {
   console[level] = (...args) => {
@@ -622,6 +624,7 @@ export default function Flash() {
   const [serial, setSerial] = useState(null)
   const [selectedDevice, setSelectedDevice] = useState(null)
   const [wizardScreen, setWizardScreen] = useState('landing') // 'landing', 'device', 'zadig', 'connect', 'unbind', 'webusb', 'flash'
+  const reportSentRef = useRef(false)
 
   const qdlManager = useRef(null)
   const imageManager = useImageManager()
@@ -643,7 +646,7 @@ export default function Flash() {
           onProgressChange: setProgress,
           onErrorChange: setError,
           onConnectionChange: setConnected,
-          onSerialChange: setSerial
+          onSerialChange: setSerial,
         })
 
         // Initialize the manager
@@ -654,6 +657,45 @@ export default function Flash() {
         setError(ErrorCode.UNKNOWN)
       })
   }, [config, imageManager.current])
+
+  // Helper to send a single pass/fail summary
+  function sendSessionSummary(result) {
+    if (reportSentRef.current) return
+    reportSentRef.current = true
+
+    const errorName = Object.keys(ErrorCode).find(k => ErrorCode[k] === error) || 'NONE'
+    const stepName = Object.keys(StepCode).find(k => StepCode[k] === step) || 'UNKNOWN'
+
+    // PostHog
+    posthog.capture('flash_session', {
+      result,
+      serial,
+      device_type: selectedDevice,
+      error_code: errorName,
+      step: stepName,
+    })
+
+    // Sentry
+    Sentry.captureMessage('flash_session', {
+      level: result === 'pass' ? 'info' : 'error',
+      tags: { result, serial, device_type: selectedDevice, error_code: errorName, step: stepName },
+      extra: { console_tail: consoleLogs.slice(-200) },
+    })
+  }
+
+  // Send report on failure
+  useEffect(() => {
+    if (error !== ErrorCode.NONE && !reportSentRef.current) {
+      sendSessionSummary('fail')
+    }
+  }, [error])
+
+  // Send report on success
+  useEffect(() => {
+    if (step === StepCode.DONE && error === ErrorCode.NONE && !reportSentRef.current) {
+      sendSessionSummary('pass')
+    }
+  }, [step, error])
 
   // Transition to flash screen when connected
   useEffect(() => {
