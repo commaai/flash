@@ -664,9 +664,10 @@ export default function Flash() {
     }
   }, [selectedDevice])
 
-  // OpenReplay: set serial when available
+  // OpenReplay: set serial as user ID and metadata
   useEffect(() => {
     if (serial) {
+      tracker.setUserID(serial)
       tracker.setMetadata('serial', serial)
     }
   }, [serial])
@@ -676,14 +677,14 @@ export default function Flash() {
     if (error !== ErrorCode.NONE && !reportSentRef.current) {
       reportSentRef.current = true
       const errorName = Object.keys(ErrorCode).find(k => ErrorCode[k] === error) || 'UNKNOWN'
-      tracker.event('flash_result', { result: 'fail', errorCode: error, errorName, step })
+      tracker.event('flash_result', { result: 'fail', errorCode: error, errorName, step, serial })
     }
   }, [error])
 
   useEffect(() => {
     if (step === StepCode.DONE && error === ErrorCode.NONE && !reportSentRef.current) {
       reportSentRef.current = true
-      tracker.event('flash_result', { result: 'pass' })
+      tracker.event('flash_result', { result: 'pass', serial })
     }
   }, [step, error])
 
