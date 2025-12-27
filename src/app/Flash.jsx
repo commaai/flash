@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import posthog from 'posthog-js'
-import { addBreadcrumb, setTags, setTag, captureSessionSummary } from '../utils/telemetry'
+import * as Sentry from '@sentry/react'
 
 import { FlashManager, StepCode, ErrorCode, DeviceType } from '../utils/manager'
 import { useImageManager } from '../utils/image'
@@ -51,9 +51,6 @@ const originalConsole = { log: console.log, warn: console.warn, error: console.e
     originalConsole[level]?.(...args)
   }
 })
-
-// Unique per-page session id for correlating events
-const SESSION_ID = (crypto && 'randomUUID' in crypto) ? crypto.randomUUID() : String(Math.random()).slice(2)
 
 // Debug info component for error reporting
 function DebugInfo({ error, step, selectedDevice, serial, message, onClose }) {
@@ -644,33 +641,12 @@ export default function Flash() {
       .then((programmer) => {
         // Create QDL manager with callbacks that update React state
         qdlManager.current = new FlashManager(programmer, {
-          onStepChange: (s) => {
-            setStep(s)
-            addBreadcrumb({ category: 'flash', message: `step:${s}`, level: 'info', data: { step: s } })
-            setTag('last_step', String(s))
-          },
-          onMessageChange: (m) => {
-            setMessage(m)
-            if (m) addBreadcrumb({ category: 'flash', message: m, level: 'info' })
-          },
-          onProgressChange: (p) => {
-            setProgress(p)
-          },
-          onErrorChange: (e) => {
-            setError(e)
-            if (e !== ErrorCode.NONE) {
-              addBreadcrumb({ category: 'flash', message: 'error', level: 'error', data: { errorCode: e } })
-              setTag('error_code', String(e))
-            }
-          },
-          onConnectionChange: (c) => {
-            setConnected(c)
-            addBreadcrumb({ category: 'flash', message: c ? 'connected' : 'disconnected', level: c ? 'info' : 'warning' })
-          },
-          onSerialChange: (sn) => {
-            setSerial(sn)
-            setTag('serial', sn)
-          }
+          onStepChange: setStep,
+          onMessageChange: setMessage,
+          onProgressChange: setProgress,
+          onErrorChange: setError,
+          onConnectionChange: setConnected,
+          onSerialChange: setSerial,
         })
 
         // Initialize the manager
@@ -682,24 +658,6 @@ export default function Flash() {
       })
   }, [config, imageManager.current])
 
-  // Telemetry: set static tags/context once
-  useEffect(() => {
-    setTags({ session_id: SESSION_ID })
-  }, [])
-
-  // Telemetry: tag device selection
-  useEffect(() => {
-    if (selectedDevice) {
-      setTag('device_type', selectedDevice)
-      addBreadcrumb({ category: 'flash', message: `device:${selectedDevice}`, level: 'info' })
-    }
-  }, [selectedDevice])
-
-  // Telemetry: wizard screen transitions
-  useEffect(() => {
-    if (wizardScreen) addBreadcrumb({ category: 'wizard', message: wizardScreen, level: 'info' })
-  }, [wizardScreen])
-
   // Helper to send a single pass/fail summary
   function sendSessionSummary(result) {
     if (reportSentRef.current) return
@@ -708,7 +666,7 @@ export default function Flash() {
     const errorName = Object.keys(ErrorCode).find(k => ErrorCode[k] === error) || 'NONE'
     const stepName = Object.keys(StepCode).find(k => StepCode[k] === step) || 'UNKNOWN'
 
-    // PostHog event
+    // PostHog
     posthog.capture('flash_session', {
       result,
       serial,
@@ -717,16 +675,11 @@ export default function Flash() {
       step: stepName,
     })
 
-    // Sentry (for errors with full context)
-    const meta = { selectedDevice, serial, step, message }
-    const tail = consoleLogs.slice(-200)
-    captureSessionSummary({
-      sessionId: SESSION_ID,
-      result,
-      errorCode: error,
-      step,
-      meta,
-      consoleTail: tail,
+    // Sentry
+    Sentry.captureMessage('flash_session', {
+      level: result === 'pass' ? 'info' : 'error',
+      tags: { result, serial, device_type: selectedDevice, error_code: errorName, step: stepName },
+      extra: { console_tail: consoleLogs.slice(-200) },
     })
   }
 
