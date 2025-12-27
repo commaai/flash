@@ -16,6 +16,7 @@
     "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#21d7be79fa5178f253d32a0879bd8bdd4fa37e30",
     "@fontsource-variable/inter": "^5.2.5",
     "@fontsource-variable/jetbrains-mono": "^5.2.5",
+    "@openreplay/tracker": "^17.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "xz-decompress": "^0.2.2"

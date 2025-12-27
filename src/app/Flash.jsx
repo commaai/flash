@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { addBreadcrumb, setTags, setTag, setContext, captureSessionSummary } from '../utils/telemetry'
+import { tracker } from '../main'
 
 import { FlashManager, StepCode, ErrorCode, DeviceType } from '../utils/manager'
 import { useImageManager } from '../utils/image'
@@ -50,41 +50,6 @@ const originalConsole = { log: console.log, warn: console.warn, error: console.e
     originalConsole[level]?.(...args)
   }
 })
-
-// Unique per-page session id for correlating events
-const SESSION_ID = (crypto && 'randomUUID' in crypto) ? crypto.randomUUID() : String(Math.random()).slice(2)
-
-// Helper for building environment metadata
-function buildEnvMeta() {
-  const ua = navigator.userAgent
-  let os = 'Unknown'
-  if (ua.includes('Windows NT 10.0')) os = 'Windows 10/11'
-  else if (ua.includes('Windows NT 6.3')) os = 'Windows 8.1'
-  else if (ua.includes('Windows NT 6.2')) os = 'Windows 8'
-  else if (ua.includes('Windows NT 6.1')) os = 'Windows 7'
-  else if (ua.includes('Mac OS X')) {
-    const match = ua.match(/Mac OS X (\d+[._]\d+[._]?\d*)/)
-    os = match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS'
-  } else if (ua.includes('Linux')) {
-    os = 'Linux'
-    if (ua.includes('Ubuntu')) os += ' (Ubuntu)'
-    else if (ua.includes('Fedora')) os += ' (Fedora)'
-    else if (ua.includes('Debian')) os += ' (Debian)'
-  } else if (ua.includes('CrOS')) os = 'ChromeOS'
-
-  const sandboxHints = []
-  if (ua.includes('snap')) sandboxHints.push('Snap')
-  if (ua.includes('Flatpak')) sandboxHints.push('Flatpak')
-  if (navigator.userAgentData?.brands?.some(b => b.brand.includes('snap'))) sandboxHints.push('Snap')
-
-  return {
-    os,
-    sandbox: sandboxHints.length ? sandboxHints.join(', ') : 'None detected',
-    browser: navigator.userAgent,
-    url: window.location.href,
-    version: import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev',
-  }
-}
 
 // Debug info component for error reporting
 function DebugInfo({ error, step, selectedDevice, serial, message, onClose }) {
@@ -675,34 +640,12 @@ export default function Flash() {
       .then((programmer) => {
         // Create QDL manager with callbacks that update React state
         qdlManager.current = new FlashManager(programmer, {
-          onStepChange: (s) => {
-            setStep(s)
-            addBreadcrumb({ category: 'flash', message: `step:${s}`, level: 'info', data: { step: s } })
-            setTag('last_step', String(s))
-          },
-          onMessageChange: (m) => {
-            setMessage(m)
-            if (m) addBreadcrumb({ category: 'flash', message: m, level: 'info' })
-          },
-          onProgressChange: (p) => {
-            setProgress(p)
-          },
-          onErrorChange: (e) => {
-            setError(e)
-            if (e !== ErrorCode.NONE) {
-              addBreadcrumb({ category: 'flash', message: 'error', level: 'error', data: { errorCode: e } })
-              setTag('error_code', String(e))
-            }
-          },
-          onConnectionChange: (c) => {
-            setConnected(c)
-            addBreadcrumb({ category: 'flash', message: c ? 'connected' : 'disconnected', level: c ? 'info' : 'warning' })
-          },
-          onSerialChange: (sn) => {
-            setSerial(sn)
-            // Avoid tagging the raw serial; keep in context only
-            setContext('device', { serial_present: !!sn })
-          }
+          onStepChange: setStep,
+          onMessageChange: setMessage,
+          onProgressChange: setProgress,
+          onErrorChange: setError,
+          onConnectionChange: setConnected,
+          onSerialChange: setSerial,
         })
 
         // Initialize the manager
@@ -714,54 +657,35 @@ export default function Flash() {
       })
   }, [config, imageManager.current])
 
-  // Telemetry: set static tags/context once
-  useEffect(() => {
-    setTags({ session_id: SESSION_ID })
-    setContext('env', buildEnvMeta())
-  }, [])
-
-  // Telemetry: tag device selection
+  // OpenReplay: set metadata when device is selected
   useEffect(() => {
     if (selectedDevice) {
-      setTag('device_type', selectedDevice)
-      addBreadcrumb({ category: 'flash', message: `device:${selectedDevice}`, level: 'info' })
+      tracker.setMetadata('deviceType', selectedDevice)
     }
   }, [selectedDevice])
 
-  // Telemetry: wizard screen transitions
+  // OpenReplay: set serial when available
   useEffect(() => {
-    if (wizardScreen) addBreadcrumb({ category: 'wizard', message: wizardScreen, level: 'info' })
-  }, [wizardScreen])
-
-  // Helper to send a single pass/fail summary
-  function sendSessionSummary(result) {
-    if (reportSentRef.current) return
-    reportSentRef.current = true
-    const meta = {
-      ...buildEnvMeta(),
-      selectedDevice,
-      connected,
-      serial_present: !!serial,
-      step,
-      message,
+    if (serial) {
+      tracker.setMetadata('serial', serial)
     }
-    const tail = consoleLogs.slice(-200)
-    captureSessionSummary({
-      sessionId: SESSION_ID,
-      result,
-      errorCode: error,
-      step,
-      meta,
-      consoleTail: tail,
-    })
-  }
+  }, [serial])
 
-  // Send report on failure only
+  // OpenReplay: track session result
   useEffect(() => {
     if (error !== ErrorCode.NONE && !reportSentRef.current) {
-      sendSessionSummary('fail')
+      reportSentRef.current = true
+      const errorName = Object.keys(ErrorCode).find(k => ErrorCode[k] === error) || 'UNKNOWN'
+      tracker.event('flash_result', { result: 'fail', errorCode: error, errorName, step })
     }
   }, [error])
+
+  useEffect(() => {
+    if (step === StepCode.DONE && error === ErrorCode.NONE && !reportSentRef.current) {
+      reportSentRef.current = true
+      tracker.event('flash_result', { result: 'pass' })
+    }
+  }, [step, error])
 
   // Transition to flash screen when connected
   useEffect(() => {
