@@ -9,14 +9,14 @@ import '@fontsource-variable/jetbrains-mono'
 import './index.css'
 import App from './app'
 
-// Initialize PostHog
+// init PostHog
 posthog.init('phc_O4kXIsdyB2cm9Wne1pwJkj5jk9Ua51ABVPAhtSuYQ4V', {
   api_host: 'https://us.i.posthog.com',
   capture_pageview: false,  // We'll track manually
   persistence: 'memory',    // Don't persist across sessions
 })
 
-// Initialize Sentry (no-op if DSN unset)
+// init sentry
 initSentry()
 
 // Explicitly load fonts before rendering to prevent FOUT
