@@ -756,19 +756,12 @@ export default function Flash() {
     })
   }
 
-  // Send fail on first error
+  // Send report on failure only
   useEffect(() => {
     if (error !== ErrorCode.NONE && !reportSentRef.current) {
       sendSessionSummary('fail')
     }
   }, [error])
-
-  // Send pass when done without error
-  useEffect(() => {
-    if (step === StepCode.DONE && error === ErrorCode.NONE && !reportSentRef.current) {
-      sendSessionSummary('pass')
-    }
-  }, [step, error])
 
   // Transition to flash screen when connected
   useEffect(() => {
