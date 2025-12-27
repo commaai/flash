@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import posthog from 'posthog-js'
 import { addBreadcrumb, setTags, setTag, setContext, captureSessionSummary } from '../utils/telemetry'
 
 import { FlashManager, StepCode, ErrorCode, DeviceType } from '../utils/manager'
@@ -736,6 +737,20 @@ export default function Flash() {
   function sendSessionSummary(result) {
     if (reportSentRef.current) return
     reportSentRef.current = true
+
+    const errorName = Object.keys(ErrorCode).find(k => ErrorCode[k] === error) || 'NONE'
+    const stepName = Object.keys(StepCode).find(k => StepCode[k] === step) || 'UNKNOWN'
+
+    // PostHog event
+    posthog.capture('flash_session', {
+      result,
+      serial,
+      device_type: selectedDevice,
+      error_code: errorName,
+      step: stepName,
+    })
+
+    // Sentry (for errors with full context)
     const meta = {
       ...buildEnvMeta(),
       selectedDevice,
