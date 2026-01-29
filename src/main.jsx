@@ -1,7 +1,6 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
+import { render } from 'solid-js/web'
 import posthog from 'posthog-js'
-import * as Sentry from '@sentry/react'
+import * as Sentry from '@sentry/browser'
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/jetbrains-mono'
@@ -29,9 +28,5 @@ async function loadFonts() {
 }
 
 loadFonts().then(() => {
-  ReactDOM.createRoot(document.getElementById('root')).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>,
-  )
+  render(() => <App />, document.getElementById('root'))
 })

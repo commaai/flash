@@ -1,10 +1,9 @@
-import { Suspense } from 'react'
 import { expect, test } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from '@solidjs/testing-library'
 
 import App from '.'
 
 test('renders without crashing', () => {
-  render(<Suspense fallback="loading"><App /></Suspense>)
+  render(() => <App />)
   expect(screen.getByText('flash.comma.ai')).toBeInTheDocument()
 })
