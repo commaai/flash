@@ -81,6 +81,16 @@ export function checkCompatibleDevice(storageInfo) {
     return 'userdata_90'
   }
 
+  // Konik A1 - 8x64GB
+  if (storageInfo.prod_name === '64GB-UFS-MT     8QSP' && storageInfo.manufacturer_id === 300 &&
+    storageInfo.total_blocks === 14143488) {
+    return 'userdata_30'
+  }
+  if (storageInfo.prod_name === 'HN8G962EHKX037' && storageInfo.manufacturer_id === 429 &&
+    storageInfo.total_blocks === 14125056) {
+    return 'userdata_30'
+  }
+
   throw new Error('Could not identify UFS chip')
 }
 
