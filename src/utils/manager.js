@@ -288,8 +288,8 @@ export class FlashManager {
     } catch (e) {
       console.error('[Flash] Could not identify device:', e)
       console.error(storageInfo)
-      // this.#setError(ErrorCode.UNRECOGNIZED_DEVICE)
-      // return
+      this.#setError(ErrorCode.UNRECOGNIZED_DEVICE)
+      return
     }
 
     const serialNum = Number(storageInfo.serial_num).toString(16).padStart(8, '0')
@@ -384,11 +384,11 @@ export class FlashManager {
       console.info('[Flash] Fast mode: skipping system partition')
     }
 
-    // if (!systemImages.find((image) => image.name === this.#userdataImage)) {
-    //   console.error(`[Flash] Did not find userdata image "${this.#userdataImage}"`)
-    //   this.#setError(ErrorCode.UNKNOWN)
-    //   return
-    // }
+    if (!systemImages.find((image) => image.name === this.#userdataImage)) {
+      console.error(`[Flash] Did not find userdata image "${this.#userdataImage}"`)
+      this.#setError(ErrorCode.UNKNOWN)
+      return
+    }
 
     try {
       for await (const image of systemImages) {
