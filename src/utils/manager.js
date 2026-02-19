@@ -5,6 +5,9 @@ import { getManifest } from './manifest'
 import config from '../config'
 import { createSteps, withProgress } from './progress'
 
+// Diagnostic mode - dump GPT partition info
+export const DUMP_GPT_MODE = new URLSearchParams(window.location.search).has('dump_gpt')
+
 // Fast mode for development - skips flashing system partition (the slowest)
 // Enable with ?fast=1 in URL
 const FAST_MODE = new URLSearchParams(window.location.search).has('fast')
@@ -392,17 +395,17 @@ export class FlashManager {
 
     try {
       for await (const image of systemImages) {
-        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
+        // Flash system to slot A only (large, slow), other A/B partitions to both slots
+        const flashBothSlots = image.hasAB && image.name !== 'system'
+        const [onDownload, onFlash] = createSteps([1, flashBothSlots ? 2 : 1], this.#setProgress.bind(this))
 
         this.#setMessage(`Downloading ${image.name}`)
         await this.imageManager.downloadImage(image, onDownload)
         const blob = await this.imageManager.getImage(image)
         onDownload(1.0)
 
-        // Flash image to each slot
-        const slots = image.hasAB ? ['_a', '_b'] : ['']
+        const slots = flashBothSlots ? ['_a', '_b'] : (image.hasAB ? ['_a'] : [''])
         for (const [slot, onSlotProgress] of withProgress(slots, onFlash)) {
-          // NOTE: userdata image name does not match partition name
           const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
 
           this.#setMessage(`Flashing ${partitionName}`)
@@ -424,10 +427,14 @@ export class FlashManager {
     this.#setProgress(-1)
     this.#setMessage('Finalizing...')
 
-    // Set bootable LUN and update active partitions
-    if (!await this.device.setActiveSlot('a')) {
-      console.error('[Flash] Failed to update slot')
+    // Set bootable LUN to slot A (LUN 1)
+    // GPT images already have correct A/B flags, no need to manipulate them
+    try {
+      await this.device.setBootableLun(1)
+    } catch (err) {
+      console.error('[Flash] Failed to set bootable LUN', err)
       this.#setError(ErrorCode.FINALIZING_FAILED)
+      return
     }
 
     // Reboot the device
@@ -458,5 +465,86 @@ export class FlashManager {
     start = performance.now()
     await this.#finalize()
     console.info(`Finalized in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+  }
+
+  /**
+   * Diagnostic mode: connect and dump GPT from all LUNs
+   * @returns {Promise<string|null>} Formatted GPT dump or null on error
+   */
+  async dumpGpt() {
+    this.#setStep(StepCode.CONNECTING)
+    this.#setProgress(-1)
+
+    let usb
+    try {
+      usb = new usbClass()
+    } catch (err) {
+      console.error('[Flash] Connection error', err)
+      this.#setError(ErrorCode.LOST_CONNECTION)
+      return null
+    }
+
+    try {
+      await this.device.connect(usb)
+    } catch (err) {
+      if (err.name === 'NotFoundError') {
+        console.info('[Flash] No device selected')
+        this.#setStep(StepCode.READY)
+        return null
+      }
+      console.error('[Flash] Connection error', err)
+      this.#setError(ErrorCode.LOST_CONNECTION)
+      return null
+    }
+
+    this.#setConnected(true)
+    this.#setMessage('Reading GPT...')
+
+    try {
+      const lines = []
+      lines.push('=== GPT Dump ===')
+      lines.push(`Time: ${new Date().toISOString()}`)
+      lines.push('')
+
+      // Get storage info
+      const storageInfo = await this.device.getStorageInfo()
+      lines.push('Storage Info:')
+      lines.push(JSON.stringify(storageInfo, null, 2))
+      lines.push('')
+
+      // Dump GPT from each LUN
+      for (let lun = 0; lun < 6; lun++) {
+        lines.push(`=== LUN ${lun} ===`)
+        try {
+          const gpt = await this.device.getGpt(lun)
+          const partitions = gpt.getPartitions()
+
+          for (const part of partitions) {
+            const isAB = part.name.endsWith('_a') || part.name.endsWith('_b')
+            let line = `${part.name}: ${part.attributes}`
+
+            if (isAB) {
+              // Parse A/B flags from attributes
+              const attrs = BigInt(part.attributes)
+              // Flags are at bits 48-55 (correct) or 54-61 (buggy)
+              const flags48 = (attrs >> 48n) & 0xFFFFn
+              const flags54 = (attrs >> 54n) & 0xFFFFn
+              line += ` [bit48: 0x${flags48.toString(16)}, bit54: 0x${flags54.toString(16)}]`
+            }
+            lines.push(line)
+          }
+        } catch (err) {
+          lines.push(`Error reading LUN ${lun}: ${err.message}`)
+        }
+        lines.push('')
+      }
+
+      this.#setStep(StepCode.DONE)
+      return lines.join('\n')
+    } catch (err) {
+      console.error('[Flash] Error dumping GPT', err)
+      this.#setError(ErrorCode.UNKNOWN)
+      return null
+    }
   }
 }
