@@ -345,7 +345,7 @@ function Stepper({ steps, currentStep, onStepClick }) {
 // Landing page component
 function LandingPage({ onStart }) {
   return (
-    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8 overflow-y-auto">
       <img src={comma} alt="comma" width={80} height={80} />
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">flash.comma.ai</h1>
@@ -353,6 +353,25 @@ function LandingPage({ onStart }) {
           Restore your comma device to a fresh factory state
         </p>
       </div>
+      
+      {/* Video Walkthrough Section */}
+      <div className="w-full max-w-2xl">
+        <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-lg">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+            title="flash.comma.ai Walkthrough"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          ></iframe>
+        </div>
+        <p className="text-sm text-gray-500 text-center mt-2">
+          Watch the video walkthrough to learn how to flash your device
+        </p>
+      </div>
+      
       <button
         onClick={onStart}
         className="px-12 py-4 text-2xl font-semibold rounded-full bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black transition-colors"
