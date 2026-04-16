@@ -343,6 +343,34 @@ function Stepper({ steps, currentStep, onStepClick }) {
 }
 
 // Landing page component
+
+function VideoWalkthrough() {
+  const [isOpen, setIsOpen] = useState(false)
+  if (!isOpen) {
+    return (
+      <button 
+        onClick={() => setIsOpen(true)}
+        style={{marginTop: '16px', padding: '8px 24px', fontSize: '14px', color: '#888', border: '1px solid #444', borderRadius: '8px', background: 'transparent', cursor: 'pointer'}}
+      >
+        ▶ Watch the walkthrough
+      </button>
+    )
+  }
+  return (
+    <div 
+      style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50}}
+      onClick={() => setIsOpen(false)}
+    >
+      <div style={{width: '80%', maxWidth: '800px', aspectRatio: '16/9', background: '#111', borderRadius: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+        <div style={{color: '#666', fontSize: '18px'}}>
+          <p style={{margin: 0}}>Video walkthrough — coming soon</p>
+          <p style={{fontSize: '14px', marginTop: '8px'}}>Click anywhere to close</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function LandingPage({ onStart }) {
   return (
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
@@ -359,6 +387,7 @@ function LandingPage({ onStart }) {
       >
         Start
       </button>
+      <VideoWalkthrough />
     </div>
   )
 }
