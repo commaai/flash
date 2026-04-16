@@ -342,6 +342,49 @@ function Stepper({ steps, currentStep, onStepClick }) {
   )
 }
 
+
+// Video walkthrough component
+function VideoWalkthrough() {
+  const [isOpen, setIsOpen] = useState(false)
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="mt-4 px-6 py-2 text-sm text-gray-400 border border-gray-700 rounded-lg bg-transparent hover:bg-gray-800 hover:text-gray-300 transition-colors cursor-pointer flex items-center gap-2"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        Watch the walkthrough
+      </button>
+    )
+  }
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+      onClick={() => setIsOpen(false)}
+    >
+      <div className="w-full max-w-3xl mx-4" onClick={e => e.stopPropagation()}>
+        <video
+          controls
+          autoPlay
+          poster="/walkthrough-poster.png"
+          className="w-full rounded-xl"
+        >
+          <source src="/walkthrough.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        <button
+          onClick={() => setIsOpen(false)}
+          className="mt-3 text-gray-400 hover:text-white text-sm transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // Landing page component
 function LandingPage({ onStart }) {
   return (
@@ -359,6 +402,7 @@ function LandingPage({ onStart }) {
       >
         Start
       </button>
+      <VideoWalkthrough />
     </div>
   )
 }
