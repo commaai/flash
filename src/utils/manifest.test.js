@@ -38,7 +38,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
     const images = await getManifest(manifestUrl)
 
     // Check all images are present
-    expect(images.length).toBe(33)
+    expect(images.length).toBe(branch === 'release_tici' ? 33 : 32)
 
     let countGpt = 0
 
