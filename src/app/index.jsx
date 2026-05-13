@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Flash from './Flash'
 
 function DiscordIcon({ className }) {
@@ -25,6 +26,7 @@ function CommaIcon({ className }) {
 }
 
 export default function App() {
+  const [showWalkthrough, setShowWalkthrough] = useState(false)
   const version = import.meta.env.VITE_PUBLIC_GIT_SHA || 'dev'
   console.info(`flash.comma.ai version: ${version}`)
   return (
@@ -41,11 +43,47 @@ export default function App() {
           <GitHubIcon className="w-12 h-12" />
         </a>
       </div>
+      <button
+        type="button"
+        onClick={() => setShowWalkthrough(true)}
+        className="absolute bottom-4 right-4 rounded-full border border-gray-300 bg-white/90 px-5 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:border-[#51ff00] hover:text-black focus:outline-none focus:ring-2 focus:ring-[#51ff00] focus:ring-offset-2"
+      >
+        Watch walkthrough
+      </button>
       <div className="absolute bottom-4 left-4 text-sm text-gray-500">
         <a href={`https://github.com/commaai/flash/tree/${version}`} target="_blank" className="hover:underline">
           {version}
         </a>
       </div>
+      {showWalkthrough && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="walkthrough-title"
+            className="w-full max-w-4xl rounded-lg bg-white p-4 shadow-2xl"
+          >
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <h2 id="walkthrough-title" className="text-lg font-semibold text-gray-900">Flash walkthrough</h2>
+              <button
+                type="button"
+                onClick={() => setShowWalkthrough(false)}
+                className="rounded-full px-3 py-1 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#51ff00]"
+              >
+                Close
+              </button>
+            </div>
+            <video
+              title="Flash walkthrough video"
+              src="/flash-walkthrough.mp4"
+              poster="/flash-walkthrough-poster.svg"
+              className="aspect-video w-full rounded-md bg-black"
+              controls
+              preload="metadata"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

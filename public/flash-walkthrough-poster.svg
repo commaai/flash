@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="Flash walkthrough poster">
+  <rect width="1920" height="1080" fill="#f3f4f6"/>
+  <rect x="220" y="130" width="1480" height="820" rx="42" fill="#0b0f14"/>
+  <rect x="290" y="210" width="620" height="620" rx="42" fill="#111827"/>
+  <path d="M523 756c0-20-2-37 1-54 1-7 9-15 16-19 34-22 71-40 103-65 103-81 164-187 167-325 1-39-14-49-47-34-95 44-197 18-251-64-59-89-51-208 20-286 91-100 240-103 343-8 62 57 91 131 99 215 24 280-116 511-371 612-25 10-51 18-80 28Z" fill="#51ff00" transform="translate(-40 20) scale(.72)"/>
+  <text x="1010" y="360" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800">flash.comma.ai</text>
+  <text x="1010" y="445" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="36">A concise walkthrough for flashing AGNOS</text>
+  <g fill="none" stroke="#51ff00" stroke-width="6" stroke-linecap="round">
+    <path d="M1010 560h460"/>
+    <path d="M1010 660h360"/>
+    <path d="M1010 760h430"/>
+  </g>
+  <g fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700">
+    <text x="1050" y="548">Connect your comma device</text>
+    <text x="1050" y="648">Choose the image branch</text>
+    <text x="1050" y="748">Keep power stable while flashing</text>
+  </g>
+</svg>
