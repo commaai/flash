@@ -7,4 +7,5 @@ import App from '.'
 test('renders without crashing', () => {
   render(<Suspense fallback="loading"><App /></Suspense>)
   expect(screen.getByText('flash.comma.ai')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Watch walkthrough' })).toBeInTheDocument()
 })
