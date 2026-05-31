@@ -343,7 +343,37 @@ function Stepper({ steps, currentStep, onStepClick }) {
 }
 
 // Landing page component
+function WalkthroughDialog({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="flash.comma.ai walkthrough">
+      <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-black shadow-2xl">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black"
+          aria-label="Close walkthrough"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <video
+          className="aspect-video w-full bg-black"
+          controls
+          autoPlay
+          playsInline
+          poster="/flash-walkthrough-poster.webp"
+        >
+          <source src="/flash-walkthrough.webm" type="video/webm" />
+        </video>
+      </div>
+    </div>
+  )
+}
+
 function LandingPage({ onStart }) {
+  const [showWalkthrough, setShowWalkthrough] = useState(false)
+
   return (
     <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
       <img src={comma} alt="comma" width={80} height={80} />
@@ -359,6 +389,14 @@ function LandingPage({ onStart }) {
       >
         Start
       </button>
+      <button
+        type="button"
+        onClick={() => setShowWalkthrough(true)}
+        className="px-8 py-3 text-lg font-semibold rounded-full bg-black hover:bg-gray-800 active:bg-gray-700 text-white transition-colors"
+      >
+        Watch walkthrough
+      </button>
+      {showWalkthrough && <WalkthroughDialog onClose={() => setShowWalkthrough(false)} />}
     </div>
   )
 }
