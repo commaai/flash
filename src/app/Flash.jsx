@@ -203,6 +203,46 @@ const steps = {
   },
 }
 
+// Shown when the OS refuses to open the device (WebUSB SecurityError), e.g. on
+// Linux when the user lacks write access to the /dev/bus/usb device node.
+const UDEV_FIX_SCRIPT = `sudo tee /etc/udev/rules.d/99-comma-flash.rules > /dev/null <<'EOF'
+SUBSYSTEM=="usb", ATTR{idVendor}=="05c6", ATTR{idProduct}=="9008", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTR{idVendor}=="3801", ATTR{idProduct}=="9008", TAG+="uaccess"
+EOF
+sudo udevadm control --reload-rules && sudo udevadm trigger`
+
+function AccessDeniedHelp() {
+  const [copied, setCopied] = useState(false)
+
+  if (!isLinux) {
+    return <>Your browser was not allowed to open the device. Close any other program that may be using the device, unplug it, and try again.</>
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(UDEV_FIX_SCRIPT)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <>
+      Your user does not have permission to access the device. Run this command in a terminal
+      to grant access, then retry:
+      <span className="relative block w-full max-w-2xl mx-auto mt-4 text-left">
+        <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto font-mono">
+          {UDEV_FIX_SCRIPT}
+        </pre>
+        <button
+          onClick={handleCopy}
+          className="absolute top-2 right-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 active:bg-blue-400 text-white text-sm rounded transition-colors"
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </span>
+    </>
+  )
+}
+
 const errors = {
   [ErrorCode.UNKNOWN]: {
     status: 'Unknown error',
@@ -238,6 +278,13 @@ const errors = {
     status: 'Lost connection',
     description: 'The connection to your device was lost. Unplug your device and try again.',
     icon: cable,
+  },
+  [ErrorCode.ACCESS_DENIED]: {
+    status: 'Access denied',
+    description: <AccessDeniedHelp />,
+    bgColor: 'bg-yellow-500',
+    icon: deviceExclamation,
+    showDiscordHelp: true,
   },
   [ErrorCode.REPAIR_PARTITION_TABLES_FAILED]: {
     status: 'Repairing partition tables failed',
