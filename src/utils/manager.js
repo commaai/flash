@@ -41,6 +41,22 @@ export const ErrorCode = {
   ERASE_FAILED: 6,
   FLASH_SYSTEM_FAILED: 7,
   FINALIZING_FAILED: 8,
+  ACCESS_DENIED: 9,
+}
+
+/**
+ * Check if an error was caused by the OS denying access to the device, e.g. on
+ * Linux when the user lacks write access to the /dev/bus/usb device node.
+ * Chrome throws a SecurityError ("Access denied.") from USBDevice.open(),
+ * which qdl.js wraps as the cause of its own connection error.
+ * @param {any} err
+ * @returns {boolean}
+ */
+export function isAccessDeniedError(err) {
+  for (let e = err; e; e = e.cause) {
+    if (e.name === 'SecurityError') return true
+  }
+  return false
 }
 
 /**
@@ -232,7 +248,7 @@ export class FlashManager {
         return
       }
       console.error('[Flash] Connection error', err)
-      this.#setError(ErrorCode.LOST_CONNECTION)
+      this.#setError(isAccessDeniedError(err) ? ErrorCode.ACCESS_DENIED : ErrorCode.LOST_CONNECTION)
       this.#setConnected(false)
       return
     }
