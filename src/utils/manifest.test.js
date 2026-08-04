@@ -6,6 +6,11 @@ import { getManifest } from './manifest'
 
 const CI = import.meta.env.CI
 const MANIFEST_BRANCH = import.meta.env.MANIFEST_BRANCH
+const EXPECTED_IMAGE_COUNTS = {
+  release_mici: 32,
+  release_tizi: 32,
+  release_tici: 33,
+}
 
 const imageManager = new ImageManager()
 
@@ -38,7 +43,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
     const images = await getManifest(manifestUrl)
 
     // Check all images are present
-    expect(images.length).toBe(33)
+    expect(images.length).toBe(EXPECTED_IMAGE_COUNTS[branch])
 
     let countGpt = 0
 
