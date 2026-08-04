@@ -69,14 +69,15 @@ export function checkCompatibleDevice(storageInfo) {
     return 'userdata_30'
   }
 
-  // comma 3X
+  // comma 3X + comma four
+  const isSandisk128Gb = /^SDINDDH4-128G(?: +\d+)?$/.test(storageInfo.prod_name)
   // userdata start 6159400 size 23446483
-  if (storageInfo.prod_name === 'SDINDDH4-128G   1308' && storageInfo.manufacturer_id === 325 &&
+  if (isSandisk128Gb && storageInfo.manufacturer_id === 325 &&
     storageInfo.total_blocks === 29605888) {
     return 'userdata_89'
   }
   // unknown userdata sectors
-  if (storageInfo.prod_name === 'SDINDDH4-128G   1272' && storageInfo.manufacturer_id === 325 &&
+  if (isSandisk128Gb && storageInfo.manufacturer_id === 325 &&
     storageInfo.total_blocks === 29775872) {
     return 'userdata_90'
   }
