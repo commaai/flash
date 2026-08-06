@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import posthog from 'posthog-js'
 import * as Sentry from '@sentry/react'
 
-import { FlashManager, StepCode, ErrorCode, DeviceType } from '../utils/manager'
+import { FlashManager, StepCode, ErrorCode, DeviceType, DUMP_GPT_MODE } from '../utils/manager'
 import { useImageManager } from '../utils/image'
 import { isLinux, isWindows } from '../utils/platform'
 import config from '../config'
@@ -519,6 +519,91 @@ function LinuxUnbind({ onNext }) {
   )
 }
 
+// GPT Dump diagnostic mode
+function GptDumpMode({ qdlManager, imageManager }) {
+  const [gptDump, setGptDump] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    if (!imageManager.current) return
+    fetch(config.loader.url)
+      .then((res) => res.arrayBuffer())
+      .then((programmer) => {
+        qdlManager.current = new FlashManager(programmer, {})
+        qdlManager.current.initialize(imageManager.current).then(() => setReady(true))
+      })
+  }, [imageManager.current])
+
+  const handleDump = async () => {
+    setLoading(true)
+    const result = await qdlManager.current.dumpGpt()
+    setGptDump(result)
+    setLoading(false)
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(gptDump)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold mb-2">GPT Diagnostic Mode</h1>
+        <p className="text-xl text-gray-600">
+          Connect your device to dump partition table info
+        </p>
+      </div>
+
+      {!gptDump ? (
+        <button
+          onClick={handleDump}
+          disabled={loading || !ready}
+          className={`px-8 py-3 text-xl font-semibold rounded-full transition-colors ${
+            loading || !ready
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-[#51ff00] hover:bg-[#45e000] active:bg-[#3acc00] text-black'
+          }`}
+        >
+          {loading ? 'Reading...' : !ready ? 'Initializing...' : 'Connect & Dump GPT'}
+        </button>
+      ) : (
+        <>
+          <textarea
+            readOnly
+            value={gptDump}
+            className="w-full max-w-3xl h-96 p-4 font-mono text-sm bg-gray-900 text-gray-100 rounded-lg"
+          />
+          <div className="flex gap-4">
+            <button
+              onClick={handleCopy}
+              className="px-6 py-2 text-lg font-semibold rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+            >
+              {copied ? 'Copied!' : 'Copy to Clipboard'}
+            </button>
+            <button
+              onClick={() => setGptDump(null)}
+              className="px-6 py-2 text-lg font-semibold rounded-full bg-gray-300 hover:bg-gray-400 text-black transition-colors"
+            >
+              Dump Again
+            </button>
+          </div>
+          <p className="text-gray-500">
+            Send this to{' '}
+            <a href="https://discord.comma.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+              Discord
+            </a>
+            {' '}for debugging
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
 // WebUSB connection screen - shows while waiting for user to select device
 function WebUSBConnect({ onConnect }) {
   return (
@@ -763,6 +848,11 @@ export default function Flash() {
 
   // Handle retry on error
   const handleRetry = () => window.location.reload()
+
+  // Render GPT dump diagnostic mode
+  if (DUMP_GPT_MODE) {
+    return <GptDumpMode qdlManager={qdlManager} imageManager={imageManager} />
+  }
 
   // Render landing page
   if (wizardScreen === 'landing' && !error) {
