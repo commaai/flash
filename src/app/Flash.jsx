@@ -3,7 +3,11 @@ import posthog from 'posthog-js'
 import * as Sentry from '@sentry/react'
 
 import { FlashManager, StepCode, ErrorCode, DeviceType } from '../utils/manager'
-import { useImageManager } from '../utils/image'
+import {
+  cleanupStorageProbe,
+  runStorageProbe,
+  useImageManager,
+} from '../utils/image'
 import { isLinux, isWindows } from '../utils/platform'
 import config from '../config'
 
@@ -306,39 +310,42 @@ function beforeUnloadListener(event) {
 // Stepper/breadcrumb component
 function Stepper({ steps, currentStep, onStepClick }) {
   return (
-    <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-center gap-2">
-      {steps.map((stepName, index) => {
-        const isCompleted = index < currentStep
-        const isCurrent = index === currentStep
-        const isClickable = index < currentStep
+    <nav aria-label="Flash setup progress" className="absolute top-0 left-0 right-0 overflow-x-auto p-4">
+      <div className="mx-auto flex w-max min-w-max items-center justify-center gap-2">
+        {steps.map((stepName, index) => {
+          const isCompleted = index < currentStep
+          const isCurrent = index === currentStep
+          const isClickable = index < currentStep
 
-        return (
-          <div key={stepName} className="flex items-center">
-            {index > 0 && (
-              <div className={`w-8 h-0.5 mx-1 ${isCompleted ? 'bg-[#51ff00]' : 'bg-gray-300'}`} />
-            )}
-            <button
-              onClick={() => isClickable && onStepClick(index)}
-              disabled={!isClickable}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                isCurrent
-                  ? 'bg-[#51ff00] text-black'
-                  : isCompleted
-                    ? 'bg-[#51ff00]/80 text-black hover:bg-[#51ff00] cursor-pointer'
-                    : 'bg-gray-200 text-gray-500 cursor-default'
-              }`}
-            >
-              {isCompleted && (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+          return (
+            <div key={stepName} className="flex items-center">
+              {index > 0 && (
+                <div aria-hidden="true" className={`w-8 h-0.5 mx-1 ${isCompleted ? 'bg-[#51ff00]' : 'bg-gray-300'}`} />
               )}
-              {stepName}
-            </button>
-          </div>
-        )
-      })}
-    </div>
+              <button
+                onClick={() => isClickable && onStepClick(index)}
+                disabled={!isClickable}
+                aria-current={isCurrent ? 'step' : undefined}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  isCurrent
+                    ? 'bg-[#51ff00] text-black'
+                    : isCompleted
+                      ? 'bg-[#51ff00]/80 text-black hover:bg-[#51ff00] cursor-pointer'
+                      : 'bg-gray-200 text-gray-500 cursor-default'
+                }`}
+              >
+                {isCompleted && (
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {stepName}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </nav>
   )
 }
 
@@ -542,12 +549,206 @@ function WebUSBConnect({ onConnect }) {
   )
 }
 
+const STORAGE_PROBE_MARKER = 'comma-flash-storage-probe-active'
+const FORCE_STORAGE_PROBE_FAILURE = import.meta.env.DEV && new URLSearchParams(window.location.search).has('storageFail')
+const STORAGE_PROBE_FAILURE_MESSAGE = 'The browser could not reserve the 5.25 GiB needed for flashing.'
+const STORAGE_PROBE_SETTINGS_URL = 'chrome://settings/content/siteData'
+
+function StoragePreCheck({ storageCleanupComplete, onPassed }) {
+  const [probeStatus, setProbeStatus] = useState('idle')
+  const [probeProgress, setProbeProgress] = useState(0)
+  const [probeMessage, setProbeMessage] = useState('')
+  const probeStatusRef = useRef('idle')
+  const probeAbortRef = useRef(null)
+  const probeRunRef = useRef(0)
+  const skipRequestedRef = useRef(false)
+
+  const updateProbeStatus = (nextStatus, nextMessage = '') => {
+    probeStatusRef.current = nextStatus
+    setProbeStatus(nextStatus)
+    setProbeMessage(nextMessage)
+  }
+
+  const startProbe = async () => {
+    if (probeStatusRef.current === 'running') return
+    const runId = ++probeRunRef.current
+    const abortController = new AbortController()
+    probeAbortRef.current = abortController
+    setProbeProgress(0)
+    updateProbeStatus('running')
+
+    try {
+      localStorage.setItem(STORAGE_PROBE_MARKER, '1')
+    } catch {
+      // The OPFS write itself remains authoritative if localStorage is unavailable.
+    }
+
+    try {
+      if (FORCE_STORAGE_PROBE_FAILURE) throw new Error('Forced storage probe failure')
+      await runStorageProbe({
+        signal: abortController.signal,
+        onProgress: (progress) => {
+          if (probeRunRef.current !== runId) return
+          setProbeProgress(progress)
+        },
+      })
+      if (probeRunRef.current !== runId) return
+      try { localStorage.removeItem(STORAGE_PROBE_MARKER) } catch { /* ignored */ }
+      updateProbeStatus('passed', 'Passed')
+      onPassed?.()
+    } catch (error) {
+      if (probeRunRef.current !== runId) return
+      try { localStorage.removeItem(STORAGE_PROBE_MARKER) } catch { /* ignored */ }
+      if (skipRequestedRef.current) {
+        skipRequestedRef.current = false
+        onPassed?.()
+        return
+      }
+      if (error?.name === 'AbortError') {
+        updateProbeStatus('failed', 'The storage check was canceled. Retry to continue.')
+      } else {
+        updateProbeStatus('failed', STORAGE_PROBE_FAILURE_MESSAGE)
+      }
+    } finally {
+      if (probeRunRef.current === runId) probeAbortRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    if (!storageCleanupComplete || probeStatusRef.current !== 'idle') return
+
+    // Deferring one task prevents React Strict Mode's development-only effect
+    // cleanup from starting and immediately aborting the real storage probe.
+    const startTimer = setTimeout(() => {
+      if (probeStatusRef.current !== 'idle') return
+      let previousProbeInterrupted = false
+      try {
+        previousProbeInterrupted = localStorage.getItem(STORAGE_PROBE_MARKER) === '1'
+        localStorage.removeItem(STORAGE_PROBE_MARKER)
+      } catch {
+        // Continue with a new probe when localStorage is unavailable.
+      }
+      if (previousProbeInterrupted) {
+        updateProbeStatus('failed', STORAGE_PROBE_FAILURE_MESSAGE)
+        return
+      }
+
+      startProbe()
+    }, 0)
+
+    return () => clearTimeout(startTimer)
+  }, [storageCleanupComplete])
+
+  useEffect(() => () => {
+    probeRunRef.current += 1
+    if (probeStatusRef.current === 'running') probeAbortRef.current?.abort()
+  }, [])
+
+  const probeFailed = probeStatus === 'failed'
+  const skipProbe = (event) => {
+    if (event.shiftKey) {
+      // Shift-click is an intentional tester shortcut for exercising the failure UI.
+      probeRunRef.current += 1
+      probeAbortRef.current?.abort()
+      try { localStorage.removeItem(STORAGE_PROBE_MARKER) } catch { /* ignored */ }
+      updateProbeStatus('failed', STORAGE_PROBE_FAILURE_MESSAGE)
+      return
+    }
+
+    if (probeStatusRef.current === 'running') {
+      skipRequestedRef.current = true
+      updateProbeStatus('skipping')
+      probeAbortRef.current?.abort()
+      return
+    }
+
+    onPassed?.()
+  }
+
+  return (
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 overflow-y-auto px-6 pb-10 pt-24 sm:px-8">
+      {probeFailed ? (
+        <>
+          <div className="w-full max-w-2xl text-center" role="alert">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-700">
+              <svg aria-hidden="true" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.3 3.8 2.9 17a2 2 0 0 0 1.75 3h14.7a2 2 0 0 0 1.75-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold mb-2">Storage check failed</h2>
+            <p className="text-lg text-gray-600">{probeMessage}</p>
+          </div>
+
+          <div className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-5 text-left sm:p-6">
+            <h3 className="text-lg font-semibold">Try these steps</h3>
+            <ol className="mt-4 space-y-4 text-base text-gray-700">
+              <li className="flex gap-3">
+                <span aria-hidden="true" className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#51ff00] font-bold text-black">1</span>
+                <p>Use a regular browser window. Close any Incognito, InPrivate, or Private window.</p>
+              </li>
+              <li className="flex gap-3">
+                <span aria-hidden="true" className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#51ff00] font-bold text-black">2</span>
+                <p>Free at least 6 GiB of space on this device.</p>
+              </li>
+              <li className="flex gap-3">
+                <span aria-hidden="true" className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#51ff00] font-bold text-black">3</span>
+                <p>
+                  If there is enough space, open <code className="break-all rounded bg-gray-100 px-1.5 py-0.5 font-mono text-sm text-gray-900">{STORAGE_PROBE_SETTINGS_URL}</code> in the address bar. Choose <strong>Allow sites to save data on your device</strong> and turn off deletion when the browser closes.
+                </p>
+              </li>
+              <li className="flex gap-3">
+                <span aria-hidden="true" className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#51ff00] font-bold text-black">4</span>
+                <p>Fully quit and reopen the browser—not just this tab—then retry.</p>
+              </li>
+              <li className="flex gap-3">
+                <span aria-hidden="true" className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#51ff00] font-bold text-black">5</span>
+                <p>If none of these steps work, try again from an Android phone running Chrome, following the same steps above.</p>
+              </li>
+            </ol>
+          </div>
+
+          <button
+            type="button"
+            onClick={startProbe}
+            className="rounded-full bg-[#51ff00] px-6 py-3 text-lg font-semibold text-black transition-colors hover:bg-[#45e000] active:bg-[#3acc00]"
+          >
+            Retry storage check
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-2">Checking available storage</h2>
+            <p className="text-xl text-gray-600" aria-live="polite">
+              {probeStatus === 'skipping' ? 'Continuing without checking...' : 'Reserving 5.25 GiB before flashing...'}
+            </p>
+          </div>
+          {probeStatus === 'running' && (
+            <div className="w-full max-w-2xl h-2 overflow-hidden rounded-full bg-gray-200">
+              <div className="h-full rounded-full bg-[#51ff00] transition-all" style={{ width: `${probeProgress * 100}%` }} />
+            </div>
+          )}
+          {probeStatus !== 'skipping' && (
+            <button
+              type="button"
+              onClick={skipProbe}
+              className="text-sm text-gray-500 underline transition-colors hover:text-black"
+            >
+              Skip storage check
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // Device picker component
 function DevicePicker({ onSelect }) {
   const [selected, setSelected] = useState(null)
 
   return (
-    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-8 p-8">
+    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8 overflow-y-auto">
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-2">Which device are you flashing?</h2>
         <p className="text-xl text-gray-600">Select your comma device</p>
@@ -596,7 +797,7 @@ function DevicePicker({ onSelect }) {
 
 // Build wizard steps dynamically based on platform and device
 function getWizardSteps(selectedDevice) {
-  const steps = ['Device']
+  const steps = ['Storage', 'Device']
   if (isWindows) steps.push('Driver')
   steps.push('Connect')
   if (isLinux && selectedDevice === DeviceType.COMMA_3) steps.push('Unbind')
@@ -607,6 +808,7 @@ function getWizardSteps(selectedDevice) {
 // Map screen names to step names
 const screenToStep = {
   device: 'Device',
+  storage: 'Storage',
   zadig: 'Driver',
   connect: 'Connect',
   unbind: 'Unbind',
@@ -623,7 +825,8 @@ export default function Flash() {
   const [connected, setConnected] = useState(false)
   const [serial, setSerial] = useState(null)
   const [selectedDevice, setSelectedDevice] = useState(null)
-  const [wizardScreen, setWizardScreen] = useState('landing') // 'landing', 'device', 'zadig', 'connect', 'unbind', 'webusb', 'flash'
+  const [storageCleanupComplete, setStorageCleanupComplete] = useState(false)
+  const [wizardScreen, setWizardScreen] = useState('landing') // 'landing', 'device', 'storage', 'zadig', 'connect', 'unbind', 'webusb', 'flash'
   const reportSentRef = useRef(false)
 
   const qdlManager = useRef(null)
@@ -632,6 +835,12 @@ export default function Flash() {
   // Build steps based on current platform and selected device
   const wizardSteps = getWizardSteps(selectedDevice)
   const wizardStep = screenToStep[wizardScreen] ? wizardSteps.indexOf(screenToStep[wizardScreen]) : -1
+
+  useEffect(() => {
+    cleanupStorageProbe()
+      .catch((error) => console.warn('[Storage] Could not clean up a previous storage test:', error))
+      .finally(() => setStorageCleanupComplete(true))
+  }, [])
 
   useEffect(() => {
     if (!imageManager.current) return
@@ -707,6 +916,12 @@ export default function Flash() {
   // Handle user clicking start on landing page
   const handleStart = () => {
     setStep(StepCode.DEVICE_PICKER)
+    setWizardScreen('storage')
+  }
+
+  // Handle storage check completion
+  const handleStoragePassed = () => {
+    setStep(StepCode.DEVICE_PICKER)
     setWizardScreen('device')
   }
 
@@ -748,7 +963,9 @@ export default function Flash() {
   // Handle going back in wizard
   const handleWizardBack = (toStep) => {
     const stepName = wizardSteps[toStep]
-    if (stepName === 'Device') {
+    if (stepName === 'Storage') {
+      setWizardScreen('storage')
+    } else if (stepName === 'Device') {
       setStep(StepCode.DEVICE_PICKER)
       setWizardScreen('device')
       setSelectedDevice(null)
@@ -780,6 +997,19 @@ export default function Flash() {
       <div className="relative h-full">
         <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
         <DevicePicker onSelect={handleDeviceSelect} />
+      </div>
+    )
+  }
+
+  // Render storage pre-check
+  if (wizardScreen === 'storage' && !error) {
+    return (
+      <div className="relative h-full">
+        <Stepper steps={wizardSteps} currentStep={wizardStep} onStepClick={handleWizardBack} />
+        <StoragePreCheck
+          storageCleanupComplete={storageCleanupComplete}
+          onPassed={handleStoragePassed}
+        />
       </div>
     )
   }

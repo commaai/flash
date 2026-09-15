@@ -191,22 +191,25 @@ export class FlashManager {
       return
     }
 
-    try {
-      await this.imageManager.init()
-    } catch (err) {
-      console.error('[Flash] Failed to initialize image worker')
-      console.error(err)
-      const message = err?.message || String(err)
-      if (message.startsWith('Not enough storage')) {
-        this.#setError(ErrorCode.STORAGE_SPACE)
-        this.#setMessage(message)
-      } else {
-        this.#setError(ErrorCode.UNKNOWN)
-      }
-      return
+    this.#setStep(StepCode.READY)
+  }
+
+  async #prepareStorage() {
+    if (!navigator.storage?.getDirectory) {
+      this.#setMessage('Storage pre-check is unavailable in this browser.')
+      this.#setError(ErrorCode.STORAGE_SPACE)
+      return false
     }
 
-    this.#setStep(StepCode.READY)
+    try {
+      await this.imageManager.init()
+      return true
+    } catch (err) {
+      console.error('[Flash] Failed to initialize image storage')
+      console.error(err)
+      this.#setError(ErrorCode.UNKNOWN)
+      return false
+    }
   }
 
   async #connect() {
@@ -441,6 +444,7 @@ export class FlashManager {
 
   async start() {
     if (this.step !== StepCode.READY) return
+    if (!await this.#prepareStorage()) return
     await this.#connect()
     // Check if connection was cancelled (step went back to READY) or failed
     if (this.step === StepCode.READY || this.error !== ErrorCode.NONE) return
