@@ -81,8 +81,6 @@ export class ManifestImage {
  */
 export async function getManifest(url) {
   const images = await fetch(url).then((response) => response.json())
-  // all-partitions.json can be stale, use the AGNOS images openpilot expects from agnos.json
-  const agnos = await fetch(url.replace('all-partitions.json', 'agnos.json')).then((response) => response.json())
-  const latest = Object.fromEntries(agnos.map((image) => [image.name, image]))
-  return images.map((image) => new ManifestImage(latest[image.name] ?? image))
+  const agnos = await fetch(url.replace('all-partitions', 'agnos')).then((response) => response.json())
+  return images.map((image) => new ManifestImage(agnos.find((a) => a.name === image.name) ?? image))
 }
