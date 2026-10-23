@@ -79,8 +79,9 @@ export class ManifestImage {
  * @param {string} url
  * @returns {Promise<ManifestImage[]>}
  */
-export function getManifest(url) {
-  return fetch(url)
-    .then((response) => response.text())
-    .then((text) => JSON.parse(text).map((image) => new ManifestImage(image)))
+export async function getManifest(url) {
+  const fetchJson = (u) => fetch(u).then((response) => response.json())
+  // all-partitions.json can lag behind agnos.json, flash the AGNOS openpilot expects
+  const [images, agnos] = await Promise.all([fetchJson(url), fetchJson(url.replace('all-partitions.json', 'agnos.json'))])
+  return images.map((image) => new ManifestImage(agnos.find((a) => a.name === image.name) ?? image))
 }
