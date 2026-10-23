@@ -79,8 +79,8 @@ export class ManifestImage {
  * @param {string} url
  * @returns {Promise<ManifestImage[]>}
  */
-export function getManifest(url) {
-  return fetch(url)
-    .then((response) => response.text())
-    .then((text) => JSON.parse(text).map((image) => new ManifestImage(image)))
+export async function getManifest(url) {
+  const images = await fetch(url).then((response) => response.json())
+  const agnos = await fetch(url.replace('all-partitions', 'agnos')).then((response) => response.json())
+  return images.map((image) => new ManifestImage(agnos.find((a) => a.name === image.name) ?? image))
 }
