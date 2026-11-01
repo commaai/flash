@@ -1,7 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { XzReadableStream } from 'xz-decompress'
-
-import { fetchStream } from './stream'
 
 /**
  * Progress callback
@@ -44,30 +41,35 @@ export class ImageManager {
    *
    * @param {ManifestImage} image
    * @param {progressCallback} [onProgress]
+   * @param {AbortSignal} [signal]
    * @returns {Promise<void>}
    */
-  async downloadImage(image, onProgress = undefined) {
-    const { archiveUrl, fileName } = image
-
-    /** @type {FileSystemWritableFileStream} */
-    let writable
+  async downloadImage(image, onProgress = undefined, signal = undefined) {
+    signal?.throwIfAborted()
+    const decoder = new Worker(new URL('./image.worker.js', import.meta.url), { type: 'module' })
+    const writer = new Worker(new URL('./image-write.worker.js', import.meta.url), { type: 'module' })
+    const channel = new MessageChannel()
+    let onAbort
     try {
-      const fileHandle = await this.root.getFileHandle(fileName, { create: true })
-      writable = await fileHandle.createWritable()
-    } catch (e) {
-      throw new Error(`Error opening file handle: ${e}`, { cause: e })
-    }
-
-    console.debug(`[ImageManager] Downloading ${image.name} from ${archiveUrl}`)
-    let stream = await fetchStream(archiveUrl, { mode: 'cors' }, { onProgress })
-    try {
-      if (image.compressed) {
-        stream = new XzReadableStream(stream)
-      }
-      await stream.pipeTo(writable)
-      onProgress?.(1)
-    } catch (e) {
-      throw new Error(`Error unpacking archive: ${e}`, { cause: e })
+      await new Promise((resolve, reject) => {
+        onAbort = () => reject(signal.reason)
+        signal?.addEventListener('abort', onAbort, { once: true })
+        decoder.onmessage = ({ data }) => {
+          if (data.error) reject(new Error(data.error))
+          else onProgress?.(data.progress)
+        }
+        writer.onmessage = ({ data }) => {
+          if (data.error) reject(new Error(data.error))
+          else if (data.done) resolve()
+        }
+        decoder.onerror = writer.onerror = (event) => reject(new Error(event.message))
+        writer.postMessage({ image, port: channel.port2 }, [channel.port2])
+        decoder.postMessage({ image, port: channel.port1 }, [channel.port1])
+      })
+    } finally {
+      signal?.removeEventListener('abort', onAbort)
+      decoder.terminate()
+      writer.terminate()
     }
   }
 

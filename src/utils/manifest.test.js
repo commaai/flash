@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest'
 
 import config from '../config'
-import { ImageManager } from './image'
+import { downloadImage } from './download'
 import { getManifest } from './manifest'
 
 const CI = import.meta.env.CI
@@ -12,7 +12,7 @@ const EXPECTED_IMAGE_COUNTS = {
   release_tici: 33,
 }
 
-const imageManager = new ImageManager()
+let root
 
 beforeAll(async () => {
   globalThis.navigator = {
@@ -35,7 +35,7 @@ beforeAll(async () => {
     },
   }
 
-  await imageManager.init()
+  root = await navigator.storage.getDirectory()
 })
 
 for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
@@ -57,16 +57,16 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           if (image.name === 'system') {
             if (image.compressed) {
               expect(image.fileName, 'not to equal archive name').not.toEqual(image.archiveFileName)
-              expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
-              expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
+              expect(image.archiveFileName, 'compressed archive').toMatch(/\.(xz|zst)$/)
+              expect(image.archiveUrl, 'compressed archive url').toMatch(/\.(xz|zst)$/)
             } else {
               expect(image.fileName, 'to equal archive name').toEqual(image.archiveFileName)
               expect(image.archiveUrl, 'archive url to not be in xz format').not.toContain('.xz')
             }
           } else {
             expect(image.compressed, 'image to be compressed').toBe(true)
-            expect(image.archiveFileName, 'archive to be in xz format').toContain('.xz')
-            expect(image.archiveUrl, 'archive url to be in xz format').toContain('.xz')
+            expect(image.archiveFileName, 'compressed archive').toMatch(/\.(xz|zst)$/)
+            expect(image.archiveUrl, 'compressed archive url').toMatch(/\.(xz|zst)$/)
           }
         })
 
@@ -74,7 +74,7 @@ for (const [branch, manifestUrl] of Object.entries(config.manifests)) {
           timeout: (big ? 11 * 60 : 20) * 1000,
           repeats: 1,
         }, async () => {
-          await imageManager.downloadImage(image)
+          await downloadImage(root, image)
         })
       })
     }

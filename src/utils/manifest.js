@@ -58,20 +58,30 @@ export class ManifestImage {
    */
   compressed
 
+  hash
+  fileSize
+  chunkSize
+  chunkHashes
+
   constructor(json) {
+    json = { ...json, ...json.flash }
     this.name = json.name
     this.partitionName = json.name.startsWith('userdata_') ? 'userdata' : json.name
 
+    this.hash = json.hash
+    this.fileSize = json.file_size
+    this.chunkSize = json.chunk_size
+    this.chunkHashes = json.chunk_hashes
     this.size = json.size
     this.sparse = json.sparse
     this.hasAB = json.has_ab
     this.gpt = 'gpt' in json ? json.gpt : null
 
-    this.fileName = `${this.name}-${json.hash_raw}.img`
-    this.archiveUrl = json.url
+    this.fileName = `${this.name}-${json.hash}.img`
+    this.archiveUrl = json.zstd_url || json.url
     this.archiveFileName = this.archiveUrl.split('/').pop()
 
-    this.compressed = this.archiveFileName.endsWith('.xz')
+    this.compressed = /\.(xz|zst)$/.test(this.archiveFileName)
   }
 }
 

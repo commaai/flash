@@ -391,14 +391,32 @@ export class FlashManager {
       return
     }
 
+    const downloads = new AbortController()
+    let downloadingImage
+    let onDownload
+    const download = (image) => {
+      const pending = this.imageManager.downloadImage(image, (progress) => {
+        if (image === downloadingImage) onDownload?.(progress)
+      }, downloads.signal)
+      // A prefetched download can fail before flashing the current image finishes.
+      pending.catch(() => {})
+      return pending
+    }
+
     try {
-      for await (const image of systemImages) {
-        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
+      let pending = download(systemImages[0])
+      for (const [index, image] of systemImages.entries()) {
+        downloadingImage = image
+        const steps = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
+        onDownload = steps[0]
+        const onFlash = steps[1]
 
         this.#setMessage(`Downloading ${image.name}`)
-        await this.imageManager.downloadImage(image, onDownload)
+        await pending
         const blob = await this.imageManager.getImage(image)
         onDownload(1.0)
+        downloadingImage = null
+        if (index + 1 < systemImages.length) pending = download(systemImages[index + 1])
 
         // Flash image to each slot
         const slots = image.hasAB ? ['_a', '_b'] : ['']
@@ -417,6 +435,8 @@ export class FlashManager {
       console.error('[Flash] An error occurred while flashing system')
       console.error(err)
       this.#setError(ErrorCode.FLASH_SYSTEM_FAILED)
+    } finally {
+      downloads.abort()
     }
   }
 

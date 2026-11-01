@@ -120,6 +120,16 @@ describe('fetchStream', () => {
     expect(headers['range']).toBe('bytes=10-')
   })
 
+  it('does not read the entire response ahead of the consumer', async () => {
+    const read = vi.fn(async () => ({ done: false, value: encoder.encode('chunk') }))
+    global.fetch.mockResolvedValue({ ok: true, status: 200,
+      headers: { get: () => '1000' }, body: { getReader: () => ({ read }) } })
+    const stream = await fetchStream('https://example.com')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(read).toHaveBeenCalledTimes(1)
+    await stream.cancel()
+  })
+
   it('throws after max retries', async () => {
     global.fetch.mockRejectedValue(new Error('network error'))
 

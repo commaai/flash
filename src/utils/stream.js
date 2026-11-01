@@ -41,29 +41,28 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
   const abortController = new AbortController()
   let startByte = 0
   let contentLength = null
+  let reader
 
   return new ReadableStream({
     async pull(stream) {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const response = await fetchRange(startByte, abortController.signal)
-          if (contentLength === null) {
-            contentLength = getContentLength(response)
+          if (!reader) {
+            const response = await fetchRange(startByte, abortController.signal)
+            if (contentLength === null) contentLength = getContentLength(response)
+            reader = response.body.getReader()
           }
-
-          const reader = response.body.getReader()
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) {
-              stream.close()
-              return
-            }
-
-            startByte += value.byteLength
-            stream.enqueue(value)
-            options.onProgress?.(startByte / contentLength)
+          const { done, value } = await reader.read()
+          if (done) {
+            stream.close()
+            return
           }
+          startByte += value.byteLength
+          stream.enqueue(value)
+          options.onProgress?.(startByte / contentLength)
+          return
         } catch (err) {
+          reader = null
           console.warn(`Attempt ${attempt + 1} failed:`, err)
           if (attempt === maxRetries) {
             abortController.abort()
