@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeAll, describe, expect, test, vi } from 'vitest'
 
 import config from '../config'
@@ -15,7 +16,7 @@ const EXPECTED_IMAGE_COUNTS = {
 let root
 
 beforeAll(async () => {
-  globalThis.navigator = {
+  vi.stubGlobal('navigator', {
     storage: {
       estimate: vi.fn().mockImplementation(() => ({ quota: 10 * (1024 ** 3) })),
       getDirectory: () => ({
@@ -33,7 +34,7 @@ beforeAll(async () => {
         remove: vi.fn(),
       }),
     },
-  }
+  })
 
   root = await navigator.storage.getDirectory()
 })
