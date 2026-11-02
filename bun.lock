@@ -5,7 +5,7 @@
     "": {
       "name": "@commaai/flash",
       "dependencies": {
-        "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#067042cc74412eeb2bbbd19d66e5690b925e7818",
+        "@commaai/qdl": "git+https://github.com/commaai/qdl.js.git#619e6b17bc29b93799d0d880f6451e6dc7841123",
         "@fontsource-variable/inter": "^5.2.5",
         "@fontsource-variable/jetbrains-mono": "^5.2.5",
         "@sentry/react": "^10.32.1",
@@ -85,7 +85,7 @@
 
     "@babel/types": ["@babel/types@7.28.5", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.28.5" } }, "sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA=="],
 
-    "@commaai/qdl": ["@commaai/qdl@github:commaai/qdl.js#067042c", { "dependencies": { "@incognitojam/tiny-struct": "https://npm.jsr.io/~/11/@jsr/incognitojam__tiny-struct/0.1.2.tgz", "arg": "^5.0.2", "crc-32": "^1.2.2", "fast-xml-parser": "^5.0.8", "usb": "^2.15.0" }, "peerDependencies": { "typescript": "^5.7.3" }, "bin": { "simg2img.js": "src/bin/simg2img.js", "qdl.js": "src/bin/qdl.js", "qdl-flash-manifest": "src/bin/flash-manifest.js" } }, "commaai-qdl.js-067042c", "sha512-UVCI01JmDNH7GcxG+Lwf77Y/AamNfLG5hDnYcTSFAE56N2EGAKkBKg4yzSTeYWP0y8liusGwZGVHVUUTsXZzfg=="],
+    "@commaai/qdl": ["@commaai/qdl@github:commaai/qdl.js#619e6b1", { "dependencies": { "@incognitojam/tiny-struct": "https://npm.jsr.io/~/11/@jsr/incognitojam__tiny-struct/0.1.2.tgz", "arg": "^5.0.2", "crc-32": "^1.2.2", "fast-xml-parser": "^5.0.8", "usb": "^2.15.0" }, "peerDependencies": { "typescript": "^5.7.3" }, "bin": { "simg2img.js": "src/bin/simg2img.js", "qdl.js": "src/bin/qdl.js", "qdl-flash-manifest": "src/bin/flash-manifest.js" } }, "commaai-qdl.js-619e6b1", "sha512-vg3XhIGOAWb/GbwQbnee8qNszfeNAgFvV8yJTjj+nifudLU/8cm34csiBhEhBASFrxMyT5kVkmIqxZrLGTq1AQ=="],
 
     "@csstools/color-helpers": ["@csstools/color-helpers@5.1.0", "", {}, "sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA=="],
 
