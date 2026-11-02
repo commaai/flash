@@ -62,6 +62,7 @@ export class ImageManager {
     const writer = new Worker(new URL('./image-write.worker.js', import.meta.url), { type: 'module' })
     const channel = new MessageChannel()
     const output = onStream ? new MessageChannel() : null
+    const frameWorkers = []
     let active = true
     let onAbort
     let streamComplete = Promise.resolve()
@@ -90,6 +91,23 @@ export class ImageManager {
           if (!active) return
           if (data.error) reject(new Error(data.error))
           else if (data.cacheDone) resolve()
+          else if (data.frameWorkers) {
+            try {
+              if (!onStream || !Number.isInteger(data.frameWorkers) || data.frameWorkers < 1 || data.frameWorkers > 4 || frameWorkers.length) {
+                throw new Error('Invalid frame worker request')
+              }
+              const ports = []
+              for (let i = 0; i < data.frameWorkers; i++) {
+                const worker = new Worker(new URL('./frame.worker.js', import.meta.url), { type: 'module' })
+                frameWorkers.push(worker)
+                worker.onerror = (event) => reject(new Error(event.message))
+                const channel = new MessageChannel()
+                worker.postMessage({ port: channel.port1 }, [channel.port1])
+                ports.push(channel.port2)
+              }
+              decoder.postMessage({ framePorts: ports }, ports)
+            } catch (error) { reject(error) }
+          }
           else onProgress?.(data.progress)
         }
         writer.onmessage = ({ data }) => {
@@ -147,6 +165,7 @@ export class ImageManager {
       signal?.removeEventListener('abort', onAbort)
       decoder.terminate()
       writer.terminate()
+      for (const worker of frameWorkers) worker.terminate()
       output?.port1.close?.()
     }
   }
@@ -155,6 +174,7 @@ export class ImageManager {
     const keep = new Set(images.filter((image) => Number.isSafeInteger(image.fileSize)).map((image) => image.fileName))
     for (const image of images) {
       if (Number.isSafeInteger(image.archiveSize) && image.archiveCacheName) keep.add(image.archiveCacheName)
+      if (Number.isSafeInteger(image.framedArchiveSize) && image.framedArchiveCacheName) keep.add(image.framedArchiveCacheName)
     }
     for await (const [name] of this.root.entries()) {
       if (!keep.has(name)) await this.root.removeEntry(name)

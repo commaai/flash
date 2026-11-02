@@ -86,4 +86,14 @@ describe('download workers', () => {
     await expect(complete).rejects.toThrow('aborted')
     for (const worker of workers) expect(worker.terminate).toHaveBeenCalledOnce()
   })
+
+  it('owns and terminates every parallel decoder on cancellation', async () => {
+    const controller = new AbortController()
+    const complete = new ImageManager().downloadImage({}, undefined, controller.signal, vi.fn())
+    workers[0].onmessage({ data: { frameWorkers: 4 } })
+    expect(workers).toHaveLength(6)
+    controller.abort()
+    await expect(complete).rejects.toThrow('aborted')
+    for (const worker of workers) expect(worker.terminate).toHaveBeenCalledOnce()
+  })
 })

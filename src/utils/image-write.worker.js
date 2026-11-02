@@ -3,11 +3,12 @@ import { getImageDirectory } from './image-storage'
 import { sendStream } from './stream-channel'
 
 self.onmessage = ({ data: { image, port, streaming, output } }) => {
-  port.onmessage = async ({ data: stream }) => {
+  port.onmessage = async ({ data }) => {
     try {
+      const stream = data.stream || data
       if (streaming) {
         if (!image.chunkHashes) throw new Error('Streaming requires image chunk hashes')
-        const verified = await verifyImage(stream, image)
+        const verified = data.verified ? stream : await verifyImage(stream, image)
         self.postMessage({ streamReady: true })
         await sendStream(verified, output)
       } else {

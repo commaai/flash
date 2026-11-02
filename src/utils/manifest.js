@@ -1,3 +1,5 @@
+import { validateFrames } from './framed'
+
 /**
  * Represents a partition image defined in the AGNOS manifest.
  *
@@ -65,6 +67,10 @@ export class ManifestImage {
   chunkSize
   chunkHashes
   stream
+  framedArchiveUrl
+  framedArchiveSize
+  framedArchiveCacheName
+  frameSizes
 
   constructor(json) {
     json = { ...json, ...json.flash }
@@ -95,6 +101,10 @@ export class ManifestImage {
     this.archiveUrl = json.zstd_url || json.url
     this.archiveFileName = this.archiveUrl.split('/').pop()
     this.archiveCacheName = `${this.fileName}.${this.archiveFileName.split('.').pop()}`
+    this.framedArchiveUrl = json.zstd_chunked_url
+    this.framedArchiveSize = json.zstd_chunked_size
+    this.frameSizes = json.zstd_frame_sizes
+    if (validateFrames(this)) this.framedArchiveCacheName = `${this.fileName}.${this.framedArchiveUrl.split('/').pop()}`
 
     this.compressed = /\.(xz|zst)$/.test(this.archiveFileName)
   }
