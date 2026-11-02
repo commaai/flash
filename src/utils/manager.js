@@ -1,7 +1,12 @@
 import { qdlDevice } from '@commaai/qdl'
 import { usbClass } from '@commaai/qdl/usblib'
+import { selectSparseRanges, validateSparseStreamMetadata } from '@commaai/qdl/sparse-stream'
+import { CalibrationLayoutError, canPreserveDdr, ddrPartitionFromGpt, readDdrPartition } from '@commaai/qdl/calibration'
+import { validateLz4Metadata } from '@commaai/qdl/lz4-stream'
+import { createFirmwareBatch, firmwareDestinations, flashFirmwareBatch } from '@commaai/qdl/manifest-batch'
 
-import { getManifest } from './manifest'
+import { getManifest, validateLz4Alternative } from './manifest'
+import { DownloadQueue } from './download-queue'
 import config from '../config'
 import { createSteps, withProgress } from './progress'
 
@@ -81,6 +86,10 @@ export function checkCompatibleDevice(storageInfo) {
     storageInfo.total_blocks === 29775872) {
     return 'userdata_90'
   }
+  if (storageInfo.prod_name === 'KLUDG4U1EA-B0C1' && storageInfo.manufacturer_id === 462 &&
+    storageInfo.total_blocks === 29765632) {
+    return 'userdata_90'
+  }
 
   throw new Error('Could not identify UFS chip')
 }
@@ -105,6 +114,11 @@ export function checkCompatibleDevice(storageInfo) {
 export class FlashManager {
   /** @type {string} */
   #userdataImage
+  #downloads
+  #streamingImages = []
+  #preserveDdr = false
+  #desiredDdr
+  #firmwareBatch
 
   /**
    * @param {string} manifestUrl
@@ -114,7 +128,7 @@ export class FlashManager {
   constructor(programmer, callbacks = {}) {
     this.manifestUrl = null
     this.callbacks = callbacks
-    this.device = new qdlDevice(programmer)
+    this.device = new qdlDevice(programmer, { transferSize: 224 * 1024, transferQueueDepth: 32 })
     /** @type {import('./image').ImageManager|null} */
     this.imageManager = null
     /** @type {ManifestImage[]|null} */
@@ -298,6 +312,37 @@ export class FlashManager {
     this.#setSerial(serialNum)
   }
 
+  async #prepareDdrPreservation() {
+    this.#preserveDdr = false
+    const image = this.manifest.find((image) => image.gpt?.lun === 3)
+    if (!image) return
+    await this.#downloads.get(image)
+    const blob = await this.imageManager.getImage(image)
+    const desired = readDdrPartition(new Uint8Array(await blob.arrayBuffer()), 3)
+    this.#desiredDdr = desired
+    try {
+      const existing = ddrPartitionFromGpt(await this.device.getGpt(3), 3)
+      this.#preserveDdr = canPreserveDdr(existing, desired)
+    } catch (error) {
+      if (!(error instanceof CalibrationLayoutError) && error.code !== 'GPT_CORRUPT') throw error
+      console.info('[Flash] Existing DDR calibration cannot be preserved:', error.message)
+    }
+  }
+
+  async #prepareFirmwareBatch() {
+    this.#firmwareBatch = null
+    if (!this.device.canFlashStream(1)) return
+    const gpt = this.manifest.find((image) => image.gpt?.lun === 4)
+    if (!gpt) return
+    await this.#downloads.get(gpt)
+    const destinations = firmwareDestinations(new Uint8Array(await (await this.imageManager.getImage(gpt)).arrayBuffer()))
+    const images = this.#systemImages().filter((image) => image.sparse && image.stream && !this.#streamingImages.includes(image))
+      .map((image) => ({ image, name: image.name, names: [`${image.name}${image.hasAB ? '_a' : ''}`],
+        transport: 'sparse', fileSize: image.fileSize, stream: image.stream }))
+    this.#firmwareBatch = createFirmwareBatch(this.device, images, destinations, 'a')
+    if (this.#firmwareBatch) this.#downloads.prioritize(this.#firmwareBatch.images.map(({ image }) => image))
+  }
+
   async #repairPartitionTables() {
     this.#setStep(StepCode.REPAIR_PARTITION_TABLES)
     this.#setProgress(0)
@@ -316,7 +361,7 @@ export class FlashManager {
         const [onDownload, onRepair] = createSteps([2, 1], onProgress)
 
         // Download GPT image
-        await this.imageManager.downloadImage(image, onDownload)
+        await this.#downloads.get(image, onDownload)
         const blob = await this.imageManager.getImage(image);
 
         // Recreate main and backup GPT for this LUN
@@ -324,6 +369,10 @@ export class FlashManager {
           throw new Error(`Repairing LUN ${image.gpt.lun} failed`)
         }
         onRepair(1.0)
+      }
+      if (this.#preserveDdr) {
+        const repaired = ddrPartitionFromGpt(await this.device.getGpt(3), 3)
+        if (!canPreserveDdr(repaired, this.#desiredDdr)) throw new Error('Repaired DDR calibration layout changed')
       }
     } catch (err) {
       console.error('[Flash] An error occurred while repairing partition tables')
@@ -358,6 +407,7 @@ export class FlashManager {
       for (const lun of luns) {
         const preserve = [...critical]
         if (lun === persistLun) preserve.push('persist')
+        if (lun === 3 && this.#preserveDdr) preserve.push('ddr')
         console.info(`[Flash] Erasing LUN ${lun} while preserving ${preserve.map((part) => `"${part}"`).join(', ')} partitions`)
         if (!await this.device.eraseLun(lun, preserve)) {
           throw new Error(`Erasing LUN ${lun} failed`)
@@ -370,10 +420,7 @@ export class FlashManager {
     }
   }
 
-  async #flashSystem() {
-    this.#setStep(StepCode.FLASH_SYSTEM)
-    this.#setProgress(0)
-
+  #systemImages() {
     // Exclude GPT images and persist image, and pick correct userdata image to flash
     let systemImages = this.manifest
       .filter((image) => !image.gpt && image.name !== 'persist')
@@ -385,6 +432,14 @@ export class FlashManager {
       console.info('[Flash] Fast mode: skipping system partition')
     }
 
+    return systemImages
+  }
+
+  async #flashSystem() {
+    this.#setStep(StepCode.FLASH_SYSTEM)
+    this.#setProgress(0)
+    const systemImages = this.#systemImages()
+
     if (!systemImages.find((image) => image.name === this.#userdataImage)) {
       console.error(`[Flash] Did not find userdata image "${this.#userdataImage}"`)
       this.#setError(ErrorCode.UNKNOWN)
@@ -392,26 +447,60 @@ export class FlashManager {
     }
 
     try {
-      for await (const image of systemImages) {
-        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
-
-        this.#setMessage(`Downloading ${image.name}`)
-        await this.imageManager.downloadImage(image, onDownload)
-        const blob = await this.imageManager.getImage(image)
-        onDownload(1.0)
-
-        // Flash image to each slot
-        const slots = image.hasAB ? ['_a', '_b'] : ['']
-        for (const [slot, onSlotProgress] of withProgress(slots, onFlash)) {
-          // NOTE: userdata image name does not match partition name
-          const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
-
-          this.#setMessage(`Flashing ${partitionName}`)
-          if (!await this.device.flashBlob(partitionName, blob, (progress) => onSlotProgress(progress / image.size), false)) {
-            throw new Error(`Flashing partition "${partitionName}" failed`)
+      const batchImages = new Set(this.#firmwareBatch?.images.map(({ image }) => image))
+      let batchFlashed = false
+      for (const image of systemImages) {
+        if (batchImages.has(image)) {
+          if (batchFlashed) continue
+          this.#setMessage('Flashing firmware')
+          const batch = this.#firmwareBatch
+          // Verify the whole small group before the target enters raw mode;
+          // a slow archive must not leave it waiting for the next partition.
+          await Promise.all(batch.images.map(({ image }) => this.#downloads.get(image)))
+          if (!await flashFirmwareBatch(this.device, batch, async ({ image }) => {
+            return (await this.imageManager.getImage(image)).stream()
+          }, (bytes) => this.#setProgress(bytes / (batch.metadata.dataSectors * batch.metadata.sectorSize)))) {
+            throw new Error('Flashing firmware failed')
           }
-          onSlotProgress(1.0)
+          batchFlashed = true
+          this.#setProgress(1)
+          continue
         }
+        const [onDownload, onFlash] = createSteps([1, 1], this.#setProgress.bind(this))
+        const name = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${image.hasAB ? '_a' : ''}`
+        const progress = (bytes) => onFlash(bytes / image.size)
+        let streamed = false
+        if (this.#streamingImages.includes(image)) {
+          let source = await this.#downloads.getStream(image)
+          const selected = this.#downloads.getSelectedImage(image)
+          if (!source && selected.isLz4) {
+            await this.#downloads.get(image)
+            source = (await this.imageManager.getImage(selected)).stream()
+          }
+          if (source) {
+            this.#setMessage(`Flashing ${name}`)
+            const result = selected.isLz4
+              ? await this.device.flashLz4Stream(name, selected.stream, source, progress, false)
+              : await this.device.flashStream(name, image.stream, selectSparseRanges(source, image.stream, image.fileSize), progress, false)
+            if (!result) {
+              throw new Error(`Flashing ${name} failed`)
+            }
+            await this.#downloads.get(image)
+            onDownload(1.0)
+            streamed = true
+          }
+        }
+        if (!streamed) {
+          this.#setMessage(`Downloading ${image.name}`)
+          await this.#downloads.get(image, onDownload)
+          const blob = await this.imageManager.getImage(image)
+          onDownload(1.0)
+          this.#setMessage(`Flashing ${name}`)
+          if (!await this.device.flashBlob(name, blob, progress, false)) {
+            throw new Error(`Flashing ${name} failed`)
+          }
+        }
+        onFlash(1.0)
       }
     } catch (err) {
       console.error('[Flash] An error occurred while flashing system')
@@ -429,6 +518,7 @@ export class FlashManager {
     if (!await this.device.setActiveSlot('a')) {
       console.error('[Flash] Failed to update slot')
       this.#setError(ErrorCode.FINALIZING_FAILED)
+      return
     }
 
     // Reboot the device
@@ -444,20 +534,71 @@ export class FlashManager {
     await this.#connect()
     // Check if connection was cancelled (step went back to READY) or failed
     if (this.step === StepCode.READY || this.error !== ErrorCode.NONE) return
-    let start = performance.now()
-    await this.#repairPartitionTables()
-    console.info(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
-    if (this.error !== ErrorCode.NONE) return
-    start = performance.now()
-    await this.#eraseDevice()
-    console.info(`Erased device in ${((performance.now() - start) / 1000).toFixed(2)}s`)
-    if (this.error !== ErrorCode.NONE) return
-    start = performance.now()
-    await this.#flashSystem()
-    console.info(`Flashed system in ${((performance.now() - start) / 1000).toFixed(2)}s`)
-    if (this.error !== ErrorCode.NONE) return
-    start = performance.now()
-    await this.#finalize()
-    console.info(`Finalized in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+    const systemImages = this.#systemImages()
+    const system = systemImages.find((image) => image.name === 'system')
+    const userdata = systemImages.filter((image) => image.name.startsWith('userdata_'))
+    const gptImages = this.manifest.filter((image) => image.gpt)
+    const ddrGpt = gptImages.find((image) => image.gpt.lun === 3)
+    const firmwareGpt = gptImages.find((image) => image.gpt.lun === 4)
+    const images = [system, ddrGpt, firmwareGpt, ...gptImages.filter((image) => image !== ddrGpt && image !== firmwareGpt),
+      ...systemImages.filter((image) => image !== system && !userdata.includes(image))].filter(Boolean)
+    try {
+      const streamable = (image) => image?.stream && Number.isSafeInteger(image.fileSize) && image.fileSize > 0 &&
+        Number.isSafeInteger(image.chunkSize) && image.chunkSize > 0 && image.chunkSize <= 4 * 1024 * 1024 &&
+        Array.isArray(image.chunkHashes) && image.chunkHashes.length === Math.ceil(image.fileSize / image.chunkSize) &&
+        image.chunkHashes.every((hash) => /^[a-f0-9]{64}$/i.test(hash)) &&
+        Number.isSafeInteger(image.archiveSize) && image.archiveSize > 0 && image.archiveFileName.endsWith('.zst')
+      this.#streamingImages = systemImages.filter((image) => {
+        image.useLz4 = false
+        if (!streamable(image) || !this.device.canFlashStream(image.stream.extents.length)) return false
+        if (image.lz4 && this.device.canFlashLz4Stream?.(image.lz4.stream?.extents.length)) {
+          validateLz4Metadata(image.lz4.stream)
+          validateLz4Alternative(image, image.lz4)
+          if (!streamable(image.lz4)) throw new Error('LZ4 alternative is missing verified stream metadata')
+          image.useLz4 = true
+        }
+        return image === system || image.useLz4
+      })
+      for (const image of this.#streamingImages) validateSparseStreamMetadata(image.stream, image.fileSize)
+    } catch (error) {
+      console.error('[Flash] Invalid image stream metadata', error)
+      this.#setError(ErrorCode.UNKNOWN)
+      return
+    }
+    try {
+      await this.imageManager.prune([...images, ...userdata])
+    } catch (error) {
+      console.error('[Flash] Could not prepare image storage', error)
+      this.#setError(ErrorCode.STORAGE_SPACE)
+      return
+    }
+    this.#downloads = new DownloadQueue(this.imageManager, images, 4, userdata, this.#streamingImages)
+    try {
+      try {
+        await this.#prepareDdrPreservation()
+        await this.#prepareFirmwareBatch()
+      } catch (error) {
+        console.error('[Flash] Could not validate the partition layout before repair', error)
+        this.#setError(ErrorCode.REPAIR_PARTITION_TABLES_FAILED)
+        return
+      }
+      let start = performance.now()
+      await this.#repairPartitionTables()
+      console.info(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+      if (this.error !== ErrorCode.NONE) return
+      start = performance.now()
+      await this.#eraseDevice()
+      console.info(`Erased device in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+      if (this.error !== ErrorCode.NONE) return
+      start = performance.now()
+      await this.#flashSystem()
+      console.info(`Flashed system in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+      if (this.error !== ErrorCode.NONE) return
+      start = performance.now()
+      await this.#finalize()
+      console.info(`Finalized in ${((performance.now() - start) / 1000).toFixed(2)}s`)
+    } finally {
+      this.#downloads.cancel()
+    }
   }
 }

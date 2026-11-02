@@ -253,7 +253,7 @@ const errors = {
   },
   [ErrorCode.FLASH_SYSTEM_FAILED]: {
     status: 'Flash failed',
-    description: 'Try using a different cable, USB port, browser, or computer.',
+    description: 'Disconnect all power from your device before trying again. If it still fails, try a different cable, USB port, browser, or computer.',
     icon: deviceExclamation,
     showDiscordHelp: true,
   },
