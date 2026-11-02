@@ -78,7 +78,8 @@ export async function createArchiveWriter(root, name) {
       if (committed) return
       if (closed) throw new Error('Archive cache is closed')
       try {
-        await access.flush()
+        // Every cache read is decoded and hash-verified again. Let the OS
+        // schedule durable writeback instead of stalling a completed flash.
         await closeAccess()
         await temporary.move(name)
         committed = true

@@ -27,12 +27,12 @@ function filesystem({ sync = true, shortWrite = false, moveError = false, flush 
     }),
     removeEntry: vi.fn(async (name) => { files.delete(name) }),
   }
-  return { root, files, fallback, moves }
+  return { root, files, fallback, moves, flush }
 }
 
 describe('atomic worker archive cache', () => {
   it('replaces the old archive only after the caller commits verified bytes', async () => {
-    const { root, files } = filesystem()
+    const { root, files, flush } = filesystem()
     const writer = await createArchiveWriter(root, 'archive.zst')
     await writer.write(new Uint8Array([1, 2]))
     await writer.write(new Uint8Array([3, 4]))
@@ -40,6 +40,7 @@ describe('atomic worker archive cache', () => {
     await writer.close()
     expect([...files.get('archive.zst')]).toEqual([1, 2, 3, 4])
     expect(files.size).toBe(1)
+    expect(flush).not.toHaveBeenCalled()
     await writer.abort()
     expect([...files.get('archive.zst')]).toEqual([1, 2, 3, 4])
   })
@@ -72,17 +73,12 @@ describe('atomic worker archive cache', () => {
     expect(files.size).toBe(1)
   })
 
-  it('waits for asynchronous flush and close before committing or removing a file', async () => {
-    let flushed, closed
-    const flush = vi.fn(() => new Promise((resolve) => { flushed = resolve }))
+  it('waits for asynchronous close before committing or removing a file', async () => {
+    let closed
     const close = vi.fn(() => new Promise((resolve) => { closed = resolve }))
-    const { root, moves } = filesystem({ flush, close })
+    const { root, moves } = filesystem({ close })
     const writer = await createArchiveWriter(root, 'archive.zst')
     const commit = writer.close()
-    expect(close).not.toHaveBeenCalled()
-    expect(moves).not.toHaveBeenCalled()
-    flushed()
-    await Promise.resolve()
     expect(close).toHaveBeenCalledOnce()
     expect(moves).not.toHaveBeenCalled()
     closed()
@@ -95,6 +91,15 @@ describe('atomic worker archive cache', () => {
     closed()
     await abort
     expect(root.removeEntry).toHaveBeenCalledWith(abandoned.temporaryName)
+  })
+
+  it('keeps the previous archive when closing the replacement fails', async () => {
+    const { root, files } = filesystem({ close: vi.fn(async () => { throw new Error('Close failed') }) })
+    const writer = await createArchiveWriter(root, 'archive.zst')
+    await writer.write(new Uint8Array([1, 2]))
+    await expect(writer.close()).rejects.toThrow('Close failed')
+    expect([...files.get('archive.zst')]).toEqual([9, 8, 7])
+    expect(files.size).toBe(1)
   })
 })
 
