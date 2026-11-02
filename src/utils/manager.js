@@ -393,25 +393,21 @@ export class FlashManager {
 
     try {
       for await (const image of systemImages) {
-        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
+        const [onDownload, onFlash] = createSteps([1, 1], this.#setProgress.bind(this))
 
         this.#setMessage(`Downloading ${image.name}`)
         await this.imageManager.downloadImage(image, onDownload)
         const blob = await this.imageManager.getImage(image)
         onDownload(1.0)
 
-        // Flash image to each slot
-        const slots = image.hasAB ? ['_a', '_b'] : ['']
-        for (const [slot, onSlotProgress] of withProgress(slots, onFlash)) {
-          // NOTE: userdata image name does not match partition name
-          const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`
-
-          this.#setMessage(`Flashing ${partitionName}`)
-          if (!await this.device.flashBlob(partitionName, blob, (progress) => onSlotProgress(progress / image.size), false)) {
-            throw new Error(`Flashing partition "${partitionName}" failed`)
-          }
-          onSlotProgress(1.0)
+        // Only slot a, it's the one #finalize makes active
+        // NOTE: userdata image name does not match partition name
+        const partitionName = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${image.hasAB ? '_a' : ''}`
+        this.#setMessage(`Flashing ${partitionName}`)
+        if (!await this.device.flashBlob(partitionName, blob, (progress) => onFlash(progress / image.size), false)) {
+          throw new Error(`Flashing partition "${partitionName}" failed`)
         }
+        onFlash(1.0)
       }
     } catch (err) {
       console.error('[Flash] An error occurred while flashing system')
