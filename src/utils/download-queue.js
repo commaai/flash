@@ -10,8 +10,9 @@ export class DownloadQueue {
       return [image, entry]
     }))
     const run = async (pending) => {
-      for (const image of pending) {
+      while (pending.length) {
         if (this.controller.signal.aborted) break
+        const image = pending.shift()
         const entry = this.downloads.get(image)
         try {
           const complete = imageManager.downloadImage(image, (progress) => {
@@ -36,8 +37,13 @@ export class DownloadQueue {
         }
       }
     }
-    const pending = images.values()
-    Promise.all(Array.from({ length: concurrency }, () => run(pending))).then(() => run(deferred.values()))
+    this.pending = Array.from(images)
+    Promise.all(Array.from({ length: concurrency }, () => run(this.pending))).then(() => run(Array.from(deferred)))
+  }
+
+  prioritize(images) {
+    const order = new Map(images.map((image, index) => [image, index]))
+    this.pending.sort((a, b) => (order.get(a) ?? images.length) - (order.get(b) ?? images.length))
   }
 
   get(image, onProgress) {

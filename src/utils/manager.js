@@ -3,6 +3,7 @@ import { usbClass } from '@commaai/qdl/usblib'
 import { selectSparseRanges, validateSparseStreamMetadata } from '@commaai/qdl/sparse-stream'
 import { CalibrationLayoutError, canPreserveDdr, ddrPartitionFromGpt, readDdrPartition } from '@commaai/qdl/calibration'
 import { validateLz4Metadata } from '@commaai/qdl/lz4-stream'
+import { createFirmwareBatch, firmwareDestinations, flashFirmwareBatch } from '@commaai/qdl/manifest-batch'
 
 import { getManifest, validateLz4Alternative } from './manifest'
 import { DownloadQueue } from './download-queue'
@@ -117,6 +118,7 @@ export class FlashManager {
   #streamingImages = []
   #preserveDdr = false
   #desiredDdr
+  #firmwareBatch
 
   /**
    * @param {string} manifestUrl
@@ -327,6 +329,20 @@ export class FlashManager {
     }
   }
 
+  async #prepareFirmwareBatch() {
+    this.#firmwareBatch = null
+    if (!this.device.canFlashStream(1)) return
+    const gpt = this.manifest.find((image) => image.gpt?.lun === 4)
+    if (!gpt) return
+    await this.#downloads.get(gpt)
+    const destinations = firmwareDestinations(new Uint8Array(await (await this.imageManager.getImage(gpt)).arrayBuffer()))
+    const images = this.#systemImages().filter((image) => image.sparse && image.stream && !this.#streamingImages.includes(image))
+      .map((image) => ({ image, name: image.name, names: [`${image.name}${image.hasAB ? '_a' : ''}`],
+        transport: 'sparse', fileSize: image.fileSize, stream: image.stream }))
+    this.#firmwareBatch = createFirmwareBatch(this.device, images, destinations, 'a')
+    if (this.#firmwareBatch) this.#downloads.prioritize(this.#firmwareBatch.images.map(({ image }) => image))
+  }
+
   async #repairPartitionTables() {
     this.#setStep(StepCode.REPAIR_PARTITION_TABLES)
     this.#setProgress(0)
@@ -431,7 +447,25 @@ export class FlashManager {
     }
 
     try {
+      const batchImages = new Set(this.#firmwareBatch?.images.map(({ image }) => image))
+      let batchFlashed = false
       for (const image of systemImages) {
+        if (batchImages.has(image)) {
+          if (batchFlashed) continue
+          this.#setMessage('Flashing firmware')
+          const batch = this.#firmwareBatch
+          // Verify the whole small group before the target enters raw mode;
+          // a slow archive must not leave it waiting for the next partition.
+          await Promise.all(batch.images.map(({ image }) => this.#downloads.get(image)))
+          if (!await flashFirmwareBatch(this.device, batch, async ({ image }) => {
+            return (await this.imageManager.getImage(image)).stream()
+          }, (bytes) => this.#setProgress(bytes / (batch.metadata.dataSectors * batch.metadata.sectorSize)))) {
+            throw new Error('Flashing firmware failed')
+          }
+          batchFlashed = true
+          this.#setProgress(1)
+          continue
+        }
         const [onDownload, onFlash] = createSteps([1, 1], this.#setProgress.bind(this))
         const name = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${image.hasAB ? '_a' : ''}`
         const progress = (bytes) => onFlash(bytes / image.size)
@@ -505,7 +539,8 @@ export class FlashManager {
     const userdata = systemImages.filter((image) => image.name.startsWith('userdata_'))
     const gptImages = this.manifest.filter((image) => image.gpt)
     const ddrGpt = gptImages.find((image) => image.gpt.lun === 3)
-    const images = [system, ddrGpt, ...gptImages.filter((image) => image !== ddrGpt),
+    const firmwareGpt = gptImages.find((image) => image.gpt.lun === 4)
+    const images = [system, ddrGpt, firmwareGpt, ...gptImages.filter((image) => image !== ddrGpt && image !== firmwareGpt),
       ...systemImages.filter((image) => image !== system && !userdata.includes(image))].filter(Boolean)
     try {
       const streamable = (image) => image?.stream && Number.isSafeInteger(image.fileSize) && image.fileSize > 0 &&
@@ -541,6 +576,7 @@ export class FlashManager {
     try {
       try {
         await this.#prepareDdrPreservation()
+        await this.#prepareFirmwareBatch()
       } catch (error) {
         console.error('[Flash] Could not validate the partition layout before repair', error)
         this.#setError(ErrorCode.REPAIR_PARTITION_TABLES_FAILED)

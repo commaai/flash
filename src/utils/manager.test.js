@@ -5,6 +5,8 @@ vi.mock('@commaai/qdl', () => ({ qdlDevice: vi.fn() }))
 vi.mock('@commaai/qdl/usblib', () => ({ usbClass: vi.fn() }))
 vi.mock('@commaai/qdl/sparse-stream', () => ({ selectSparseRanges: vi.fn((stream) => stream), validateSparseStreamMetadata: vi.fn() }))
 vi.mock('@commaai/qdl/lz4-stream', () => ({ validateLz4Metadata: vi.fn() }))
+vi.mock('@commaai/qdl/manifest-batch', () => ({ createFirmwareBatch: vi.fn(() => null),
+  firmwareDestinations: vi.fn(() => new Map()), flashFirmwareBatch: vi.fn(async () => true) }))
 vi.mock('@commaai/qdl/calibration', () => ({
   CalibrationLayoutError: class CalibrationLayoutError extends Error {},
   canPreserveDdr: vi.fn(() => true),
@@ -15,6 +17,7 @@ vi.mock('./manifest', () => ({ getManifest: vi.fn(), validateLz4Alternative: vi.
 
 import { getManifest } from './manifest'
 import { CalibrationLayoutError, canPreserveDdr, readDdrPartition } from '@commaai/qdl/calibration'
+import { createFirmwareBatch, firmwareDestinations, flashFirmwareBatch } from '@commaai/qdl/manifest-batch'
 import { FlashManager, StepCode, ErrorCode, checkCompatibleDevice } from './manager'
 
 function setup(downloadImage) {
@@ -188,6 +191,71 @@ describe('image prefetch', () => {
     expect(manager.error).toBe(ErrorCode.FINALIZING_FAILED)
     expect(manager.device.reset).not.toHaveBeenCalled()
     expect(manager.step).not.toBe(StepCode.DONE)
+  })
+
+  it('validates GPT4 before writes and flashes its selected firmware images once as a group', async () => {
+    const manager = setup(vi.fn(async () => {}))
+    const manifest = await getManifest()
+    const firmware = (name) => ({ name, hasAB: true, sparse: true, fileSize: 4096, stream: {} })
+    manifest.splice(1, 0, firmware('boot'))
+    manifest.push(firmware('abl'), { name: 'gpt_main_4', gpt: { lun: 4 } })
+    manager.device.canFlashStream.mockReturnValue(true)
+    createFirmwareBatch.mockImplementationOnce((device, images) => ({ images: images.reverse(), metadata: { dataSectors: 2, sectorSize: 4096 } }))
+    flashFirmwareBatch.mockImplementationOnce(async (device, batch, getSource, progress) => {
+      expect(batch.images.map((entry) => entry.names)).toEqual([['abl_a'], ['boot_a']])
+      for (const image of batch.images) await (await getSource(image)).pipeTo(new WritableStream())
+      progress(8192)
+      return true
+    })
+    await manager.start()
+    expect(manager.error).toBe(ErrorCode.NONE)
+    expect(firmwareDestinations.mock.invocationCallOrder.at(-1)).toBeLessThan(manager.device.repairGpt.mock.invocationCallOrder[0])
+    expect(manager.device.flashBlob.mock.calls.map(([name]) => name)).toEqual(['system_a', 'userdata'])
+    expect(manager.device.setActiveSlot).toHaveBeenCalledWith('a')
+  })
+
+  it('rejects malformed desired firmware geometry before any write', async () => {
+    const manager = setup(vi.fn(async () => {}))
+    ;(await getManifest()).push({ name: 'gpt_main_4', gpt: { lun: 4 } })
+    manager.device.canFlashStream.mockReturnValue(true)
+    firmwareDestinations.mockImplementationOnce(() => { throw new Error('Invalid firmware GPT') })
+    await manager.start()
+    expect(manager.error).toBe(ErrorCode.REPAIR_PARTITION_TABLES_FAILED)
+    expect(manager.device.repairGpt).not.toHaveBeenCalled()
+    expect(manager.device.eraseLun).not.toHaveBeenCalled()
+  })
+
+  it('waits for every verified firmware image before starting the grouped command', async () => {
+    flashFirmwareBatch.mockClear()
+    let release
+    const pending = new Promise((resolve) => { release = resolve })
+    const manager = setup(vi.fn(async (image) => { if (image.name === 'abl') await pending }))
+    const manifest = await getManifest()
+    manifest.splice(1, 0, { name: 'abl', hasAB: true, sparse: true, fileSize: 4096, stream: {} })
+    manifest.push({ name: 'gpt_main_4', gpt: { lun: 4 } })
+    manager.device.canFlashStream.mockReturnValue(true)
+    createFirmwareBatch.mockImplementationOnce((device, images) => ({ images, metadata: { dataSectors: 1, sectorSize: 4096 } }))
+    const flashing = manager.start()
+    await vi.waitFor(() => expect(manager.device.eraseLun).toHaveBeenCalled())
+    expect(flashFirmwareBatch).not.toHaveBeenCalled()
+    release()
+    await flashing
+    expect(flashFirmwareBatch).toHaveBeenCalledOnce()
+    expect(manager.error).toBe(ErrorCode.NONE)
+  })
+
+  it('does not activate or reset after a firmware group fails', async () => {
+    const manager = setup(vi.fn(async () => {}))
+    const manifest = await getManifest()
+    manifest.splice(1, 0, { name: 'abl', hasAB: true, sparse: true, fileSize: 4096, stream: {} })
+    manifest.push({ name: 'gpt_main_4', gpt: { lun: 4 } })
+    manager.device.canFlashStream.mockReturnValue(true)
+    createFirmwareBatch.mockImplementationOnce((device, images) => ({ images, metadata: { dataSectors: 1, sectorSize: 4096 } }))
+    flashFirmwareBatch.mockRejectedValueOnce(new Error('Firmware stream failed'))
+    await manager.start()
+    expect(manager.error).toBe(ErrorCode.FLASH_SYSTEM_FAILED)
+    expect(manager.device.setActiveSlot).not.toHaveBeenCalled()
+    expect(manager.device.reset).not.toHaveBeenCalled()
   })
 
   it('validates existing and desired DDR before any GPT write and preserves the same device calibration', async () => {

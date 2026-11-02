@@ -73,4 +73,18 @@ describe('download queue', () => {
     await queue.get('system')
     queue.cancel()
   })
+
+  it('reprioritizes unopened downloads without restarting active images', async () => {
+    const { manager, images, pending } = harness()
+    const queue = new DownloadQueue(manager, images, 1)
+    queue.prioritize(['boot', 'gpt1'])
+    expect(manager.downloadImage.mock.calls.map(([image]) => image)).toEqual(['system'])
+    pending.get('system').resolve()
+    await queue.get('system')
+    expect(manager.downloadImage.mock.calls.map(([image]) => image)).toEqual(['system', 'boot'])
+    pending.get('boot').resolve()
+    await queue.get('boot')
+    expect(manager.downloadImage.mock.calls.map(([image]) => image)).toEqual(['system', 'boot', 'gpt1'])
+    queue.cancel()
+  })
 })
