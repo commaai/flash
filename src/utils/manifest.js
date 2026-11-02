@@ -60,8 +60,11 @@ export class ManifestImage {
 
   hash
   fileSize
+  archiveSize
+  archiveCacheName
   chunkSize
   chunkHashes
+  stream
 
   constructor(json) {
     json = { ...json, ...json.flash }
@@ -69,9 +72,20 @@ export class ManifestImage {
     this.partitionName = json.name.startsWith('userdata_') ? 'userdata' : json.name
 
     this.hash = json.hash
+    this.archiveSize = json.archive_size
     this.fileSize = json.file_size
     this.chunkSize = json.chunk_size
     this.chunkHashes = json.chunk_hashes
+    this.stream = json.stream ? {
+      sectorSize: json.stream.sector_size,
+      numPartitionSectors: json.stream.num_partition_sectors,
+      dataSectors: json.stream.data_sectors,
+      extents: json.stream.extents.map((extent) => extent.map((value) => {
+        if (!Number.isSafeInteger(value)) throw new Error('Invalid sparse stream extent')
+        return BigInt(value)
+      })),
+      sourceRanges: json.stream.source_ranges,
+    } : null
     this.size = json.size
     this.sparse = json.sparse
     this.hasAB = json.has_ab
@@ -80,6 +94,7 @@ export class ManifestImage {
     this.fileName = `${this.name}-${json.hash}.img`
     this.archiveUrl = json.zstd_url || json.url
     this.archiveFileName = this.archiveUrl.split('/').pop()
+    this.archiveCacheName = `${this.fileName}.${this.archiveFileName.split('.').pop()}`
 
     this.compressed = /\.(xz|zst)$/.test(this.archiveFileName)
   }
@@ -90,7 +105,7 @@ export class ManifestImage {
  * @returns {Promise<ManifestImage[]>}
  */
 export async function getManifest(url) {
-  const images = await fetch(url).then((response) => response.json())
-  const agnos = await fetch(url.replace('all-partitions', 'agnos')).then((response) => response.json())
+  const [images, agnos] = await Promise.all([url, url.replace('all-partitions', 'agnos')]
+    .map((manifestUrl) => fetch(manifestUrl).then((response) => response.json())))
   return images.map((image) => new ManifestImage(agnos.find((a) => a.name === image.name) ?? image))
 }

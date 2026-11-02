@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { createHash, webcrypto } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import { unpackImage, verifyImage } from './download'
+import { cacheArchive, unpackImage, verifyImage, writeImage } from './download'
 import { ManifestImage } from './manifest'
 
 vi.mock('zstd-wasm-decoder/perf/external', async () => import('zstd-wasm-decoder'))
@@ -92,5 +92,59 @@ describe('chunk verification', () => {
     for (const fields of [{ chunkSize: 0 }, { fileSize: -1 }, { chunkHashes: [] }, { chunkHashes: chunkHashes.map(() => 'bad') }]) {
       await expect(verify(contents, { ...image, ...fields })).rejects.toThrow('Invalid')
     }
+  })
+})
+
+describe('verified decoded cache', () => {
+  function cache() {
+    let committed = Buffer.from('previous image')
+    const root = { async getFileHandle() { return { async createWritable() {
+      const chunks = []
+      return new WritableStream({
+        write(chunk) { chunks.push(Buffer.from(chunk)) },
+        close() { committed = Buffer.concat(chunks) },
+      })
+    } } } }
+    return { root, contents: () => committed }
+  }
+
+  it('commits verified bytes and preserves the previous file on checksum failure', async () => {
+    const { root, contents: cached } = cache()
+    const image = { name: 'system', fileName: 'image.img', fileSize: contents.length,
+      chunkSize: contents.length, chunkHashes: [hash] }
+    await writeImage(root, image, source(contents))
+    expect(cached()).toEqual(contents)
+    await expect(writeImage(root, { ...image, chunkHashes: ['0'.repeat(64)] }, source(contents))).rejects.toThrow('Checksum mismatch')
+    expect(cached()).toEqual(contents)
+  })
+})
+
+describe('compressed archive cache', () => {
+  it('pipelines at most two writes, preserves byte order, and leaves commit to image verification', async () => {
+    const contents = new Uint8Array(9 * 1024 * 1024)
+    for (let i = 0; i < contents.length; i++) contents[i] = i % 251
+    const source = new ReadableStream({ start(controller) { controller.enqueue(contents); controller.close() } })
+    const writes = []
+    let active = 0, maximum = 0
+    const writer = {
+      write(chunk) {
+        active++
+        maximum = Math.max(maximum, active)
+        return new Promise((resolve) => setTimeout(() => { writes.push(chunk); active--; resolve() }, 0))
+      },
+      close: vi.fn(),
+    }
+    const output = []
+    await cacheArchive(source, writer).pipeTo(new WritableStream({ write(chunk) { output.push(chunk) } }))
+    expect(maximum).toBe(2)
+    expect(Buffer.concat(writes).equals(Buffer.from(contents))).toBe(true)
+    expect(Buffer.concat(output).equals(Buffer.from(contents))).toBe(true)
+    expect(writer.close).not.toHaveBeenCalled()
+  })
+
+  it('propagates a cache write failure without committing', async () => {
+    const writer = { write: vi.fn(async () => { throw new Error('Disk full') }), close: vi.fn() }
+    await expect(cacheArchive(source(contents), writer).pipeTo(new WritableStream())).rejects.toThrow('Disk full')
+    expect(writer.close).not.toHaveBeenCalled()
   })
 })

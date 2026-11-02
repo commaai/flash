@@ -11,11 +11,12 @@ const getContentLength = (response) => {
  * @param {object} [options]
  * @param {number} [options.maxRetries]
  * @param {number} [options.retryDelay]
+ * @param {number} [options.expectedLength]
  * @param {progressCallback} [options.onProgress]
  */
 export async function fetchStream(url, requestOptions = {}, options = {}) {
-  const maxRetries = options.maxRetries || 3
-  const retryDelay = options.retryDelay || 1000
+  const maxRetries = options.maxRetries ?? 3
+  const retryDelay = options.retryDelay ?? 1000
 
   /**
    * @param {number} startByte
@@ -54,6 +55,9 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
           }
           const { done, value } = await reader.read()
           if (done) {
+            if (options.expectedLength !== undefined && startByte !== options.expectedLength) {
+              throw new Error('Archive size mismatch')
+            }
             stream.close()
             return
           }
@@ -63,6 +67,7 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
           return
         } catch (err) {
           reader = null
+          if (abortController.signal.aborted) return
           console.warn(`Attempt ${attempt + 1} failed:`, err)
           if (attempt === maxRetries) {
             abortController.abort()
@@ -78,5 +83,5 @@ export async function fetchStream(url, requestOptions = {}, options = {}) {
       console.warn('Stream canceled:', reason)
       abortController.abort()
     },
-  })
+  }, { highWaterMark: 4 * 1024 * 1024, size: (chunk) => chunk.byteLength })
 }

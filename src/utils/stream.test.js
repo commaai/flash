@@ -121,13 +121,21 @@ describe('fetchStream', () => {
   })
 
   it('does not read the entire response ahead of the consumer', async () => {
-    const read = vi.fn(async () => ({ done: false, value: encoder.encode('chunk') }))
+    const read = vi.fn(async () => ({ done: false, value: new Uint8Array(1024 * 1024) }))
     global.fetch.mockResolvedValue({ ok: true, status: 200,
       headers: { get: () => '1000' }, body: { getReader: () => ({ read }) } })
     const stream = await fetchStream('https://example.com')
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(read).toHaveBeenCalledTimes(1)
+    expect(read).toHaveBeenCalledTimes(4)
     await stream.cancel()
+  })
+
+  it('rejects truncated or oversized archives against the manifest byte count', async () => {
+    for (const expectedLength of [4, 2]) {
+      global.fetch.mockResolvedValue(mockResponse({ body: ['abc'], headers: { 'content-length': '3' } }))
+      const stream = await fetchStream('https://example.com', {}, { expectedLength, maxRetries: 0 })
+      await expect(readText(stream)).rejects.toMatchObject({ cause: { message: 'Archive size mismatch' } })
+    }
   })
 
   it('throws after max retries', async () => {

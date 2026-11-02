@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+import { getImageDirectory } from './image-storage'
+import { receiveStream } from './stream-channel'
 
 /**
  * Progress callback
@@ -16,16 +18,11 @@ export class ImageManager {
 
   async init() {
     if (!this.root) {
-      this.root = await navigator.storage.getDirectory()
-      // Clean up any leftover files from previous sessions
-      try {
-        await this.root.remove({ recursive: true })
-      } catch (e) {
-        // Ignore errors - directory might not exist or be empty
-        console.debug('[ImageManager] Could not remove old directory:', e)
+      const root = await navigator.storage.getDirectory()
+      for await (const [name, handle] of root.entries()) {
+        if (handle.kind === 'file' && name.endsWith('.img')) await root.removeEntry(name)
       }
-      // Re-get the directory after removal
-      this.root = await navigator.storage.getDirectory()
+      this.root = await getImageDirectory()
       console.info('[ImageManager] Initialized')
     }
 
@@ -42,34 +39,125 @@ export class ImageManager {
    * @param {ManifestImage} image
    * @param {progressCallback} [onProgress]
    * @param {AbortSignal} [signal]
+   * @param {(stream: ReadableStream<Uint8Array>|null) => void} [onStream] Receives verified bytes, or null for an existing decoded cache.
    * @returns {Promise<void>}
    */
-  async downloadImage(image, onProgress = undefined, signal = undefined) {
+  async downloadImage(image, onProgress = undefined, signal = undefined, onStream = undefined) {
+    signal?.throwIfAborted()
+    if (Number.isSafeInteger(image.fileSize)) {
+      try {
+        const file = await this.getImage(image)
+        if (file.size === image.fileSize) {
+          onStream?.(null)
+          onProgress?.(1)
+          return
+        }
+        await this.root.removeEntry(image.fileName)
+      } catch (error) {
+        if (error.name !== 'NotFoundError') throw error
+      }
+    }
     signal?.throwIfAborted()
     const decoder = new Worker(new URL('./image.worker.js', import.meta.url), { type: 'module' })
     const writer = new Worker(new URL('./image-write.worker.js', import.meta.url), { type: 'module' })
     const channel = new MessageChannel()
+    const output = onStream ? new MessageChannel() : null
+    let active = true
     let onAbort
+    let streamComplete = Promise.resolve()
+    let rejectStream = () => {}
+    let streamController
+    let sourceReader
+    const stopStream = (error) => {
+      const controller = streamController
+      streamController = null
+      controller?.error(error)
+      if (sourceReader) {
+        const reader = sourceReader
+        sourceReader = null
+        reader.cancel(error).catch(() => {}).finally(() => reader.releaseLock())
+      }
+      rejectStream(error)
+    }
     try {
       await new Promise((resolve, reject) => {
-        onAbort = () => reject(signal.reason)
+        onAbort = () => {
+          stopStream(signal.reason)
+          reject(signal.reason)
+        }
         signal?.addEventListener('abort', onAbort, { once: true })
         decoder.onmessage = ({ data }) => {
+          if (!active) return
           if (data.error) reject(new Error(data.error))
+          else if (data.cacheDone) resolve()
           else onProgress?.(data.progress)
         }
         writer.onmessage = ({ data }) => {
+          if (!active) return
           if (data.error) reject(new Error(data.error))
-          else if (data.done) resolve()
+          else if (data.stream || data.streamReady) {
+            let completeStream
+            streamComplete = new Promise((resolve, reject) => { completeStream = resolve; rejectStream = reject })
+            streamComplete.catch(() => {})
+            sourceReader = (data.stream || receiveStream(output.port1)).getReader()
+            const reader = sourceReader
+            const stream = new ReadableStream({
+              start(controller) { streamController = controller },
+              async pull(controller) {
+                try {
+                  const { value, done } = await reader.read()
+                  if (!streamController) return
+                  if (done) {
+                    streamController = null
+                    sourceReader = null
+                    controller.close()
+                    reader.releaseLock()
+                    completeStream()
+                  } else controller.enqueue(value)
+                } catch (error) {
+                  stopStream(error)
+                  reject(error)
+                }
+              },
+              cancel(reason) {
+                streamController = null
+                const error = reason || new DOMException('Image stream cancelled', 'AbortError')
+                stopStream(error)
+                reject(error)
+              },
+            })
+            onStream?.(stream)
+          }
+          else if (data.done) {
+            if (onStream) decoder.postMessage({ commit: true })
+            else resolve()
+          }
         }
         decoder.onerror = writer.onerror = (event) => reject(new Error(event.message))
-        writer.postMessage({ image, port: channel.port2 }, [channel.port2])
-        decoder.postMessage({ image, port: channel.port1 }, [channel.port1])
+        writer.postMessage({ image, port: channel.port2, streaming: !!onStream, output: output?.port2 },
+          [channel.port2, ...(output ? [output.port2] : [])])
+        decoder.postMessage({ image, port: channel.port1, streaming: !!onStream }, [channel.port1])
       })
+      await streamComplete
+    } catch (error) {
+      stopStream(error)
+      throw error
     } finally {
+      active = false
       signal?.removeEventListener('abort', onAbort)
       decoder.terminate()
       writer.terminate()
+      output?.port1.close?.()
+    }
+  }
+
+  async prune(images) {
+    const keep = new Set(images.filter((image) => Number.isSafeInteger(image.fileSize)).map((image) => image.fileName))
+    for (const image of images) {
+      if (Number.isSafeInteger(image.archiveSize) && image.archiveCacheName) keep.add(image.archiveCacheName)
+    }
+    for await (const [name] of this.root.entries()) {
+      if (!keep.has(name)) await this.root.removeEntry(name)
     }
   }
 
@@ -82,12 +170,7 @@ export class ImageManager {
   async getImage(image) {
     const { fileName } = image
 
-    let fileHandle
-    try {
-      fileHandle = await this.root.getFileHandle(fileName, { create: false })
-    } catch (e) {
-      throw new Error(`Error getting file handle: ${e}`, { cause: e })
-    }
+    const fileHandle = await this.root.getFileHandle(fileName, { create: false })
 
     return fileHandle.getFile()
   }

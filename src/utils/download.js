@@ -81,6 +81,37 @@ export async function unpackImage(stream, image) {
   return verifyImage(decodeImage(stream, image), image)
 }
 
+// Keep compressed writes bounded; the caller commits only after decoded-image verification.
+export function cacheArchive(stream, writer) {
+  let buffer = new Uint8Array(4 * 1024 * 1024)
+  let offset = 0
+  const writes = []
+  return stream.pipeThrough(new TransformStream({
+    async transform(chunk, controller) {
+      let start = 0
+      while (start < chunk.length) {
+        const length = Math.min(chunk.length - start, buffer.length - offset)
+        buffer.set(chunk.subarray(start, start + length), offset)
+        offset += length
+        start += length
+        if (offset === buffer.length) {
+          const write = writer.write(buffer)
+          write.catch(() => {})
+          writes.push(write)
+          buffer = new Uint8Array(buffer.length)
+          offset = 0
+          if (writes.length === 2) await writes.shift()
+        }
+      }
+      controller.enqueue(chunk)
+    },
+    async flush() {
+      if (offset) await writer.write(buffer.subarray(0, offset))
+      await Promise.all(writes)
+    },
+  }))
+}
+
 export async function writeImage(root, image, stream) {
   const handle = await root.getFileHandle(image.fileName, { create: true })
   const writable = await handle.createWritable()
@@ -95,7 +126,7 @@ export async function writeImage(root, image, stream) {
 }
 
 export async function downloadImage(root, image, onProgress) {
-  const response = await fetchStream(image.archiveUrl, { mode: 'cors' }, { onProgress })
+  const response = await fetchStream(image.archiveUrl, { mode: 'cors' }, { onProgress, expectedLength: image.archiveSize })
   await writeImage(root, image, decodeImage(response, image))
   onProgress?.(1)
 }

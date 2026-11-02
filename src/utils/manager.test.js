@@ -2,19 +2,21 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@commaai/qdl', () => ({ qdlDevice: vi.fn() }))
 vi.mock('@commaai/qdl/usblib', () => ({ usbClass: vi.fn() }))
+vi.mock('@commaai/qdl/sparse-stream', () => ({ selectSparseRanges: vi.fn((stream) => stream), validateSparseStreamMetadata: vi.fn() }))
 vi.mock('./manifest', () => ({ getManifest: vi.fn() }))
 
 import { getManifest } from './manifest'
-import { FlashManager, StepCode, ErrorCode } from './manager'
+import { FlashManager, StepCode, ErrorCode, checkCompatibleDevice } from './manager'
 
 function setup(downloadImage) {
   const gpt = { name: 'gpt_main_0', gpt: { lun: 0 } }
-  const system = { name: 'system', hasAB: true, size: 4096 }
+  const system = { name: 'system', hasAB: true, size: 4096, archiveSize: 100, archiveFileName: 'system.zst',
+    chunkSize: 4096, chunkHashes: ['0'.repeat(64)] }
   const userdata = { name: 'userdata_89', size: 4096 }
   getManifest.mockResolvedValue([gpt, system, userdata])
   const manager = new FlashManager(new ArrayBuffer(0))
   manager.step = StepCode.READY
-  manager.imageManager = { downloadImage, getImage: vi.fn(async () => new Blob(['image'])) }
+  manager.imageManager = { downloadImage, prune: vi.fn(), getImage: vi.fn(async () => new Blob(['image'])) }
   manager.device = {
     connect: vi.fn(),
     getDeviceType: vi.fn(async () => 34),
@@ -24,6 +26,8 @@ function setup(downloadImage) {
     detectPartition: vi.fn(async () => [true, 0, { start: 8n, sectors: 8192n }]),
     eraseLun: vi.fn(async () => true),
     flashBlob: vi.fn(async () => true),
+    canFlashStream: vi.fn(() => false),
+    flashStream: vi.fn(async () => true),
     setActiveSlot: vi.fn(async () => true),
     reset: vi.fn(),
   }
@@ -31,15 +35,21 @@ function setup(downloadImage) {
 }
 
 describe('image prefetch', () => {
-  it('downloads the next image while flashing both slots of the current image', async () => {
+  it('selects the validated userdata size for Samsung 128 GB storage', () => {
+    const storage = { block_size: 4096, page_size: 4096, num_physical: 6, mem_type: 'UFS',
+      prod_name: 'KLUDG4U1EA-B0C1', manufacturer_id: 462, total_blocks: 29765632 }
+    expect(checkCompatibleDevice(storage)).toBe('userdata_90')
+    expect(() => checkCompatibleDevice({ ...storage, total_blocks: 29765631 })).toThrow('Could not identify')
+  })
+  it('starts system download before GPT repair and flashes both slots', async () => {
     const events = []
     const manager = setup(vi.fn(async (image) => { events.push(`download ${image.name}`) }))
     manager.device.flashBlob.mockImplementation(async (name) => { events.push(`flash ${name}`); return true })
     await manager.start()
     expect(manager.error).toBe(ErrorCode.NONE)
     expect(manager.step).toBe(StepCode.DONE)
-    expect(events).toEqual(['download gpt_main_0', 'download system', 'download userdata_89',
-      'flash system_a', 'flash system_b', 'flash userdata'])
+    expect(events).toEqual(['download system', 'download gpt_main_0', 'download userdata_89',
+      'flash system_a,system_b', 'flash userdata'])
   })
 
   it('reports a failed prefetch after the current image and does not flash it', async () => {
@@ -52,7 +62,62 @@ describe('image prefetch', () => {
     })
     await manager.start()
     expect(manager.error).toBe(ErrorCode.FLASH_SYSTEM_FAILED)
-    expect(manager.device.flashBlob.mock.calls.map(([name]) => name)).toEqual(['system_a', 'system_b'])
+    expect(manager.device.flashBlob.mock.calls.map(([name]) => name)).toEqual([['system_a', 'system_b']])
     expect(manager.device.setActiveSlot).not.toHaveBeenCalled()
+  })
+
+  it('streams both slots before the system cache completes and waits for verified completion', async () => {
+    let finish
+    const stream = new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(4096)); controller.close() } })
+    const manager = setup(vi.fn(async (image, progress, signal, onStream) => {
+      if (image.name === 'system') {
+        onStream(stream)
+        await new Promise((resolve) => { finish = resolve })
+      }
+    }))
+    const system = (await getManifest())[1]
+    system.stream = { extents: [[0n, 1n]] }
+    system.fileSize = 4096
+    manager.device.canFlashStream.mockReturnValue(true)
+    manager.device.flashStream.mockImplementation(async (names, metadata, payload, progress) => {
+      await payload.pipeTo(new WritableStream())
+      progress(8192)
+      finish()
+      return true
+    })
+    await manager.start()
+    expect(manager.error).toBe(ErrorCode.NONE)
+    expect(manager.device.flashStream.mock.calls[0][0]).toEqual(['system_a', 'system_b'])
+    expect(manager.device.flashBlob.mock.calls.map(([name]) => name)).toEqual(['userdata'])
+    expect(manager.step).toBe(StepCode.DONE)
+  })
+
+  it('uses the verified cached Blob when streaming is supported but no download is needed', async () => {
+    const manager = setup(vi.fn(async (image, progress, signal, onStream) => { onStream?.(null) }))
+    const system = (await getManifest())[1]
+    system.stream = { extents: [[0n, 1n]] }
+    system.fileSize = 4096
+    manager.device.canFlashStream.mockReturnValue(true)
+    await manager.start()
+    expect(manager.device.flashStream).not.toHaveBeenCalled()
+    expect(manager.device.flashBlob.mock.calls.map(([name]) => name)).toEqual([['system_a', 'system_b'], 'userdata'])
+  })
+
+  it('cancels downloads and skips finalization when native streaming fails', async () => {
+    const signals = []
+    const manager = setup(vi.fn(async (image, progress, signal, onStream) => {
+      signals.push(signal)
+      onStream?.(new ReadableStream())
+    }))
+    const system = (await getManifest())[1]
+    system.stream = { extents: [[0n, 1n]] }
+    system.fileSize = 4096
+    manager.device.canFlashStream.mockReturnValue(true)
+    manager.device.flashStream.mockRejectedValue(new Error('Stream interrupted; power cycle required'))
+    await manager.start()
+    expect(manager.error).toBe(ErrorCode.FLASH_SYSTEM_FAILED)
+    expect(signals.every((signal) => signal.aborted)).toBe(true)
+    expect(manager.device.setActiveSlot).not.toHaveBeenCalled()
+    expect(manager.device.reset).not.toHaveBeenCalled()
   })
 })
