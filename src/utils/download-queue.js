@@ -2,7 +2,7 @@ export class DownloadQueue {
   constructor(imageManager, images, concurrency = 4, deferred = [], streaming = []) {
     this.controller = new AbortController()
     this.downloads = new Map([...images, ...deferred].map((image) => {
-      const entry = { progress: 0 }
+      const entry = { progress: 0, selectedImage: image }
       entry.promise = new Promise((resolve, reject) => { entry.resolve = resolve; entry.reject = reject })
       entry.stream = new Promise((resolve, reject) => { entry.resolveStream = resolve; entry.rejectStream = reject })
       entry.promise.catch(() => {})
@@ -17,7 +17,10 @@ export class DownloadQueue {
           const complete = imageManager.downloadImage(image, (progress) => {
             entry.progress = progress
             entry.onProgress?.(progress)
-          }, this.controller.signal, streaming.includes(image) ? entry.resolveStream : undefined)
+          }, this.controller.signal, streaming.includes(image) ? (stream, selected = image) => {
+            entry.selectedImage = selected
+            entry.resolveStream(stream)
+          } : undefined)
           complete.then(() => {
             entry.progress = 1
             entry.onProgress?.(1)
@@ -49,6 +52,10 @@ export class DownloadQueue {
     entry.onProgress = onProgress
     onProgress?.(entry.progress)
     return entry.stream
+  }
+
+  getSelectedImage(image) {
+    return this.downloads.get(image).selectedImage
   }
 
   cancel() {

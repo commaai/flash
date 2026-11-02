@@ -15,6 +15,7 @@ const MIN_QUOTA_GB = 5.25
 export class ImageManager {
   /** @type {FileSystemDirectoryHandle} */
   root
+  fastLink
 
   async init() {
     if (!this.root) {
@@ -39,7 +40,7 @@ export class ImageManager {
    * @param {ManifestImage} image
    * @param {progressCallback} [onProgress]
    * @param {AbortSignal} [signal]
-   * @param {(stream: ReadableStream<Uint8Array>|null) => void} [onStream] Receives verified bytes, or null for an existing decoded cache.
+   * @param {(stream: ReadableStream<Uint8Array>|null, selected: ManifestImage) => void} [onStream] Receives verified bytes and their selected image, or null for an existing decoded cache.
    * @returns {Promise<void>}
    */
   async downloadImage(image, onProgress = undefined, signal = undefined, onStream = undefined) {
@@ -48,7 +49,7 @@ export class ImageManager {
       try {
         const file = await this.getImage(image)
         if (file.size === image.fileSize) {
-          onStream?.(null)
+          onStream?.(null, image)
           onProgress?.(1)
           return
         }
@@ -69,6 +70,7 @@ export class ImageManager {
     let rejectStream = () => {}
     let streamController
     let sourceReader
+    let cacheTemporary
     const stopStream = (error) => {
       const controller = streamController
       streamController = null
@@ -91,6 +93,8 @@ export class ImageManager {
           if (!active) return
           if (data.error) reject(new Error(data.error))
           else if (data.cacheDone) resolve()
+          else if (data.cacheTemporary) cacheTemporary = data.cacheTemporary
+          else if (typeof data.fastLink === 'boolean') this.fastLink = data.fastLink
           else if (data.frameWorkers) {
             try {
               if (!onStream || !Number.isInteger(data.frameWorkers) || data.frameWorkers < 1 || data.frameWorkers > 4 || frameWorkers.length) {
@@ -114,6 +118,8 @@ export class ImageManager {
           if (!active) return
           if (data.error) reject(new Error(data.error))
           else if (data.stream || data.streamReady) {
+            const selected = data.transport === 'lz4' ? image.lz4 : image
+            if (!selected) { reject(new Error('Missing selected image alternative')); return }
             let completeStream
             streamComplete = new Promise((resolve, reject) => { completeStream = resolve; rejectStream = reject })
             streamComplete.catch(() => {})
@@ -144,7 +150,7 @@ export class ImageManager {
                 reject(error)
               },
             })
-            onStream?.(stream)
+            onStream?.(stream, selected)
           }
           else if (data.done) {
             if (onStream) decoder.postMessage({ commit: true })
@@ -154,7 +160,7 @@ export class ImageManager {
         decoder.onerror = writer.onerror = (event) => reject(new Error(event.message))
         writer.postMessage({ image, port: channel.port2, streaming: !!onStream, output: output?.port2 },
           [channel.port2, ...(output ? [output.port2] : [])])
-        decoder.postMessage({ image, port: channel.port1, streaming: !!onStream }, [channel.port1])
+        decoder.postMessage({ image, port: channel.port1, streaming: !!onStream, fastLink: this.fastLink }, [channel.port1])
       })
       await streamComplete
     } catch (error) {
@@ -167,10 +173,27 @@ export class ImageManager {
       writer.terminate()
       for (const worker of frameWorkers) worker.terminate()
       output?.port1.close?.()
+      if (cacheTemporary) {
+        // Terminating the decoder closes its exclusive access handle. Cleanup
+        // can briefly race that release; a future prune also removes leftovers.
+        for (let attempt = 0; attempt < 10; attempt++) {
+          try { await this.root.removeEntry(cacheTemporary); break }
+          catch (error) {
+            if (error.name === 'NotFoundError') break
+            if (error.name !== 'NoModificationAllowedError' || attempt === 9) {
+              console.warn('[ImageManager] Could not remove incomplete cache:', error)
+              break
+            }
+            await new Promise((resolve) => setTimeout(resolve, 10))
+          }
+        }
+      }
     }
   }
 
   async prune(images) {
+    this.fastLink = undefined
+    images = images.flatMap((image) => image.lz4 ? [image, image.lz4] : [image])
     const keep = new Set(images.filter((image) => Number.isSafeInteger(image.fileSize)).map((image) => image.fileName))
     for (const image of images) {
       if (Number.isSafeInteger(image.archiveSize) && image.archiveCacheName) keep.add(image.archiveCacheName)

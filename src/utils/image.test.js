@@ -96,4 +96,21 @@ describe('download workers', () => {
     await expect(complete).rejects.toThrow('aborted')
     for (const worker of workers) expect(worker.terminate).toHaveBeenCalledOnce()
   })
+
+  it('reuses the initial link measurement within one flash and resets it for the next', async () => {
+    const manager = new ImageManager()
+    const first = manager.downloadImage({})
+    workers[0].onmessage({ data: { fastLink: true } })
+    workers[1].onmessage({ data: { done: true } })
+    await first
+    const second = manager.downloadImage({})
+    expect(workers[2].postMessage.mock.calls[0][0].fastLink).toBe(true)
+    workers[3].onmessage({ data: { done: true } })
+    await second
+    manager.root = { async *entries() {} }
+    await manager.prune([])
+    expect(manager.fastLink).toBeUndefined()
+    workers[0].onmessage({ data: { fastLink: true } })
+    expect(manager.fastLink).toBeUndefined()
+  })
 })

@@ -2,6 +2,8 @@ import { cacheArchive, decodeImage } from './download'
 import { fetchStream } from './stream'
 import { getImageDirectory } from './image-storage'
 import { decodeFrames, probeArchive, validateFrames } from './framed'
+import { sendStream } from './stream-channel'
+import { createArchiveWriter } from './archive-cache'
 
 let archiveWriter
 let receiveFramePorts
@@ -31,31 +33,41 @@ self.onmessage = async ({ data }) => {
       self.postMessage({ cacheDone: true })
       return
     }
-    const { image, port, streaming } = data
+    const { image: requested, port, streaming } = data
+    let image = requested
     let source, root, parallel = false
-    const framed = streaming && validateFrames(image)
+    const allowLz4 = streaming && requested.useLz4 && requested.lz4
+    const candidates = allowLz4 ? [requested.lz4, requested] : [requested]
     if (streaming) {
       root = await getImageDirectory()
-      if (framed) {
-        source = await cachedArchive(root, image.framedArchiveCacheName, image.framedArchiveSize)
-        parallel = !!source
+      for (const candidate of candidates) {
+        if (validateFrames(candidate)) {
+          source = await cachedArchive(root, candidate.framedArchiveCacheName, candidate.framedArchiveSize)
+          parallel = !!source
+        }
+        source ||= await cachedArchive(root, candidate.archiveCacheName, candidate.archiveSize)
+        if (source) { image = candidate; break }
       }
-      source ||= await cachedArchive(root, image.archiveCacheName, image.archiveSize)
       if (source) self.postMessage({ progress: 1 })
     }
     if (!source) {
-      source = await download(image.archiveUrl, image.archiveSize)
-      if (framed) {
-        source = await probeArchive(source)
-        if (!source) {
-          parallel = true
-          source = await download(image.framedArchiveUrl, image.framedArchiveSize)
-        }
+      const framed = streaming && validateFrames(image)
+      const primaryFramed = framed && image.archiveUrl === image.framedArchiveUrl && image.archiveSize === image.framedArchiveSize
+      let fastLink = data.fastLink
+      if ((framed || allowLz4) && fastLink === undefined && !(primaryFramed && !allowLz4)) {
+        source = await probeArchive(await download(image.archiveUrl, image.archiveSize), undefined,
+          (measurement) => console.debug('[ImageManager] Archive source', measurement))
+        fastLink = !source
+        self.postMessage({ fastLink })
       }
+      if (fastLink && allowLz4) image = requested.lz4
+      parallel = streaming && validateFrames(image) && (fastLink || primaryFramed)
+      source ||= await download(parallel ? image.framedArchiveUrl : image.archiveUrl,
+        parallel ? image.framedArchiveSize : image.archiveSize)
       if (streaming) {
         const name = parallel ? image.framedArchiveCacheName : image.archiveCacheName
-        const handle = await root.getFileHandle(name, { create: true })
-        archiveWriter = (await handle.createWritable()).getWriter()
+        archiveWriter = await createArchiveWriter(root, name)
+        if (archiveWriter.temporaryName) self.postMessage({ cacheTemporary: archiveWriter.temporaryName })
       }
       if (archiveWriter) source = cacheArchive(source, archiveWriter)
     }
@@ -65,12 +77,14 @@ self.onmessage = async ({ data }) => {
         self.postMessage({ frameWorkers: Math.max(1, Math.min(4, navigator.hardwareConcurrency || 4)) })
       })
       const stream = decodeFrames(source, image, ports)
-      port.postMessage({ stream, verified: true }, [stream])
+      port.postMessage({ ownedStream: true, image, verified: true })
+      await sendStream(stream, port)
     } else {
       const stream = decodeImage(source, image)
-      port.postMessage(stream, [stream])
+      port.postMessage({ stream, image }, [stream])
     }
   } catch (error) {
+    await archiveWriter?.abort().catch(() => {})
     self.postMessage({ error: error.message || String(error) })
   }
 }

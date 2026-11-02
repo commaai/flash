@@ -1,4 +1,5 @@
 const PROBE_BYTES = 8 * 1024 * 1024
+const MAX_PROBE_BYTES = 32 * 1024 * 1024
 const FAST_LINK_BYTES_PER_SECOND = 96 * 1000 * 1000
 
 // Reject oversized windows and excessive blocks before invoking the WASM
@@ -87,24 +88,32 @@ export function validateFrames(image) {
 
 // Start with the smaller archive. Slow links keep every downloaded byte; fast
 // links discard only this bounded probe before switching to parallel frames.
-export async function probeArchive(source, now = () => performance.now()) {
+export async function probeArchive(source, now = () => performance.now(), onMeasurement = undefined) {
   const reader = source.getReader()
   const prefix = []
   let size = 0, measuredSize = 0, started, done = false
   try {
-    while (size < PROBE_BYTES) {
-      const next = await reader.read()
-      if (next.done) { done = true; break }
-      prefix.push(next.value)
-      size += next.value.length
-      if (started !== undefined) measuredSize += next.value.length
-      else if (size >= PROBE_BYTES / 2) started = now()
-    }
-    const fast = !done && started !== undefined && measuredSize / Math.max(0.001, (now() - started) / 1000) >= FAST_LINK_BYTES_PER_SECOND
-    if (fast) {
-      await reader.cancel('Using parallel archive')
-      reader.releaseLock()
-      return null
+    for (let limit = PROBE_BYTES; limit <= MAX_PROBE_BYTES; limit *= 2) {
+      while (size < limit) {
+        const next = await reader.read()
+        if (next.done) { done = true; break }
+        prefix.push(next.value)
+        size += next.value.length
+        if (started !== undefined) measuredSize += next.value.length
+        else if (size >= PROBE_BYTES / 2) started = now()
+      }
+      if (done || started === undefined) break
+      const ended = now(), bytesPerSecond = measuredSize / Math.max(0.001, (ended - started) / 1000)
+      onMeasurement?.({ bytes: size, bytesPerSecond })
+      if (bytesPerSecond >= FAST_LINK_BYTES_PER_SECOND) {
+        await reader.cancel('Using parallel archive')
+        reader.releaseLock()
+        return null
+      }
+      // Cold workers can delay the first sample. Retry with a later, longer
+      // interval; a slow link retains every byte instead of downloading again.
+      started = ended
+      measuredSize = 0
     }
     return new ReadableStream({
       async pull(controller) {

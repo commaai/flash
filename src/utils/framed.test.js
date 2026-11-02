@@ -81,10 +81,18 @@ describe('archive selection', () => {
   })
   it('keeps a short archive and cancels its source when the consumer stops', async () => {
     expect(await collect(await probeArchive(stream([new Uint8Array([1, 2])])))).toEqual(Buffer.from([1, 2]))
-    const times = [0, 1000], cancel = vi.fn()
-    const selected = await probeArchive(stream([...chunks(), new Uint8Array(1)], cancel), () => times.shift())
+    const times = [0, 1000, 2000, 4000], cancel = vi.fn()
+    const selected = await probeArchive(stream([...chunks(), ...chunks(), ...chunks(), ...chunks(), new Uint8Array(1)], cancel), () => times.shift())
     await selected.cancel('stop')
     expect(cancel).toHaveBeenCalledWith('stop')
+  })
+  it('retries a slow startup sample before classifying a fast link', async () => {
+    const times = [0, 1000, 1040], cancel = vi.fn(), report = vi.fn()
+    const selected = await probeArchive(stream([...chunks(), ...chunks(), new Uint8Array(1)], cancel), () => times.shift(), report)
+    expect(selected).toBeNull()
+    expect(report).toHaveBeenCalledTimes(2)
+    expect(report.mock.calls[1][0].bytes).toBe(16 * 1024 * 1024)
+    expect(cancel).toHaveBeenCalledOnce()
   })
 })
 

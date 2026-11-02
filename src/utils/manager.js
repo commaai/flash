@@ -1,8 +1,10 @@
 import { qdlDevice } from '@commaai/qdl'
 import { usbClass } from '@commaai/qdl/usblib'
 import { selectSparseRanges, validateSparseStreamMetadata } from '@commaai/qdl/sparse-stream'
+import { CalibrationLayoutError, canPreserveDdr, ddrPartitionFromGpt, readDdrPartition } from '@commaai/qdl/calibration'
+import { validateLz4Metadata } from '@commaai/qdl/lz4-stream'
 
-import { getManifest } from './manifest'
+import { getManifest, validateLz4Alternative } from './manifest'
 import { DownloadQueue } from './download-queue'
 import config from '../config'
 import { createSteps, withProgress } from './progress'
@@ -113,6 +115,8 @@ export class FlashManager {
   #userdataImage
   #downloads
   #streamingImages = []
+  #preserveDdr = false
+  #desiredDdr
 
   /**
    * @param {string} manifestUrl
@@ -122,7 +126,7 @@ export class FlashManager {
   constructor(programmer, callbacks = {}) {
     this.manifestUrl = null
     this.callbacks = callbacks
-    this.device = new qdlDevice(programmer)
+    this.device = new qdlDevice(programmer, { transferSize: 224 * 1024, transferQueueDepth: 32 })
     /** @type {import('./image').ImageManager|null} */
     this.imageManager = null
     /** @type {ManifestImage[]|null} */
@@ -306,6 +310,23 @@ export class FlashManager {
     this.#setSerial(serialNum)
   }
 
+  async #prepareDdrPreservation() {
+    this.#preserveDdr = false
+    const image = this.manifest.find((image) => image.gpt?.lun === 3)
+    if (!image) return
+    await this.#downloads.get(image)
+    const blob = await this.imageManager.getImage(image)
+    const desired = readDdrPartition(new Uint8Array(await blob.arrayBuffer()), 3)
+    this.#desiredDdr = desired
+    try {
+      const existing = ddrPartitionFromGpt(await this.device.getGpt(3), 3)
+      this.#preserveDdr = canPreserveDdr(existing, desired)
+    } catch (error) {
+      if (!(error instanceof CalibrationLayoutError) && error.code !== 'GPT_CORRUPT') throw error
+      console.info('[Flash] Existing DDR calibration cannot be preserved:', error.message)
+    }
+  }
+
   async #repairPartitionTables() {
     this.#setStep(StepCode.REPAIR_PARTITION_TABLES)
     this.#setProgress(0)
@@ -332,6 +353,10 @@ export class FlashManager {
           throw new Error(`Repairing LUN ${image.gpt.lun} failed`)
         }
         onRepair(1.0)
+      }
+      if (this.#preserveDdr) {
+        const repaired = ddrPartitionFromGpt(await this.device.getGpt(3), 3)
+        if (!canPreserveDdr(repaired, this.#desiredDdr)) throw new Error('Repaired DDR calibration layout changed')
       }
     } catch (err) {
       console.error('[Flash] An error occurred while repairing partition tables')
@@ -366,6 +391,7 @@ export class FlashManager {
       for (const lun of luns) {
         const preserve = [...critical]
         if (lun === persistLun) preserve.push('persist')
+        if (lun === 3 && this.#preserveDdr) preserve.push('ddr')
         console.info(`[Flash] Erasing LUN ${lun} while preserving ${preserve.map((part) => `"${part}"`).join(', ')} partitions`)
         if (!await this.device.eraseLun(lun, preserve)) {
           throw new Error(`Erasing LUN ${lun} failed`)
@@ -411,11 +437,18 @@ export class FlashManager {
         const progress = (bytes) => onFlash(bytes / image.size)
         let streamed = false
         if (this.#streamingImages.includes(image)) {
-          const source = await this.#downloads.getStream(image)
+          let source = await this.#downloads.getStream(image)
+          const selected = this.#downloads.getSelectedImage(image)
+          if (!source && selected.isLz4) {
+            await this.#downloads.get(image)
+            source = (await this.imageManager.getImage(selected)).stream()
+          }
           if (source) {
             this.#setMessage(`Flashing ${name}`)
-            const payload = selectSparseRanges(source, image.stream, image.fileSize)
-            if (!await this.device.flashStream(name, image.stream, payload, progress, false)) {
+            const result = selected.isLz4
+              ? await this.device.flashLz4Stream(name, selected.stream, source, progress, false)
+              : await this.device.flashStream(name, image.stream, selectSparseRanges(source, image.stream, image.fileSize), progress, false)
+            if (!result) {
               throw new Error(`Flashing ${name} failed`)
             }
             await this.#downloads.get(image)
@@ -451,6 +484,7 @@ export class FlashManager {
     if (!await this.device.setActiveSlot('a')) {
       console.error('[Flash] Failed to update slot')
       this.#setError(ErrorCode.FINALIZING_FAILED)
+      return
     }
 
     // Reboot the device
@@ -469,13 +503,27 @@ export class FlashManager {
     const systemImages = this.#systemImages()
     const system = systemImages.find((image) => image.name === 'system')
     const userdata = systemImages.filter((image) => image.name.startsWith('userdata_'))
-    const images = [system, ...this.manifest.filter((image) => image.gpt),
+    const gptImages = this.manifest.filter((image) => image.gpt)
+    const ddrGpt = gptImages.find((image) => image.gpt.lun === 3)
+    const images = [system, ddrGpt, ...gptImages.filter((image) => image !== ddrGpt),
       ...systemImages.filter((image) => image !== system && !userdata.includes(image))].filter(Boolean)
     try {
-      this.#streamingImages = system?.stream && system.chunkHashes && system.chunkSize <= 4 * 1024 * 1024 &&
-        Number.isSafeInteger(system.archiveSize) && system.archiveSize > 0 &&
-        system.archiveFileName.endsWith('.zst') &&
-        this.device.canFlashStream(1, system.stream.extents.length) ? [system] : []
+      const streamable = (image) => image?.stream && Number.isSafeInteger(image.fileSize) && image.fileSize > 0 &&
+        Number.isSafeInteger(image.chunkSize) && image.chunkSize > 0 && image.chunkSize <= 4 * 1024 * 1024 &&
+        Array.isArray(image.chunkHashes) && image.chunkHashes.length === Math.ceil(image.fileSize / image.chunkSize) &&
+        image.chunkHashes.every((hash) => /^[a-f0-9]{64}$/i.test(hash)) &&
+        Number.isSafeInteger(image.archiveSize) && image.archiveSize > 0 && image.archiveFileName.endsWith('.zst')
+      this.#streamingImages = systemImages.filter((image) => {
+        image.useLz4 = false
+        if (!streamable(image) || !this.device.canFlashStream(image.stream.extents.length)) return false
+        if (image.lz4 && this.device.canFlashLz4Stream?.(image.lz4.stream?.extents.length)) {
+          validateLz4Metadata(image.lz4.stream)
+          validateLz4Alternative(image, image.lz4)
+          if (!streamable(image.lz4)) throw new Error('LZ4 alternative is missing verified stream metadata')
+          image.useLz4 = true
+        }
+        return image === system || image.useLz4
+      })
       for (const image of this.#streamingImages) validateSparseStreamMetadata(image.stream, image.fileSize)
     } catch (error) {
       console.error('[Flash] Invalid image stream metadata', error)
@@ -491,6 +539,13 @@ export class FlashManager {
     }
     this.#downloads = new DownloadQueue(this.imageManager, images, 4, userdata, this.#streamingImages)
     try {
+      try {
+        await this.#prepareDdrPreservation()
+      } catch (error) {
+        console.error('[Flash] Could not validate the partition layout before repair', error)
+        this.#setError(ErrorCode.REPAIR_PARTITION_TABLES_FAILED)
+        return
+      }
       let start = performance.now()
       await this.#repairPartitionTables()
       console.info(`Repaired partition tables in ${((performance.now() - start) / 1000).toFixed(2)}s`)
