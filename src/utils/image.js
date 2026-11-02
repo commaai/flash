@@ -118,7 +118,7 @@ export class ImageManager {
           if (!active) return
           if (data.error) reject(new Error(data.error))
           else if (data.stream || data.streamReady) {
-            const selected = data.transport === 'lz4' ? image.lz4 : image
+            const selected = data.transport === 'lz4' ? (image.isLz4 ? image : image.lz4) : image
             if (!selected) { reject(new Error('Missing selected image alternative')); return }
             let completeStream
             streamComplete = new Promise((resolve, reject) => { completeStream = resolve; rejectStream = reject })

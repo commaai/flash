@@ -113,4 +113,17 @@ describe('download workers', () => {
     workers[0].onmessage({ data: { fastLink: true } })
     expect(manager.fastLink).toBeUndefined()
   })
+
+  it('returns the exact verified image when an LZ4 leaf is requested directly', async () => {
+    const image = { isLz4: true }, selected = vi.fn()
+    const pending = new ImageManager().downloadImage(image, undefined, undefined, (stream, actual) => {
+      selected(actual)
+      void stream.pipeTo(new WritableStream())
+    })
+    workers[1].onmessage({ data: { stream: new ReadableStream({ start(controller) { controller.close() } }), transport: 'lz4' } })
+    workers[1].onmessage({ data: { done: true } })
+    workers[0].onmessage({ data: { cacheDone: true } })
+    await pending
+    expect(selected).toHaveBeenCalledWith(image)
+  })
 })
