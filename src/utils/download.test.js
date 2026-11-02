@@ -150,7 +150,7 @@ describe('compressed archive cache', () => {
       write(chunk) {
         active++
         maximum = Math.max(maximum, active)
-        return new Promise((resolve) => setTimeout(() => { writes.push(chunk); active--; resolve() }, 0))
+        return new Promise((resolve) => setTimeout(() => { writes.push(chunk.slice()); active--; resolve() }, 0))
       },
       close: vi.fn(),
     }

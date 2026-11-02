@@ -131,6 +131,6 @@ self.onmessage = async ({ data }) => {
     }
   } catch (error) {
     await archiveWriter?.abort().catch(() => {})
-    self.postMessage({ error: error.message || String(error) })
+    self.postMessage({ error: error?.message || String(error) })
   }
 }

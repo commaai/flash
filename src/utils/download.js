@@ -88,11 +88,40 @@ export async function unpackImage(stream, image) {
 
 // Keep compressed writes bounded; the caller commits only after decoded-image verification.
 export function cacheArchive(stream, writer) {
+  let cancelled = false
   let buffer = new Uint8Array(4 * 1024 * 1024)
+  let spare = new Uint8Array(buffer.length)
   let offset = 0
+  let failure
+  let failed = false
+  let rejectWait
   const writes = []
-  return stream.pipeThrough(new TransformStream({
+  const wait = async (promise) => {
+    try {
+      await new Promise((resolve, reject) => {
+        rejectWait = reject
+        promise.then(resolve, reject)
+      })
+    } finally { rejectWait = undefined }
+  }
+  const write = (chunk, controller) => {
+    let promise
+    try { promise = Promise.resolve(writer.write(chunk)) }
+    catch (error) { promise = Promise.reject(error) }
+    promise.catch((error) => {
+      if (!failed) {
+        failed = true
+        failure = error
+        if (!cancelled) controller.error(error)
+        rejectWait?.(error)
+      }
+    })
+    return { promise, buffer: chunk }
+  }
+  const cached = stream.pipeThrough(new TransformStream({
     async transform(chunk, controller) {
+      if (cancelled) return
+      if (failed) throw failure
       let start = 0
       while (start < chunk.length) {
         const length = Math.min(chunk.length - start, buffer.length - offset)
@@ -100,21 +129,53 @@ export function cacheArchive(stream, writer) {
         offset += length
         start += length
         if (offset === buffer.length) {
-          const write = writer.write(buffer)
-          write.catch(() => {})
-          writes.push(write)
-          buffer = new Uint8Array(buffer.length)
+          writes.push(write(buffer, controller))
           offset = 0
-          if (writes.length === 2) await writes.shift()
+          if (writes.length === 2) {
+            const oldest = writes.shift()
+            await wait(oldest.promise)
+            if (cancelled) return
+            buffer = oldest.buffer
+          } else {
+            buffer = spare
+            spare = undefined
+          }
+          if (failed) throw failure
         }
       }
-      controller.enqueue(chunk)
+      if (!cancelled) controller.enqueue(chunk)
     },
-    async flush() {
-      if (offset) await writer.write(buffer.subarray(0, offset))
-      await Promise.all(writes)
+    async flush(controller) {
+      if (cancelled) return
+      if (failed) throw failure
+      if (offset) writes.push(write(buffer.subarray(0, offset), controller))
+      await Promise.all(writes.map(({ promise }) => promise))
     },
   }))
+  // TransformStream cancellation alone cannot interrupt an in-progress transform.
+  // Record it before a pending write settles, so that transform cannot queue more.
+  const reader = cached.getReader()
+  let released = false
+  const release = () => {
+    if (!released) { released = true; reader.releaseLock() }
+  }
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const next = await reader.read()
+        if (cancelled) return
+        if (next.done) { release(); controller.close() }
+        else controller.enqueue(next.value)
+      } catch (error) {
+        release()
+        if (!cancelled) controller.error(error)
+      }
+    },
+    cancel(reason) {
+      cancelled = true
+      try { return reader.cancel(reason) } finally { release() }
+    },
+  }, { highWaterMark: 0 })
 }
 
 export async function writeImage(root, image, stream) {

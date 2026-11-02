@@ -30,7 +30,7 @@ self.onmessage = ({ data: { image, port, streaming, output } }) => {
       }
       self.postMessage({ done: true })
     } catch (error) {
-      self.postMessage({ error: error.message || String(error) })
+      self.postMessage({ error: error?.message || String(error) })
     }
   }
 }

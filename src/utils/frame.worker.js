@@ -14,11 +14,11 @@ self.onmessage = async ({ data: { port } }) => {
         // Decompression has copied the compressed bytes into WASM and hashing
         // only reads output. Return private input storage for the next frame.
         port.postMessage({ index, output, input: new Uint8Array(input.buffer) }, [output.buffer, input.buffer])
-      } catch (error) { port.postMessage({ index, error: error.message || String(error) }) }
+      } catch (error) { port.postMessage({ index, error: error?.message || String(error) }) }
     }
     port.start()
     port.postMessage({ ready: true })
   } catch (error) {
-    port.postMessage({ error: error.message || String(error) })
+    port.postMessage({ error: error?.message || String(error) })
   }
 }
