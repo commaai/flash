@@ -406,21 +406,20 @@ export class FlashManager {
 
     try {
       for (const image of systemImages) {
-        const [onDownload, onFlash] = createSteps([1, image.hasAB ? 2 : 1], this.#setProgress.bind(this))
-        const slots = image.hasAB ? ['_a', '_b'] : ['']
-        const names = slots.map((slot) => `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${slot}`)
-        const destinations = names.length === 1 ? names[0] : names
-        const progress = (bytes) => onFlash(bytes / (image.size * slots.length))
+        const [onDownload, onFlash] = createSteps([1, 1], this.#setProgress.bind(this))
+        const name = `${image.name.startsWith('userdata_') ? 'userdata' : image.name}${image.hasAB ? '_a' : ''}`
+        const progress = (bytes) => onFlash(bytes / image.size)
         let streamed = false
         if (this.#streamingImages.includes(image)) {
           const source = await this.#downloads.getStream(image)
           if (source) {
-            this.#setMessage(`Flashing ${names.join(', ')}`)
+            this.#setMessage(`Flashing ${name}`)
             const payload = selectSparseRanges(source, image.stream, image.fileSize)
-            if (!await this.device.flashStream(destinations, image.stream, payload, progress, false)) {
-              throw new Error(`Flashing ${names.join(', ')} failed`)
+            if (!await this.device.flashStream(name, image.stream, payload, progress, false)) {
+              throw new Error(`Flashing ${name} failed`)
             }
             await this.#downloads.get(image)
+            onDownload(1.0)
             streamed = true
           }
         }
@@ -429,9 +428,9 @@ export class FlashManager {
           await this.#downloads.get(image, onDownload)
           const blob = await this.imageManager.getImage(image)
           onDownload(1.0)
-          this.#setMessage(`Flashing ${names.join(', ')}`)
-          if (!await this.device.flashBlob(destinations, blob, progress, false)) {
-            throw new Error(`Flashing ${names.join(', ')} failed`)
+          this.#setMessage(`Flashing ${name}`)
+          if (!await this.device.flashBlob(name, blob, progress, false)) {
+            throw new Error(`Flashing ${name} failed`)
           }
         }
         onFlash(1.0)
@@ -476,7 +475,7 @@ export class FlashManager {
       this.#streamingImages = system?.stream && system.chunkHashes && system.chunkSize <= 4 * 1024 * 1024 &&
         Number.isSafeInteger(system.archiveSize) && system.archiveSize > 0 &&
         system.archiveFileName.endsWith('.zst') &&
-        this.device.canFlashStream(system.hasAB ? 2 : 1, system.stream.extents.length) ? [system] : []
+        this.device.canFlashStream(1, system.stream.extents.length) ? [system] : []
       for (const image of this.#streamingImages) validateSparseStreamMetadata(image.stream, image.fileSize)
     } catch (error) {
       console.error('[Flash] Invalid image stream metadata', error)
