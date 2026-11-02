@@ -4,7 +4,7 @@ import { createSHA256 } from 'hash-wasm'
 
 import { fetchStream } from './stream'
 
-export function decodeImage(stream, image) {
+export function decodeImage(stream, image, onStart = undefined, afterOutput = undefined, onInput = undefined) {
   if (image.archiveFileName.endsWith('.xz')) {
     stream = new XzReadableStream(stream)
   } else if (image.archiveFileName.endsWith('.zst')) {
@@ -12,11 +12,16 @@ export function decodeImage(stream, image) {
     let reset = true
     stream = stream.pipeThrough(new TransformStream({
       async start() { decoder = await createDecoder() },
-      transform(chunk, controller) {
+      async transform(chunk, controller) {
+        if (reset) onStart?.()
         const { buf, in_offset } = decoder.decompressStream(chunk, reset)
         reset = false
         if (in_offset !== chunk.length) throw new Error('Incomplete zstd input')
-        if (buf.length) controller.enqueue(buf)
+        if (buf.length) {
+          controller.enqueue(buf)
+          await afterOutput?.(buf.length)
+        }
+        onInput?.(chunk.length)
       },
     }))
   }

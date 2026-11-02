@@ -16,6 +16,7 @@ export class ImageManager {
   /** @type {FileSystemDirectoryHandle} */
   root
   fastLink
+  sourceRate
 
   async init() {
     if (!this.root) {
@@ -94,7 +95,11 @@ export class ImageManager {
           if (data.error) reject(new Error(data.error))
           else if (data.cacheDone) resolve()
           else if (data.cacheTemporary) cacheTemporary = data.cacheTemporary
-          else if (typeof data.fastLink === 'boolean') this.fastLink = data.fastLink
+          else if (typeof data.fastLink === 'boolean') {
+            this.fastLink = data.fastLink
+            if (Number.isFinite(data.sourceRate) && data.sourceRate > 0) this.sourceRate = data.sourceRate
+          }
+          else if (Number.isFinite(data.sourceRate) && data.sourceRate > 0) this.sourceRate = data.sourceRate
           else if (data.frameWorkers) {
             try {
               if (!onStream || !Number.isInteger(data.frameWorkers) || data.frameWorkers < 1 || data.frameWorkers > 4 || frameWorkers.length) {
@@ -160,7 +165,7 @@ export class ImageManager {
         decoder.onerror = writer.onerror = (event) => reject(new Error(event.message))
         writer.postMessage({ image, port: channel.port2, streaming: !!onStream, output: output?.port2 },
           [channel.port2, ...(output ? [output.port2] : [])])
-        decoder.postMessage({ image, port: channel.port1, streaming: !!onStream, fastLink: this.fastLink }, [channel.port1])
+        decoder.postMessage({ image, port: channel.port1, streaming: !!onStream, fastLink: this.fastLink, sourceRate: this.sourceRate }, [channel.port1])
       })
       await streamComplete
     } catch (error) {
@@ -193,6 +198,7 @@ export class ImageManager {
 
   async prune(images) {
     this.fastLink = undefined
+    this.sourceRate = undefined
     images = images.flatMap((image) => image.lz4 ? [image, image.lz4] : [image])
     const keep = new Set(images.filter((image) => Number.isSafeInteger(image.fileSize)).map((image) => image.fileName))
     for (const image of images) {

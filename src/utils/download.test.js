@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { createHash, webcrypto } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import { cacheArchive, unpackImage, verifyImage, writeImage } from './download'
+import { cacheArchive, decodeImage, unpackImage, verifyImage, writeImage } from './download'
 import { ManifestImage } from './manifest'
 
 vi.mock('zstd-wasm-decoder/perf/external', async () => import('zstd-wasm-decoder'))
@@ -28,6 +28,26 @@ async function unpack(data, extension, expectedHash = hash) {
 }
 
 describe('image decoding', () => {
+  it('makes a sample output readable while pausing further decoding until the decision', async () => {
+    const archive = readFileSync('src/test/fixtures/image.zst')
+    let release
+    const decision = new Promise((resolve) => { release = resolve })
+    const afterOutput = vi.fn(() => decision)
+    const decoded = decodeImage(new ReadableStream({ start(controller) {
+      controller.enqueue(archive)
+      controller.close()
+    } }), { archiveFileName: 'image.zst' }, undefined, afterOutput)
+    const reader = decoded.getReader()
+    expect(Buffer.from((await reader.read()).value)).toEqual(contents)
+    expect(afterOutput).toHaveBeenCalledWith(contents.length)
+    let finished = false
+    const last = reader.read().then((result) => { finished = true; return result })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(finished).toBe(false)
+    release()
+    expect(await last).toEqual({ done: true, value: undefined })
+    reader.releaseLock()
+  })
   for (const extension of ['xz', 'zst']) {
     const archive = readFileSync(`src/test/fixtures/image.${extension}`)
     it(`decodes ${extension} across network chunk boundaries and verifies its hash`, async () => {

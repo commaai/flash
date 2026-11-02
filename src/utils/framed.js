@@ -75,7 +75,7 @@ export function validateFrames(image) {
 
 // Start with the smaller archive. Slow links keep every downloaded byte; fast
 // links discard only this bounded probe before switching to parallel frames.
-export async function probeArchive(source, now = () => performance.now(), onMeasurement = undefined) {
+export async function probeArchive(source, now = () => performance.now(), onMeasurement = undefined, chooseFast = true) {
   const reader = source.getReader()
   const prefix = []
   let size = 0, measuredSize = 0, started, done = false
@@ -92,7 +92,7 @@ export async function probeArchive(source, now = () => performance.now(), onMeas
       if (done || started === undefined) break
       const ended = now(), bytesPerSecond = measuredSize / Math.max(0.001, (ended - started) / 1000)
       onMeasurement?.({ bytes: size, bytesPerSecond })
-      if (bytesPerSecond >= FAST_LINK_BYTES_PER_SECOND) {
+      if (chooseFast && bytesPerSecond >= FAST_LINK_BYTES_PER_SECOND) {
         await reader.cancel('Using parallel archive')
         reader.releaseLock()
         return null
@@ -102,7 +102,7 @@ export async function probeArchive(source, now = () => performance.now(), onMeas
       started = ended
       measuredSize = 0
     }
-    return new ReadableStream({
+    const replay = new ReadableStream({
       async pull(controller) {
         try {
           if (prefix.length) { controller.enqueue(prefix.shift()); return }
@@ -113,6 +113,8 @@ export async function probeArchive(source, now = () => performance.now(), onMeas
       },
       async cancel(reason) { await reader.cancel(reason); reader.releaseLock() },
     })
+    replay.probeBytes = size
+    return replay
   } catch (error) {
     await reader.cancel(error).catch(() => {})
     reader.releaseLock()

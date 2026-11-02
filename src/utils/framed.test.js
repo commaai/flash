@@ -100,6 +100,12 @@ describe('archive selection', () => {
     expect(report.mock.calls[1][0].bytes).toBe(16 * 1024 * 1024)
     expect(cancel).toHaveBeenCalledOnce()
   })
+  it('buffers an already classified source without discarding its prefix', async () => {
+    const input = [...chunks(), ...chunks(), ...chunks(), ...chunks(), new Uint8Array([99])]
+    const selected = await probeArchive(stream(input), () => 0, undefined, false)
+    expect(selected.probeBytes).toBe(32 * 1024 * 1024)
+    expect((await collect(selected)).equals(Buffer.concat(input))).toBe(true)
+  })
 })
 
 function pool(count = 2, fail = -1) {
