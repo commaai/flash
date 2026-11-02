@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createArchiveWriter } from './archive-cache'
+import { createArchiveWriter, openCachedArchive } from './archive-cache'
 
 function filesystem({ sync = true, shortWrite = false, moveError = false, flush = vi.fn(), close = vi.fn() } = {}) {
   const files = new Map([['archive.zst', new Uint8Array([9, 8, 7])]])
@@ -95,5 +95,64 @@ describe('atomic worker archive cache', () => {
     closed()
     await abort
     expect(root.removeEntry).toHaveBeenCalledWith(abandoned.temporaryName)
+  })
+})
+
+describe('cached frame input', () => {
+  function cached({ bytes = new Uint8Array([1, 2, 3, 4]), short = false, sync = true, changed = false, blocked = false, asyncSize = false } = {}) {
+    const close = vi.fn(), read = vi.fn((target, { at }) => {
+      if (short) return 0
+      target.set(bytes.subarray(at, at + target.length))
+      return target.length
+    })
+    const stream = vi.fn(() => new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close() } }))
+    const createSyncAccessHandle = vi.fn(async () => {
+      if (blocked) throw new DOMException('locked', 'NoModificationAllowedError')
+      return { close, read, getSize: () => asyncSize ? Promise.resolve(bytes.length) : changed ? 0 : bytes.length }
+    })
+    const root = { getFileHandle: async () => ({ getFile: async () => ({ size: bytes.length, stream }),
+      createSyncAccessHandle: sync ? createSyncAccessHandle : undefined }) }
+    return { root, close, read, stream, createSyncAccessHandle }
+  }
+  it('fills caller-owned storage without changing its identity and closes exactly once', async () => {
+    const { root, close } = cached(), reader = await openCachedArchive(root, 'image', 4, true)
+    const buffer = new Uint8Array(3)
+    expect(await reader.readInto(buffer)).toBe(3)
+    expect([...buffer]).toEqual([1, 2, 3])
+    expect(await reader.readInto(buffer)).toBe(1)
+    expect(buffer[0]).toBe(4)
+    expect(await reader.readInto(buffer)).toBe(0)
+    await reader.close(); await reader.cancel()
+    expect(close).toHaveBeenCalledOnce()
+    await expect(reader.readInto(buffer)).rejects.toThrow('closed')
+  })
+  it('rejects short reads, closes on cancellation, and detects changed size after locking', async () => {
+    const first = cached({ short: true }), reader = await openCachedArchive(first.root, 'image', 4, true)
+    await expect(reader.readInto(new Uint8Array(4))).rejects.toThrow('Incomplete')
+    await reader.cancel(); expect(first.close).toHaveBeenCalledOnce()
+    const second = cached({ changed: true })
+    expect(await openCachedArchive(second.root, 'image', 4, true)).toBeNull()
+    expect(second.close).toHaveBeenCalledOnce()
+    const third = cached(), cancelled = await openCachedArchive(third.root, 'image', 4, true)
+    await cancelled.cancel(); expect(third.close).toHaveBeenCalledOnce()
+  })
+  it('keeps stream fallback for unsupported or locked access and rejects wrong-size caches', async () => {
+    for (const setting of [{ sync: false }, { blocked: true }, {}]) {
+      const { root, stream } = cached(setting)
+      const reader = await openCachedArchive(root, 'image', 4, Object.keys(setting).length > 0)
+      expect(reader).toBeInstanceOf(ReadableStream)
+      expect(stream).toHaveBeenCalledOnce()
+    }
+    const { root, createSyncAccessHandle } = cached()
+    expect(await openCachedArchive(root, 'image', 7, true)).toBeNull()
+    expect(createSyncAccessHandle).not.toHaveBeenCalled()
+  })
+  it('waits for the older asynchronous size API without treating a valid cache as missing', async () => {
+    const { root, close, stream } = cached({ asyncSize: true })
+    const reader = await openCachedArchive(root, 'image', 4, true)
+    expect(await reader.readInto(new Uint8Array(4))).toBe(4)
+    await reader.close()
+    expect(close).toHaveBeenCalledOnce()
+    expect(stream).not.toHaveBeenCalled()
   })
 })

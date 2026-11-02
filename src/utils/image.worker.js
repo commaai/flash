@@ -3,20 +3,10 @@ import { fetchStream } from './stream'
 import { getImageDirectory } from './image-storage'
 import { decodeFrames, probeArchive, validateFrames } from './framed'
 import { sendStream } from './stream-channel'
-import { createArchiveWriter } from './archive-cache'
+import { createArchiveWriter, openCachedArchive } from './archive-cache'
 
 let archiveWriter
 let receiveFramePorts
-
-async function cachedArchive(root, name, size) {
-  try {
-    const file = await (await root.getFileHandle(name)).getFile()
-    return file.size === size ? file.stream() : null
-  } catch (error) {
-    if (error.name !== 'NotFoundError') throw error
-    return null
-  }
-}
 
 const download = (url, size) => fetchStream(url, { mode: 'cors' }, {
   expectedLength: size,
@@ -42,10 +32,10 @@ self.onmessage = async ({ data }) => {
       root = await getImageDirectory()
       for (const candidate of candidates) {
         if (validateFrames(candidate)) {
-          source = await cachedArchive(root, candidate.framedArchiveCacheName, candidate.framedArchiveSize)
+          source = await openCachedArchive(root, candidate.framedArchiveCacheName, candidate.framedArchiveSize, true)
           parallel = !!source
         }
-        source ||= await cachedArchive(root, candidate.archiveCacheName, candidate.archiveSize)
+        source ||= await openCachedArchive(root, candidate.archiveCacheName, candidate.archiveSize)
         if (source) { image = candidate; break }
       }
       if (source) self.postMessage({ progress: 1 })

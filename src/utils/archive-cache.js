@@ -1,3 +1,45 @@
+// Framed decoding fills reusable input buffers directly. The bytes are still
+// verified after decompression; a cache hit never bypasses image integrity.
+export async function openCachedArchive(root, name, size, reusable = false) {
+  let file
+  try { file = await root.getFileHandle(name) }
+  catch (error) { if (error.name === 'NotFoundError') return null; throw error }
+  const snapshot = await file.getFile()
+  if (snapshot.size !== size) return null
+  if (!reusable || typeof file.createSyncAccessHandle !== 'function') return snapshot.stream()
+  let access
+  try { access = await file.createSyncAccessHandle() }
+  catch (error) {
+    if (error.name === 'NotSupportedError' || error.name === 'NoModificationAllowedError') return snapshot.stream()
+    throw error
+  }
+  let offset = 0, closed = false
+  const close = async () => {
+    if (!closed) { closed = true; await access.close() }
+  }
+  try {
+    if (await access.getSize() !== size) { await close(); return null }
+  } catch (error) { await close(); throw error }
+  return {
+    async readInto(bytes) {
+      if (closed) throw new Error('Archive cache reader is closed')
+      const count = Math.min(bytes.byteLength, size - offset)
+      let filled = 0
+      try {
+        while (filled < count) {
+          const read = access.read(bytes.subarray(filled, count), { at: offset + filled })
+          if (!Number.isSafeInteger(read) || read <= 0 || read > count - filled) throw new Error('Incomplete archive cache read')
+          filled += read
+        }
+        offset += filled
+        return filled
+      } catch (error) { await close(); throw error }
+    },
+    close,
+    cancel: close,
+  }
+}
+
 // Sync access handles keep large file writes in this worker. A temporary file
 // keeps an existing verified archive intact until the caller verifies its EOF.
 export async function createArchiveWriter(root, name) {

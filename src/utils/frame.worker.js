@@ -1,4 +1,4 @@
-import { createDecoder } from 'zstd-wasm-decoder/perf/external'
+import { createDecoder } from './frame-decoder'
 import { decodeZstdFrame } from './framed'
 
 self.onmessage = async ({ data: { port } }) => {
@@ -11,7 +11,9 @@ self.onmessage = async ({ data: { port } }) => {
         const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', output)))
           .map((byte) => byte.toString(16).padStart(2, '0')).join('')
         if (digest !== hash.toLowerCase()) throw new Error('Frame checksum mismatch')
-        port.postMessage({ index, output }, [output.buffer])
+        // Decompression has copied the compressed bytes into WASM and hashing
+        // only reads output. Return private input storage for the next frame.
+        port.postMessage({ index, output, input: new Uint8Array(input.buffer) }, [output.buffer, input.buffer])
       } catch (error) { port.postMessage({ index, error: error.message || String(error) }) }
     }
     port.start()

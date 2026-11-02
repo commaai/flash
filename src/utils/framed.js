@@ -47,21 +47,8 @@ export function validateZstdFrame(input, expected) {
 }
 
 export function decodeZstdFrame(decoder, input, size) {
-  const ends = validateZstdFrame(input, size)
-  // The library's one-shot path has a fixed output buffer; its larger-input
-  // fallback does not. Feed that fallback one bounded zstd block at a time.
-  if (input.length <= 2 * 1024 * 1024) return decoder.decompressSync(input, size)
-  const output = new Uint8Array(size)
-  let start = 0, written = 0
-  for (const end of ends) {
-    const { buf, in_offset } = decoder.decompressStream(input.subarray(start, end), start === 0)
-    if (in_offset !== end - start || written + buf.length > size) throw new Error('Decoded frame size mismatch')
-    output.set(buf, written)
-    written += buf.length
-    start = end
-  }
-  if (written !== size) throw new Error('Decoded frame size mismatch')
-  return output
+  validateZstdFrame(input, size)
+  return decoder.decompressSync(input, size)
 }
 
 export function validateFrames(image) {
@@ -138,8 +125,10 @@ export async function probeArchive(source, now = () => performance.now(), onMeas
 export function decodeFrames(source, image, ports) {
   validateFrames(image)
   if (!ports.length || ports.length > 4) throw new Error('Invalid frame worker count')
-  const reader = source.getReader()
-  const tasks = new Map(), pending = []
+  const direct = typeof source.readInto === 'function'
+  const reader = direct ? source : source.getReader()
+  const tasks = new Map(), pending = [], freeInputs = []
+  const inputCapacity = image.frameSizes.reduce((maximum, size) => Math.max(maximum, size), 0)
   let buffer = new Uint8Array(0), offset = 0, index = 0, stopped = false, failure, streamController
   const fail = (error) => {
     if (stopped) return
@@ -160,10 +149,12 @@ export function decodeFrames(source, image, ports) {
       if (!task) return
       tasks.delete(data.index)
       if (data.error) { const error = new Error(data.error); task.reject(error); fail(error) }
-      else if (!ArrayBuffer.isView(data.output) || data.output.BYTES_PER_ELEMENT !== 1 || data.output.length !== task.size) {
+      else if (!ArrayBuffer.isView(data.output) || data.output.BYTES_PER_ELEMENT !== 1 || data.output.length !== task.size ||
+          !ArrayBuffer.isView(data.input) || data.input.BYTES_PER_ELEMENT !== 1 || data.input.byteOffset !== 0 ||
+          data.input.length !== inputCapacity || data.input.buffer.byteLength !== inputCapacity) {
         const error = new Error('Decoded frame size mismatch'); task.reject(error); fail(error)
       }
-      else task.resolve(data.output)
+      else { freeInputs.push(data.input); task.resolve(data.output) }
     }
     port.start()
   }))
@@ -174,10 +165,15 @@ export function decodeFrames(source, image, ports) {
     tasks.clear()
     for (const port of ports) port.close()
     await reader.cancel(error).catch(() => {})
-    reader.releaseLock()
+    if (!direct) reader.releaseLock()
   }
   const readFrame = async (size) => {
-    const frame = new Uint8Array(size)
+    const storage = freeInputs.pop() || new Uint8Array(inputCapacity)
+    const frame = storage.subarray(0, size)
+    if (direct) {
+      if (await reader.readInto(frame) !== size) throw new Error('Truncated compressed frame')
+      return frame
+    }
     let filled = 0
     while (filled < size) {
       if (offset === buffer.length) {
@@ -217,16 +213,21 @@ export function decodeFrames(source, image, ports) {
         if (stopped) return
         const output = await pending.shift()
         if (pending.length === 0 && index === image.frameSizes.length) {
-          if (offset !== buffer.length) throw new Error('Trailing compressed bytes')
-          for (;;) {
-            const next = await reader.read()
-            if (next.done) break
-            if (next.value.length) throw new Error('Trailing compressed bytes')
+          if (direct) {
+            if (await reader.readInto(new Uint8Array(1))) throw new Error('Trailing compressed bytes')
+            await reader.close()
+          } else {
+            if (offset !== buffer.length) throw new Error('Trailing compressed bytes')
+            for (;;) {
+              const next = await reader.read()
+              if (next.done) break
+              if (next.value.length) throw new Error('Trailing compressed bytes')
+            }
+            reader.releaseLock()
           }
           // Withhold the final verified frame until archive EOF and cache writes.
           controller.enqueue(output)
           controller.close()
-          reader.releaseLock()
           stopped = true
           for (const port of ports) port.close()
           return

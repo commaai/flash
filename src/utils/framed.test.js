@@ -1,7 +1,8 @@
 import { MessageChannel } from 'node:worker_threads'
-import { createDecoder } from 'zstd-wasm-decoder'
+import { readFile } from 'node:fs/promises'
 import { describe, expect, it, vi } from 'vitest'
 import { decodeFrames, decodeZstdFrame, probeArchive, validateFrames, validateZstdFrame } from './framed'
+import { instantiateDecoder } from './frame-decoder'
 
 function stream(chunks, cancel) {
   let index = 0
@@ -34,16 +35,21 @@ function metadata(count = 5) {
 }
 
 describe('bounded zstd frames', () => {
-  it('decodes a large raw frame through bounded blocks', async () => {
+  it('decodes a large frame in bounded memory and retains independent output', async () => {
     const contents = Buffer.alloc(4 * 1024 * 1024, 137), frame = rawFrame(contents)
-    const decoder = await createDecoder()
-    const original = decoder.decompressStream.bind(decoder)
-    decoder.decompressStream = vi.fn((data, reset) => {
-      expect(data.length).toBeLessThanOrEqual(128 * 1024 + 12)
-      return original(data, reset)
-    })
-    expect(Buffer.from(decodeZstdFrame(decoder, frame, contents.length)).equals(contents)).toBe(true)
-    expect(decoder.decompressStream).toHaveBeenCalledTimes(32)
+    const module = await WebAssembly.compile(await readFile('node_modules/zstd-wasm-decoder/_esm/zstd-decoder-perf.wasm'))
+    const decoder = instantiateDecoder(module)
+    const first = decodeZstdFrame(decoder, frame, contents.length)
+    expect(Buffer.from(first).equals(contents)).toBe(true)
+    const small = Buffer.alloc(8192, 14)
+    expect(Buffer.from(decodeZstdFrame(decoder, rawFrame(small), small.length)).equals(small)).toBe(true)
+    expect(Buffer.from(first).equals(contents)).toBe(true)
+    expect(() => decoder.decompressSync(frame, 4 * 1024 * 1024 + 1)).toThrow('Oversized')
+    expect(() => decoder.decompressSync(new Uint8Array(8 * 1024 * 1024 + 1), 4096)).toThrow('Oversized')
+    expect(() => decoder.decompressSync(frame, 4096)).toThrow('size mismatch')
+    expect(() => decoder.decompressSync(frame.subarray(0, -1), contents.length)).toThrow('size mismatch')
+    // A bad frame must not poison the next independent decode.
+    expect(Buffer.from(decodeZstdFrame(decoder, rawFrame(small), small.length)).equals(small)).toBe(true)
   })
 
   it('rejects oversized windows, wrong decoded sizes, truncation and trailing frames before decoding', () => {
@@ -104,7 +110,7 @@ function pool(count = 2, fail = -1) {
       jobs.push(data.index)
       setTimeout(() => {
         if (data.index === fail) channel.port2.postMessage({ index: data.index, error: 'Frame checksum mismatch' })
-        else channel.port2.postMessage({ index: data.index, output: new Uint8Array(data.size).fill(data.index) })
+        else channel.port2.postMessage({ index: data.index, output: new Uint8Array(data.size).fill(data.index), input: new Uint8Array(data.input.buffer) }, [data.input.buffer])
       }, data.index % 2 ? 0 : 5)
     }
     channel.port2.postMessage({ ready: true })
@@ -150,5 +156,37 @@ describe('ordered frame workers', () => {
     const output = decodeFrames(new ReadableStream({ cancel }), metadata(), [channel.port1])
     await expect(output.getReader().read()).rejects.toThrow('WASM initialization failed')
     expect(cancel).toHaveBeenCalledOnce()
+  })
+  it('reads cached frames into private reusable input buffers and closes after EOF', async () => {
+    let remaining = 17
+    const close = vi.fn(), cancel = vi.fn()
+    const readInto = vi.fn(async (bytes) => {
+      if (!remaining) return 0
+      bytes.fill(42)
+      remaining -= bytes.length
+      return bytes.length
+    })
+    const output = await collect(decodeFrames({ readInto, close, cancel }, metadata(17), pool().ports))
+    expect(output).toEqual(Buffer.concat(Array.from({ length: 17 }, (_, i) => Buffer.alloc(8, i))))
+    expect(readInto).toHaveBeenCalledTimes(18)
+    expect(close).toHaveBeenCalledOnce()
+    expect(cancel).not.toHaveBeenCalled()
+  })
+  it('closes a cached reader on failure and withholds the final output on trailing data', async () => {
+    for (const invalid of ['truncated', 'trailing', 'checksum']) {
+      let reads = 0
+      const cancel = vi.fn(), close = vi.fn(), received = []
+      const readInto = async (bytes) => {
+        reads++
+        if (invalid === 'truncated' && reads === 2) return 0
+        if (reads > 5) return invalid === 'trailing' ? 1 : 0
+        return bytes.length
+      }
+      await expect(decodeFrames({ readInto, close, cancel }, metadata(), pool(2, invalid === 'checksum' ? 0 : -1).ports)
+        .pipeTo(new WritableStream({ write(chunk) { received.push(chunk) } }))).rejects.toThrow()
+      expect(cancel).toHaveBeenCalledOnce()
+      expect(close).not.toHaveBeenCalled()
+      expect(received.length).toBeLessThan(5)
+    }
   })
 })
