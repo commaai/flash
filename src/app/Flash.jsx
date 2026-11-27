@@ -426,7 +426,7 @@ function ConnectInstructions({ deviceType, onNext }) {
   const isCommaFour = deviceType === DeviceType.COMMA_4
 
   return (
-    <div className="wizard-screen flex flex-col items-center justify-center h-full gap-6 p-8">
+    <div className="wizard-screen relative flex flex-col items-center justify-center h-full gap-6 p-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-2">Connect your device</h2>
         <p className="text-xl text-gray-600">Follow these steps to prepare your device for flashing</p>
@@ -471,6 +471,15 @@ function ConnectInstructions({ deviceType, onNext }) {
       >
         Next
       </button>
+
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-start gap-3 w-full max-w-[39rem] px-4 py-3 bg-amber-50 border border-amber-300 rounded-lg text-sm text-amber-900">
+        <svg className="flex-shrink-0 w-5 h-5 mt-0.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+        <p>
+          <strong>Avoid connecting both ports to the same computer.</strong> This can underpower the device and lead to incomplete flashing. It is recommended to use a power brick for port 2.
+        </p>
+      </div>
     </div>
   )
 }
