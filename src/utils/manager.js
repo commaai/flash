@@ -81,6 +81,11 @@ export function checkCompatibleDevice(storageInfo) {
     storageInfo.total_blocks === 29775872) {
     return 'userdata_90'
   }
+  // Samsung 128GB, userdata start 6159400 size 23606227
+  if (storageInfo.prod_name.startsWith('KLUDG4U1EA-B0C1') && storageInfo.manufacturer_id === 462 &&
+    storageInfo.total_blocks === 29765632) {
+    return 'userdata_90'
+  }
 
   throw new Error('Could not identify UFS chip')
 }
