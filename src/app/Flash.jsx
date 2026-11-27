@@ -456,7 +456,7 @@ function ConnectInstructions({ deviceType, onNext }) {
           </li>
           <li className="flex gap-3">
             <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#51ff00] text-black flex items-center justify-center font-bold text-sm">{isCommaFour ? 'C' : 'D'}</span>
-            <span>Connect <strong>port 2</strong> to your computer or a power brick</span>
+            <span>Connect <strong>port 2</strong> to a power adapter. Computer USB ports may not supply enough power for flashing.</span>
           </li>
         </ol>
       </div>
